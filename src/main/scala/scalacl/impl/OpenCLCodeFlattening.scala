@@ -222,13 +222,13 @@ extends MiscMatchers
           //println("flattenedTypes = " + flattenedTypes)
           //println(s"fiberPaths = $fiberPaths")
           fiberPaths.zip(flattenedTypes).zipWithIndex map { case ((path, tpe), i) =>
-            val fiberExpr = applyFiberPath(() => {
+            val (fiberExpr, fiberTpe) = applyFiberPath(() => {
               val res = ident(inputSymbol, inputType, inputSymbol.name)
               setSlice(res, TupleSlice(inputSymbol, i, 1))
               res
             }, path)
             //setType(fiberExpr, tpe)
-            val fiberVar = newVariable(inputSymbol.name + "$" + path.map(_ + 1).mkString("$"), symbolOwner, tree.pos, false, fiberExpr)
+            val fiberVar = newVariable(inputSymbol.name + "$" + path.map(_ + 1).mkString("$"), symbolOwner, tree.pos, false, fiberExpr, fiberTpe)
             sliceReplacements ++= Seq(TupleSlice(inputSymbol, i, 1) -> fiberVar.identGen)
             //println(s"fiberExpr = $fiberExpr, fiberVar = $fiberVar")
             fiberVar
@@ -379,6 +379,7 @@ extends MiscMatchers
             //case s =>
             //  sys.error(s"CONVERTED Seq(target = $target, value = $value, mf = $mf) to $s")
           }
+          //println(s"\tmf = $mf, m = $m")
           m.copy(statements = Seq(indexVal.definition) ++ m.statements)
         case Apply(target, args) =>
           //println("CONVERTING apply " + tree)
@@ -390,20 +391,24 @@ extends MiscMatchers
                 case op @ ("+" | "-" | "*" | "/" | "%" | "^" | "&" | "|" | "==" ) =>
                   Some(out("(", left, " ", op, " ", args(0), ")")
           */
-          val FlatCode(defs1, stats1, vals1) = flattenTuplesAndBlocks(target, sideEffectFree = getType(target) != NoType)
+          val fc1 @ FlatCode(defs1, stats1, vals1) = 
+            flattenTuplesAndBlocks(target, sideEffectFree = getType(target) != NoType)
+           
           val argsConv = args.map(flattenTuplesAndBlocks(_))
           val tpes = flattenTypes(getType(tree))
           // TODO assign vals to new vars before the calls, to ensure a correct evaluation order !
-          val res = FlatCode[Tree](
+          // TODO test this extensively!!!!
+          val result = FlatCode[Tree](
             defs1 ++ argsConv.flatMap(_.outerDefinitions),
             stats1 ++ argsConv.flatMap(_.statements),
-            vals1.zip(argsConv.flatMap(_.values)).zip(tpes).map { 
-              case ((v1, v2), tpe) => 
-                setType(Apply(v1, List(v2)), tpe) 
+            vals1.zip(tpes).map { 
+              case (target, tpe) => 
+                val args = argsConv.map(_.values)
+                setType(Apply(target, args.flatten), tpe) 
             }
           )
-          //println(s"CONVERTED apply $tree\n\tres = $res, \n\ttpes = $tpes, \n\targsConv = $argsConv, \n\tvals1 = $vals1")
-          res
+          //println(s"CONVERTED apply $tree\n\tresult = $result, \n\ttpes = $tpes, \n\targsConv = $argsConv, \n\tvals1 = $vals1, fc1 = $fc1")
+          result
         case f @ DefDef(_, _, _, _, _, _) =>
           FlatCode[Tree](Seq(f), Seq(), Seq())
         case WhileLoop(condition, content) =>
@@ -588,7 +593,7 @@ extends MiscMatchers
           assert(false, "Case not handled in tuples and blocks flattening : " + tree + ": " + tree.getClass.getName)// + ") :\n\t" + nodeToString(tree))
           FlatCode[Tree](Seq(), Seq(), Seq())
       }
-      //res.printDebug("res")
+      //res.printDebug(s"RAW $res")
       val ret = if (sideEffectFree)
         makeValuesSideEffectFree(
           res,
@@ -597,10 +602,12 @@ extends MiscMatchers
       else
         res
 
-      //ret.printDebug("ret")
-      //println("tree = \n\t" + tree.toString.replaceAll("\n", "\n\t"))
-      //println("res = \n\t" + res.toString.replaceAll("\n", "\n\t"))
-      //println("ret = \n\t" + ret.toString.replaceAll("\n", "\n\t"))
+      if (false) {
+        println()
+        println("tree = \n\t" + tree.toString.replaceAll("\n", "\n\t"))
+        println("res = \n\t" + res.toString.replaceAll("\n", "\n\t"))
+        println("ret = \n\t" + ret.toString.replaceAll("\n", "\n\t"))
+      }
       
       val out = ret.mapValues(s => s.flatMap(replaceValues))
       //out.printDebug("out")

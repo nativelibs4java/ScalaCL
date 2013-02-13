@@ -65,19 +65,19 @@ class OpenCLCodeFlatteningTest
   
   def code(statements: Seq[Expr[_]] = Seq(), values: Seq[Expr[_]] = Seq()) =
     FlatCode[Tree](
-      statements = statements.map(x => unwrap(typeCheck(x.tree))), 
-      values = values.map(x => unwrap(typeCheck(x.tree)))
+      statements = statements.map(x => unwrap(typeCheck(x.tree, WildcardType))), 
+      values = values.map(x => unwrap(typeCheck(x.tree, WildcardType)))
     )
   
   def inputSymbols(xs: Expr[_]*): Seq[(Symbol, Type)] = {
     for (x <- xs.toSeq) yield {
-      val i @ Ident(n) = typeCheck(x.tree)
+      val i @ Ident(n) = typeCheck(x.tree, WildcardType)
       (i.symbol, i.tpe)
     }
   }
   
   def flat(x: Expr[_], inputSymbols: Seq[(Symbol, Type)] = Seq(), owner: Symbol = NoSymbol): FlatCode[Tree] = {
-    flatten(typeCheck(x.tree), inputSymbols, owner)
+    flatten(typeCheck(x.tree, WildcardType), inputSymbols, owner)
   }
   
   def assertEquals(a: FlatCode[Tree], b: FlatCode[Tree]) {

@@ -220,8 +220,7 @@ with KernelSymbolsAnalysis
           //  convertMathFunction(s.tpe, name, args)
             //merge(Seq(right).map(convert):_*) { case Seq(v) => Seq(n + "(" + v + ")") }
           case n =>
-            println(nodeToStringNoComment(body))
-            throw new RuntimeException("[ScalaCL] Unhandled method name in Scala -> OpenCL conversion : " + name + "\n\tleft = " + left + ",\n\targs = " + args)
+            throw new RuntimeException("[ScalaCL] Unhandled method name in Scala -> OpenCL conversion : " + name + "\n\tleft = " + left + ",\n\targs = " + args + ",\n\tbody = " + body + ",\n\ttree: " + body.getClass.getName + s" (${updateName.unapply(name)})")
             valueCode("/* Error: failed to convert " + body + " */")
         }
       case s @ Select(expr, fun) =>

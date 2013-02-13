@@ -49,7 +49,7 @@ class ConversionTest
   private val Vectorizable = not(NotVectorizable)
   
   private def conv(block: Expr[Unit], explicitParamDescs: Seq[ParamDesc] = Seq()) = {
-    convertCode(typeCheck(block.tree), explicitParamDescs)
+    convertCode(typeCheck(block.tree, WildcardType), explicitParamDescs)
   }
   
   def assertParamDesc(d: ParamDesc, name: String, tpe: Type, usage: UsageKind, kind: ParamKind) = {

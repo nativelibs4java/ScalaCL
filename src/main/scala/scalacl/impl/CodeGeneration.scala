@@ -76,47 +76,52 @@ trait CodeGeneration extends CodeConversion {
       body: Tree, 
       paramDescs: Seq[ParamDesc]): Expr[CLFunction[A, B]] = 
   {
-    val CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
-      body,
-      paramDescs
-    )
-	  
-    val codeExpr = expr[String](Literal(Constant(code)))
-    val kernelIdExpr = expr[Long](Literal(Constant(kernelId)))
-    
-    def ident(s: global.Symbol) = 
-      Ident(s.asInstanceOf[Symbol].name)
-      // Ident(s.asInstanceOf[Symbol])
-    
-    val inputs = arrayApply[CLArray[_]](
-      capturedInputs
-        .map(d => ident(d.symbol)).toList
-    )
-    val outputs = arrayApply[CLArray[_]](
-      capturedOutputs
-        .map(d => ident(d.symbol)).toList
-    )
-    val constants = arrayApply[AnyRef](
-      capturedConstants
-        .map(d => {
-          val x = expr[Array[AnyRef]](ident(d.symbol))
-          (reify { x.splice.asInstanceOf[AnyRef] }).tree
-        }).toList
-    )
-    //println(s"""
-    //  code: $code
-    //  capturedInputs: $capturedInputs, 
-    //  capturedOutputs: $capturedOutputs, 
-    //  capturedConstants: $capturedConstants""") 
-    reify {
-      new CLFunction[A, B](
-        f.splice, 
-        new Kernel(kernelIdExpr.splice, codeExpr.splice),
-        Captures(
-          inputs = inputs.splice, 
-          outputs = outputs.splice, 
-          constants = constants.splice)
+    try {
+      val CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
+        body,
+        paramDescs
       )
+      
+      val codeExpr = expr[String](Literal(Constant(code)))
+      val kernelIdExpr = expr[Long](Literal(Constant(kernelId)))
+      
+      def ident(s: global.Symbol) = 
+        Ident(s.asInstanceOf[Symbol].name)
+        // Ident(s.asInstanceOf[Symbol])
+      
+      val inputs = arrayApply[CLArray[_]](
+        capturedInputs
+          .map(d => ident(d.symbol)).toList
+      )
+      val outputs = arrayApply[CLArray[_]](
+        capturedOutputs
+          .map(d => ident(d.symbol)).toList
+      )
+      val constants = arrayApply[AnyRef](
+        capturedConstants
+          .map(d => {
+            val x = expr[Array[AnyRef]](ident(d.symbol))
+            (reify { x.splice.asInstanceOf[AnyRef] }).tree
+          }).toList
+      )
+      //println(s"""
+      //  code: $code
+      //  capturedInputs: $capturedInputs, 
+      //  capturedOutputs: $capturedOutputs, 
+      //  capturedConstants: $capturedConstants""") 
+      reify {
+        new CLFunction[A, B](
+          f.splice, 
+          new Kernel(kernelIdExpr.splice, codeExpr.splice),
+          Captures(
+            inputs = inputs.splice, 
+            outputs = outputs.splice, 
+            constants = constants.splice)
+        )
+      }
+    } catch { case ex: Throwable =>
+      error("CLFunction generation failed for { " + f + " }: " + ex)
+      null
     }
   }
   

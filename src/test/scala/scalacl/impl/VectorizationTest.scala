@@ -49,7 +49,7 @@ class VectorizationTest
   private val Vectorizable = not(NotVectorizable)
   
   private def vec(block: Expr[Unit]) = {
-    vectorize(context, typeCheck(block.tree))
+    vectorize(context, typeCheck(block.tree, WildcardType))
   }
   
   @Test
