@@ -31,8 +31,8 @@
 package scalacl
 package impl
 
-import scalaxy.common.Tuploids
-import scalaxy.common.CommonScalaNames
+import scalaxy.components.Tuploids
+import scalaxy.components.CommonScalaNames
 
 trait SymbolKinds extends Tuploids with CommonScalaNames {
   val global: reflect.api.Universe

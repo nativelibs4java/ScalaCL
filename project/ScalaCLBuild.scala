@@ -24,13 +24,14 @@ object ScalaCLBuild extends Build {
       
 		libraryDependencies ++= Seq(
       "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT",
+      "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
       "com.novocode" % "junit-interface" % "0.5" % "test->default"
     ),    
 
     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
 	)
 
-	lazy val root = Project(
+	lazy val ScalaCL = Project(
 		id = "ScalaCL",
 		base = file("."),
 		settings = sharedSettings ++ Seq(

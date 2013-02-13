@@ -32,7 +32,7 @@ package scalacl.impl
 import scalacl.CLArray
 import scalacl.CLFilteredArray
 
-import scalaxy.common.WithMacroContext
+import scalaxy.components.WithMacroContext
 
 import language.experimental.macros
 import scala.reflect.macros.Context

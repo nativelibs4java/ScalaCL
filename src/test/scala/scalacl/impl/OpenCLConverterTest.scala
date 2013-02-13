@@ -31,13 +31,17 @@
 package scalacl
 package impl
 
-import scalaxy.common._
+import scalaxy.components._
 
 import org.junit._
 import Assert._
 import org.hamcrest.CoreMatchers._
 
-class OpenCLConverterTest extends OpenCLConverter with WithRuntimeUniverse {
+class OpenCLConverterTest 
+    extends OpenCLConverter 
+    with WithRuntimeUniverse
+    with WithTestFresh 
+{
   import global._
  
   def conv(x: Expr[_]): FlatCode[String] = {

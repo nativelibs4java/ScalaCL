@@ -31,13 +31,17 @@
 package scalacl
 package impl
 
-import scalaxy.common._
+import scalaxy.components._
 
 import org.junit._
 import Assert._
 import org.hamcrest.CoreMatchers._
 
-class SymbolKindsTest extends SymbolKinds with WithRuntimeUniverse {
+class SymbolKindsTest 
+    extends SymbolKinds 
+    with WithRuntimeUniverse
+    with WithTestFresh 
+{
   import global._
   
   class EmptyClass()

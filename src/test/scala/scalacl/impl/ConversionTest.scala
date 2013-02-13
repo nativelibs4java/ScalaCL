@@ -31,13 +31,17 @@
 package scalacl
 package impl
 
-import scalaxy.common._
+import scalaxy.components._
 
 import org.junit._
 import Assert._
 import org.hamcrest.CoreMatchers._
 
-class ConversionTest extends CodeConversion with WithRuntimeUniverse {
+class ConversionTest 
+    extends CodeConversion 
+    with WithRuntimeUniverse
+    with WithTestFresh 
+{
   import global._
   
   private val context = reify { null: Context }

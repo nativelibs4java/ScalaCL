@@ -30,8 +30,8 @@
  */
 package scalacl.impl
 
-import scalaxy.common.MiscMatchers
-import scalaxy.common.WithMacroContext
+import scalaxy.components.MiscMatchers
+import scalaxy.components.WithMacroContext
 
 import language.experimental.macros
 

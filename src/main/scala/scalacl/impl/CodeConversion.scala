@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package scalacl.impl
-import scalaxy.common.FlatCode
-import scalaxy.common.FlatCodes._
+import scalaxy.components.FlatCode
+import scalaxy.components.FlatCodes._
 
 import scalacl.CLArray
 import scalacl.CLFilteredArray

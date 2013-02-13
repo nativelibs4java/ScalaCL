@@ -31,10 +31,10 @@
 package scalacl
 package impl
 
-import scalaxy.common.CommonScalaNames
-import scalaxy.common.FlatCode
-import scalaxy.common.FlatCodes._
-import scalaxy.common.MiscMatchers
+import scalaxy.components.CommonScalaNames
+import scalaxy.components.FlatCode
+import scalaxy.components.FlatCodes._
+import scalaxy.components.MiscMatchers
 
 import scala.collection.immutable.Stack
 import scala.reflect.NameTransformer

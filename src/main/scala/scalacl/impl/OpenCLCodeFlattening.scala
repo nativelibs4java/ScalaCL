@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package scalacl.impl
-import scalaxy.common._
-import scalaxy.common.FlatCodes._
+import scalaxy.components._
+import scalaxy.components.FlatCodes._
 
 import scala.collection.immutable.Stack
 import scala.collection.mutable.ArrayBuffer

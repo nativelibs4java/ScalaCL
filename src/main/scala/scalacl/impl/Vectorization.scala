@@ -35,7 +35,7 @@ import scala.reflect.api.Universe
 import scalacl.CLArray
 import scalacl.CLFilteredArray
 
-import scalaxy.common.MiscMatchers
+import scalaxy.components.MiscMatchers
 
 trait Vectorization extends CodeGeneration with MiscMatchers {
   val global: Universe

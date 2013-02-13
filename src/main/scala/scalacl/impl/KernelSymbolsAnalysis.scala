@@ -31,8 +31,8 @@
 package scalacl
 package impl
 
-import scalaxy.common.CommonScalaNames
-import scalaxy.common.MiscMatchers
+import scalaxy.components.CommonScalaNames
+import scalaxy.components.MiscMatchers
 
 import scala.collection.immutable.Stack
 import scala.reflect.NameTransformer
