@@ -1,6 +1,6 @@
 ScalaCL... v3 (yeah, yet another rewrite from scratch FTW!)
 
-NOT FUNCTIONAL YET, WORK IN PROGRESS (see [ScalaCL](https://code.google.com/p/scalacl/) if you want something that _works_).
+NOT FUNCTIONAL YET, WORK IN PROGRESS (see [ScalaCL](https://code.google.com/p/scalacl/) if you want something that _works_, albeit only on Scala 2.9.x).
 
 Features of the new design:
 - Much better asynchronicity support (now requires OpenCL 1.1), and much better performance in general
