@@ -20,7 +20,7 @@ object ScalaCLBuild extends Build {
     
     fork := true,
     
-    scalaVersion := "2.10.0",
+    scalaVersion := "2.10.2",
     scalacOptions ++= Seq(
       "-language:experimental.macros",
       "-deprecation"
