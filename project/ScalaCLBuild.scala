@@ -1,7 +1,19 @@
 import sbt._
 import Keys._
 
+import scalariform.formatter.preferences._
+import com.typesafe.sbt.SbtScalariform.scalariformSettings
+import com.typesafe.sbt.SbtScalariform._
+
 object ScalaCLBuild extends Build {
+  // See https://github.com/mdr/scalariform
+  ScalariformKeys.preferences := FormattingPreferences()
+    .setPreference(MultilineScaladocCommentsStartOnFirstLine, true)
+    .setPreference(PreserveDanglingCloseParenthesis, true)
+    .setPreference(AlignSingleLineCaseStatements, true)
+    .setPreference(DoubleIndentClassDeclaration, true)
+    .setPreference(PreserveDanglingCloseParenthesis, false)
+    
 	val sharedSettings = Defaults.defaultSettings ++ Seq(
 		organization := "com.nativelibs4java",
     version := "0.3-SNAPSHOT",
@@ -34,7 +46,7 @@ object ScalaCLBuild extends Build {
 	lazy val ScalaCL = Project(
 		id = "ScalaCL",
 		base = file("."),
-		settings = sharedSettings ++ Seq(
+		settings = sharedSettings ++ scalariformSettings ++ Seq(
 		  name := "scalacl"
 		)
 	)
