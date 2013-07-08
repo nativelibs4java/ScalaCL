@@ -37,21 +37,20 @@ import org.junit._
 import Assert._
 import org.hamcrest.CoreMatchers._
 
-class OpenCLConverterTest 
-    extends OpenCLConverter 
+class OpenCLConverterTest
+    extends OpenCLConverter
     with WithRuntimeUniverse
-    with WithTestFresh 
-{
+    with WithTestFresh {
   import global._
- 
+
   def conv(x: Expr[_]): FlatCode[String] = {
     //convert(typeCheck(x))
     flattenAndConvert(typeCheck(x))
   }
-  
+
   def code(statements: Seq[String], values: Seq[String]): FlatCode[String] =
     FlatCode[String](statements = statements, values = values)
-  
+
   @Test
   def testSimpleTuple {
     assertEquals(
@@ -65,7 +64,7 @@ class OpenCLConverterTest
       })
     )
   }
-  
+
   @Test
   def testSimpleMath {
     import scala.math._

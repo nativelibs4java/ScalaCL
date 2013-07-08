@@ -13,6 +13,6 @@ class MockEvent(value: Long) extends CLEvent(null, value) {
     assert(completionCallback == null)
     completionCallback = cb
   }
-  
+
   override def toString = "MockEvent(" + value.toString + ")"
 }

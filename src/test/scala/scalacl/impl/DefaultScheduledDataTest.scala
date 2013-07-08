@@ -45,54 +45,54 @@ class DefaultScheduledDataTest {
   val data = new DefaultScheduledData {}
   def isLocked = data.scheduleLock.isLocked
   assertFalse(isLocked)
-  
+
   val e1 = new MockEvent(1)
   val e2 = new MockEvent(2)
   val e3 = new MockEvent(3)
-    
+
   def read(event: CLEvent, expectReads: List[CLEvent], expectWrite: CLEvent) {
     val events = new ArrayBuffer[CLEvent]
     data.startRead(events)
     assertEquals("bad read events", Option(expectWrite).toSeq, events.toList)
     assertTrue(isLocked)
-    
+
     data.endRead(event)
     assertEquals("bad dataWrite", expectWrite, data.dataWrite)
     assertEquals("bad dataReads", expectReads ++ Option(event), data.dataReads.toList)
     assertFalse(isLocked)
   }
-  
+
   def write(event: CLEvent, expectReads: List[CLEvent], expectWrite: CLEvent) {
     val events = new ArrayBuffer[CLEvent]
     data.startWrite(events)
     assertEquals("bad write events", expectReads ++ Option(expectWrite), events.toList)
     assertTrue(isLocked)
-    
+
     data.endWrite(event)
     assertEquals("bad dataWrite", event, data.dataWrite)
     assertEquals("bad dataReads", Nil, data.dataReads.toList)
     assertFalse(isLocked)
   }
-  
+
   @Test
   def simpleReads {
     read(e1, Nil, null)
     read(e2, List(e1), null)
   }
-  
+
   @Test
   def simpleWrites {
     write(e1, Nil, null)
-    write(e2, Nil, e1)    
+    write(e2, Nil, e1)
   }
-  
+
   @Test
   def simpleReadWriteRead {
     read(e1, Nil, null)
     write(e2, List(e1), null)
     read(e3, Nil, e2)
   }
-  
+
   @Test
   def simpleWriteReadWrite {
     write(e1, Nil, null)

@@ -37,13 +37,12 @@ import org.junit._
 import Assert._
 import org.hamcrest.CoreMatchers._
 
-class SymbolKindsTest 
-    extends SymbolKinds 
+class SymbolKindsTest
+    extends SymbolKinds
     with WithRuntimeUniverse
-    with WithTestFresh 
-{
+    with WithTestFresh {
   import global._
-  
+
   class EmptyClass()
   case class EmptyCaseClass()
   class ImmutableClass(a: Int, b: Int)
@@ -52,24 +51,24 @@ class SymbolKindsTest
   case class MutableCaseClass(a: Int, b: Int) {
     var v = 0
   }
-  
+
   @Test
   def testKinds {
     assertEquals(SymbolKind.Tuploid, kindOf(typeOf[Int]))
     assertEquals(SymbolKind.Tuploid, kindOf(typeOf[Float]))
     assertEquals(SymbolKind.Tuploid, kindOf(typeOf[(Int, Int)]))
-    
+
     assertEquals(SymbolKind.ArrayLike, kindOf(typeOf[CLArray[Int]]))
     assertEquals(SymbolKind.ArrayLike, kindOf(typeOf[CLFilteredArray[Int]]))
-    
+
     assertEquals(SymbolKind.Tuploid, kindOf(typeOf[ImmutableClass]))
     assertEquals(SymbolKind.Tuploid, kindOf(typeOf[ImmutableCaseClass]))
-    
+
     assertEquals(SymbolKind.Other, kindOf(typeOf[MutableClass]))
     assertEquals(SymbolKind.Other, kindOf(typeOf[MutableCaseClass]))
-    
+
     assertEquals(SymbolKind.Other, kindOf(typeOf[EmptyClass]))
     assertEquals(SymbolKind.Other, kindOf(typeOf[EmptyCaseClass]))
   }
-  
+
 }

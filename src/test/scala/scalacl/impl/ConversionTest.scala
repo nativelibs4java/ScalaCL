@@ -37,28 +37,27 @@ import org.junit._
 import Assert._
 import org.hamcrest.CoreMatchers._
 
-class ConversionTest 
-    extends CodeConversion 
+class ConversionTest
+    extends CodeConversion
     with WithRuntimeUniverse
-    with WithTestFresh 
-{
+    with WithTestFresh {
   import global._
-  
+
   private val context = reify { null: Context }
   private val NotVectorizable: Option[Expr[Unit]] = None
   private val Vectorizable = not(NotVectorizable)
-  
+
   private def conv(block: Expr[Unit], explicitParamDescs: Seq[ParamDesc] = Seq()) = {
     convertCode(typeCheck(block.tree, WildcardType), explicitParamDescs)
   }
-  
+
   def assertParamDesc(d: ParamDesc, name: String, tpe: Type, usage: UsageKind, kind: ParamKind) = {
     assertEquals(name, d.symbol.name.toString)
     assertEquals(tpe, d.tpe)
     assertEquals(kind, d.mode)
     assertEquals(usage, d.usage)
   }
-  
+
   @Test
   def simpleCaptures {
     val in: CLArray[Int] = null
@@ -68,19 +67,19 @@ class ConversionTest
     assertEquals(
       "kernel void f(global const int* in, global int* out, int f) {\n" +
         "\tout[1] = (in[2] * f);\n" +
-      "}",
+        "}",
       c.code
     )
     val Seq(inDesc) = c.capturedInputs
     assertParamDesc(inDesc, "in", typeOf[CLArray[Int]], UsageKind.Input, ParamKind.Normal)
-    
+
     val Seq(outDesc) = c.capturedOutputs
     assertParamDesc(outDesc, "out", typeOf[CLArray[Int]], UsageKind.Output, ParamKind.Normal)
-    
+
     val Seq(fDesc) = c.capturedConstants
     assertParamDesc(fDesc, "f", typeOf[Int], UsageKind.Input, ParamKind.Normal)
   }
-  
+
   @Test
   def simpleTupleResult {
     val in: CLArray[Int] = null
@@ -92,11 +91,11 @@ class ConversionTest
       "kernel void f(global const int* in, global int* out_1, global float* out_2) {\n" +
         "\tout_1[0] = in[0];\n" +
         "\tout_2[0] = ((float)in[2]);\n" +
-      "}",
+        "}",
       c.code
     )
   }
-  
+
   @Ignore
   @Test
   def simpleTuplesCaptures {
@@ -109,11 +108,11 @@ class ConversionTest
     assertEquals(
       "kernel void f(global const int* in, global int* out) {\n" +
         "\tout[1] = (in[2] * f);\n" +
-      "}",
+        "}",
       c.code
     )
   }
-  
+
   @Ignore
   @Test
   def aliasedTuplesCaptures {
@@ -126,7 +125,7 @@ class ConversionTest
     assertEquals(
       "kernel void f(global const int* in, global int* out) {\n" +
         "\tout[1] = (in[2] * f);\n" +
-      "}",
+        "}",
       c.code
     )
   }

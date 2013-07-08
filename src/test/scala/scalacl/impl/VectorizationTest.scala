@@ -37,21 +37,20 @@ import org.junit._
 import Assert._
 import org.hamcrest.CoreMatchers._
 
-class VectorizationTest 
-    extends Vectorization 
+class VectorizationTest
+    extends Vectorization
     with WithRuntimeUniverse
-    with WithTestFresh 
-{
+    with WithTestFresh {
   import global._
-  
+
   private val context = reify { null: Context }
   private val NotVectorizable: Option[Expr[Unit]] = None
   private val Vectorizable = not(NotVectorizable)
-  
+
   private def vec(block: Expr[Unit]) = {
     vectorize(context, typeCheck(block.tree, WildcardType))
   }
-  
+
   @Test
   def notVectorizable0D {
     assertThat(
@@ -59,24 +58,24 @@ class VectorizationTest
       is(NotVectorizable)
     )
   }
-  
+
   @Test
   def vectorizable1D {
     assertThat(
-      vec(reify { 
-        for (i <- 0 until 10) (i + 2) 
+      vec(reify {
+        for (i <- 0 until 10) (i + 2)
       }),
       is(Vectorizable)
-    ) 
+    )
   }
-  
+
   @Ignore
   @Test
   def notVectorizable2D {
     assertThat(
-      vec(reify { 
-        for (i <- 0 until 10; j <- 0 until 10) 
-          (i + j + 2) 
+      vec(reify {
+        for (i <- 0 until 10; j <- 0 until 10)
+          (i + j + 2)
       }),
       is(NotVectorizable)
     )

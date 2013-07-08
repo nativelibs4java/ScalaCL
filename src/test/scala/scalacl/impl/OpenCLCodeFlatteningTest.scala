@@ -37,13 +37,12 @@ import org.junit._
 import Assert._
 import org.hamcrest.CoreMatchers._
 
-class OpenCLCodeFlatteningTest 
-    extends OpenCLCodeFlattening 
+class OpenCLCodeFlatteningTest
+    extends OpenCLCodeFlattening
     with WithRuntimeUniverse
-    with WithTestFresh 
-{
+    with WithTestFresh {
   import global._
- 
+
   /*
   def conv(x: Expr[_]) = convert(typeCheck(x))
   def code(statements: Seq[String], values: Seq[String]) =
@@ -62,28 +61,28 @@ class OpenCLCodeFlatteningTest
     case Block(List(sub), Literal(Constant(()))) => sub
     case _ => tree
   }
-  
+
   def code(statements: Seq[Expr[_]] = Seq(), values: Seq[Expr[_]] = Seq()) =
     FlatCode[Tree](
-      statements = statements.map(x => unwrap(typeCheck(x.tree, WildcardType))), 
+      statements = statements.map(x => unwrap(typeCheck(x.tree, WildcardType))),
       values = values.map(x => unwrap(typeCheck(x.tree, WildcardType)))
     )
-  
+
   def inputSymbols(xs: Expr[_]*): Seq[(Symbol, Type)] = {
     for (x <- xs.toSeq) yield {
       val i @ Ident(n) = typeCheck(x.tree, WildcardType)
       (i.symbol, i.tpe)
     }
   }
-  
+
   def flat(x: Expr[_], inputSymbols: Seq[(Symbol, Type)] = Seq(), owner: Symbol = NoSymbol): FlatCode[Tree] = {
     flatten(typeCheck(x.tree, WildcardType), inputSymbols, owner)
   }
-  
+
   def assertEquals(a: FlatCode[Tree], b: FlatCode[Tree]) {
     Assert.assertEquals(a.transform(_.toList).toString, b.transform(_.toList).toString)
   }
-  
+
   @Test
   def simpleTupleValue {
     val x = 10
@@ -98,7 +97,7 @@ class OpenCLCodeFlatteningTest
       )
     )
   }
-  
+
   @Test
   def simpleTupleReference {
     val p = (10, 12)

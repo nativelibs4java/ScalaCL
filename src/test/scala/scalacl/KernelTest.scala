@@ -39,11 +39,11 @@ class KernelTest {
   def simple {
     implicit val context = Context.best
     try {
-      
+
       val n = 10
       val a = new CLArray[Int](n)
       val f = 10
-      
+
       kernel {
         for (i <- 0 until n) {
           a(i) = i * f + 10
@@ -55,7 +55,7 @@ class KernelTest {
       context.release()
     }
   }
-  
+
   @Test
   def testEquality {
     val sources = "aa"
@@ -63,12 +63,12 @@ class KernelTest {
     diff(new Kernel(1, sources), new Kernel(2, sources), false)
     diff(new Kernel(1, sources), new Kernel(1, "a" + ('b' - 1)), true)
   }
-  
+
   def same(a: AnyRef, b: AnyRef) = {
     assertEquals(a.hashCode, b.hashCode)
     assertEquals(a, b)
   }
-  
+
   def diff(a: AnyRef, b: AnyRef, sameHC: Boolean) = {
     assertTrue(sameHC ^ (a.hashCode != b.hashCode))
     assertFalse(a.equals(b))
