@@ -149,15 +149,44 @@ trait CodeConversion extends OpenCLConverter {
       (FlatCode[String](statements = globalIDStatements) ++ flat).mapEachValue(s => Seq(
         replacements.foldLeft(s)((v, f) => f(v))))
 
-    val params: Seq[String] = paramDescs.filter(_.mode != ParamKind.RangeIndex).map(paramDesc => {
+    val params: Seq[String] = paramDescs.filter(_.mode != ParamKind.RangeIndex).flatMap(paramDesc => {
       // TODO handle composite types, with fresh names for each fiber (x_1, x_2_1, x_2_2)
-      val t = convertTpe(paramDesc.tpe)
+      val rawParamTpe = paramDesc.tpe
+      val (paramTpe, isCLArray) = rawParamTpe match {
+        case typeRef @ TypeRef(_, _, List(tpe)) if typeRef <:< typeOf[scalacl.CLArray[_]] =>
+          tpe -> true
+        case tpe =>
+          tpe -> false
+      }
+      println(s"paramTpe = $paramTpe")
 
-      (if (paramDesc.isArray) "global " else "") +
-        (if (paramDesc.usage == UsageKind.Input && paramDesc.isArray) "const " else "") +
-        t +
-        (if (paramDesc.mode == ParamKind.ImplicitArrayElement) " *" else " ") +
-        paramDesc.symbol.name
+      def getDecl(openclType: String, paramName: String) = {
+        (if (paramDesc.isArray) "global " else "") +
+          (if (paramDesc.usage == UsageKind.Input && paramDesc.isArray) "const " else "") +
+          openclType +
+          (if (paramDesc.mode == ParamKind.ImplicitArrayElement) " *" else " ") +
+          paramName
+      }
+
+      val res = if (isTupleType(paramTpe)) {
+        val fiberValues = for ((fiberName, fiberTpe) <- fiberVariableNames(paramDesc.symbol.name, paramTpe)) yield {
+          val t = convertTpe({
+            if (isCLArray) {
+              val TypeRef(pre, sym, args) = typeOf[scalacl.CLArray[Int]]
+              TypeRef(pre, sym, List(fiberTpe))
+            } else {
+              fiberTpe
+            }
+          })
+          getDecl(t, fiberName.toString)
+        }
+        fiberValues
+      } else {
+        val t = convertTpe(rawParamTpe)
+        Seq(getDecl(t, paramDesc.symbol.name.toString))
+      }
+      println(s"res = $res")
+      res
     })
 
     val convertedCode =

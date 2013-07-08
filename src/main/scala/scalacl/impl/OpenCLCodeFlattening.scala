@@ -55,6 +55,22 @@ trait OpenCLCodeFlattening
   // separate pass should return symbolsDefined, symbolsUsed
   // DefTree vs. RefTree
 
+  def fiberVariableName(rootName: Name, path: List[Int]): Name = {
+    rootName + "$" + path.map(_ + 1).mkString("$"): TermName
+  }
+
+  def fiberVariableNames(rootName: Name, rootTpe: Type): Seq[(Name, Type)] = {
+    if (isTupleType(rootTpe)) {
+      val fiberPaths = flattenFiberPaths(rootTpe)
+      val fiberTypes = flattenTypes(rootTpe)
+      for ((fiberPath, fiberType) <- fiberPaths.zip(fiberTypes)) yield {
+        fiberVariableName(rootName, fiberPath) -> fiberType
+      }
+    } else {
+      Seq(rootName -> rootTpe)
+    }
+  }
+
   def getDefAndRefTrees(tree: Tree) = {
     val defTrees = new ArrayBuffer[DefTree]()
     val refTrees = new ArrayBuffer[RefTree]()
@@ -160,53 +176,53 @@ trait OpenCLCodeFlattening
     }
     def isUnitOrNoType(tpe: Type) = tpe == NoType || tpe == UnitTpe
 
-    def makeValuesSideEffectFree(code: FlatCode[Tree], symbolOwner: Symbol) =
-      {
-        //code /*
-        var hasNewStatements = false
-        val vals = for (value <- code.values) yield {
-          value match {
-            case Select(ScalaMathFunction(_, _, _), toFloatName()) =>
-              // special case for non-double math :
-              // exp(20: Float).toFloat
-              (Seq(), value)
-            case ScalaMathFunction(_, _, _) => //Apply(f @ Select(left, name), args) if left.toString == "scala.math.package" =>
-              // TODO this is not fair : ScalaMathFunction should have worked here !!!
-              (Seq(), value)
-            /*case Apply(s @ Select(left, name), args) if NameTransformer.decode(name.toString) match {
-              case op @ ("+" | "-" | "*" | "/" | "%" | "^" | "^^" | "&" | "&&" | "|" | "||" | "<<" | ">>" | "==" | "<" | ">" | "<=" | ">=" | "!=") =>
-                true
-              case n if left.toString == "scala.math.package" =>
-                true
-              case _ =>
-                false
-          } =>
-            (Seq(), value)*/
-            case Ident(_) | Select(_, _) | ValDef(_, _, _, _) | Literal(_) | NumberConversion(_, _) | Typed(_, _) | Apply(_, List(_)) =>
-              // already side-effect-free (?)
-              (Seq(), value)
-            case _ if isUnitOrNoType(getType(value)) =>
-              (Seq(), value)
+    def makeValuesSideEffectFree(code: FlatCode[Tree], symbolOwner: Symbol) = {
+      //code /*
+      var hasNewStatements = false
+      val vals = for (value <- code.values) yield {
+        value match {
+          case Select(ScalaMathFunction(_, _, _), toFloatName()) =>
+            // special case for non-double math :
+            // exp(20: Float).toFloat
+            (Seq(), value)
+          case ScalaMathFunction(_, _, _) => //Apply(f @ Select(left, name), args) if left.toString == "scala.math.package" =>
+            // TODO this is not fair : ScalaMathFunction should have worked here !!!
+            (Seq(), value)
+          /*case Apply(s @ Select(left, name), args) if NameTransformer.decode(name.toString) match {
+            case op @ ("+" | "-" | "*" | "/" | "%" | "^" | "^^" | "&" | "&&" | "|" | "||" | "<<" | ">>" | "==" | "<" | ">" | "<=" | ">=" | "!=") =>
+              true
+            case n if left.toString == "scala.math.package" =>
+              true
             case _ =>
-              assert(getType(value) != NoType, value + ": " + value.getClass.getName) // + " = " + nodeToString(value) + ")")
-              val tempVar = newVariable("tmp", symbolOwner, value.pos, false, value)
-              //println("Creating temp variable " + tempVar.symbol + " for " + value)
-              hasNewStatements = true
-              for (slice <- getTreeSlice(value))
-                setSlice(tempVar.definition, slice)
+              false
+        } =>
+          (Seq(), value)*/
+          case Ident(_) | Select(_, _) | ValDef(_, _, _, _) | Literal(_) | NumberConversion(_, _) | Typed(_, _) | Apply(_, List(_)) =>
+            // already side-effect-free (?)
+            (Seq(), value)
+          case _ if isUnitOrNoType(getType(value)) =>
+            (Seq(), value)
+          case _ =>
+            assert(getType(value) != NoType, value + ": " + value.getClass.getName) // + " = " + nodeToString(value) + ")")
+            val tempVar = newVariable("tmp", symbolOwner, value.pos, false, value)
+            //println("Creating temp variable " + tempVar.symbol + " for " + value)
+            hasNewStatements = true
+            for (slice <- getTreeSlice(value))
+              setSlice(tempVar.definition, slice)
 
-              (Seq(tempVar.definition), tempVar())
-          }
+            (Seq(tempVar.definition), tempVar())
         }
-        if (!hasNewStatements)
-          code
-        else
-          FlatCode[Tree](
-            code.outerDefinitions,
-            code.statements ++ vals.flatMap(_._1),
-            vals.map(_._2)
-          )
       }
+      if (!hasNewStatements)
+        code
+      else
+        FlatCode[Tree](
+          code.outerDefinitions,
+          code.statements ++ vals.flatMap(_._1),
+          vals.map(_._2)
+        )
+    }
+
     def flattenTuplesAndBlocksWithInputSymbols(tree: Tree, inputSymbols: Seq[(Symbol, Type)], symbolOwner: Symbol): FlatCode[Tree] = {
       //setSlice(inputSymbol, TupleSlice(inputSymbol, 0, flattenedTypes.size))
 
@@ -229,7 +245,7 @@ trait OpenCLCodeFlattening
                   res
                 }, path)
                 //setType(fiberExpr, tpe)
-                val fiberVar = newVariable(inputSymbol.name + "$" + path.map(_ + 1).mkString("$"), symbolOwner, tree.pos, false, fiberExpr, fiberTpe)
+                val fiberVar = newVariable(fiberVariableName(inputSymbol.name, path).toString, symbolOwner, tree.pos, false, fiberExpr, fiberTpe)
                 sliceReplacements ++= Seq(TupleSlice(inputSymbol, i, 1) -> fiberVar.identGen)
                 //println(s"fiberExpr = $fiberExpr, fiberVar = $fiberVar")
                 fiberVar
@@ -329,7 +345,34 @@ trait OpenCLCodeFlattening
             case _ =>
               FlatCode[Tree](Seq(), Seq(), Seq(tree))
           }
-        case Ident(_) | Literal(_) =>
+        case Ident(name: TermName) =>
+          // TODO
+          //val ctpe = convertTpe(tree.tpe)
+          val tpe = normalize(tree.tpe) match {
+            case typeRef @ TypeRef(_, _, List(elementType)) if typeRef <:< typeOf[scalacl.CLArray[_]] =>
+              elementType
+            case t => t
+          }
+          println(s"Getting Ident $tree: $tpe (isTupleType = ${isTupleType(tpe)})")
+          val res = if (isTupleType(tpe)) {
+            val identGen = () => setType(Ident(name), tpe)
+            val fiberPaths = flattenFiberPaths(tpe)
+            println(s"fiberPaths = $fiberPaths")
+            val fiberValues = fiberVariableNames(name, tpe).map(x => Ident(x._1))
+            /*
+            val fiberValues = for (path <- fiberPaths) yield {
+              
+              val (fiberTree, fiberTpe) = applyFiberPath(identGen, tpe, path)
+              println(s"fiberTree = $fiberTree")
+              setType(fiberTree, fiberTpe)
+            }*/
+            FlatCode[Tree](Seq(), Seq(), fiberValues)
+          } else {
+            FlatCode[Tree](Seq(), Seq(), Seq(tree))
+          }
+          println(s"\tres = $res")
+          res
+        case Literal(_) =>
           // this ident has no known replacement !
           FlatCode[Tree](Seq(), Seq(), Seq(tree))
         case s @ Select(This(targetClass), name) =>
@@ -371,11 +414,35 @@ trait OpenCLCodeFlattening
               Seq(Assign(l, r))
           }
         case Apply(Select(target, updateName()), List(index, value)) if isTupleType(getType(value)) =>
-          //println(s"CONVERTING update $tree (isTupleType(${getType(value)}) = ${isTupleType(getType(value))})")
+          val targetTpe = normalize(target.tpe).asInstanceOf[TypeRef]
+          setType(target, targetTpe)
+          /*val actualLocalTarget = if (targetTpe <:< typeOf[scalacl.CLArray[_]]) {
+            val List(elementType: Type) = targetTpe.args
+            setType(target, elementType)
+          } else {
+            target
+          }*/
+          println(s"CONVERTING update $tree (isTupleType(${getType(value)}) = ${isTupleType(getType(value))})")
+          println(s"Type of target = $targetTpe (isTupleType = ${isTupleType(targetTpe)})")
           val indexVal = newVariable("index", symbolOwner, tree.pos, false, index)
 
+          val flatTarget = flattenTuplesAndBlocks(target)
+          val flatValue = flattenTuplesAndBlocks(value)
+          println(s"flatTarget = $flatTarget")
+          println(s"flatValue = $flatValue")
+          val res = FlatCode[Tree](
+            flatTarget.outerDefinitions ++ flatValue.outerDefinitions,
+            flatTarget.statements ++ Seq(indexVal.definition) ++ flatValue.statements,
+            for ((t, v) <- flatTarget.values.zip(flatValue.values)) yield {
+              Apply(Select(t, updateName()), List(indexVal(), v))
+            }
+          )
+          println(s"res = $res")
+
+          res
+        /*
           val mf = Seq(target, value).map(flattenTuplesAndBlocks(_))
-          val m = merge(mf /*Seq(target, value).map(flattenTuplesAndBlocks(_))*/ : _*) {
+          val m = merge(mf  : _*) {
             case Seq(t, v) =>
               Seq(Apply(Select(t, updateName()), List(indexVal(), v)))
             //case s =>
@@ -383,6 +450,7 @@ trait OpenCLCodeFlattening
           }
           //println(s"\tmf = $mf, m = $m")
           m.copy(statements = Seq(indexVal.definition) ++ m.statements)
+          */
         case Apply(target, args) =>
           //println("CONVERTING apply " + tree)
           /*
@@ -595,6 +663,7 @@ trait OpenCLCodeFlattening
           FlatCode[Tree](Seq(), Seq(), Seq())
         }
         case _ =>
+          new RuntimeException().printStackTrace()
           assert(false, "Case not handled in tuples and blocks flattening : " + tree + ": " + tree.getClass.getName) // + ") :\n\t" + nodeToString(tree))
           FlatCode[Tree](Seq(), Seq(), Seq())
       }

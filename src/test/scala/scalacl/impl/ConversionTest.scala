@@ -88,9 +88,10 @@ class ConversionTest
       out(0) = (in(0), in(2).toFloat)
     })
     assertEquals(
-      "kernel void f(global const int* in, global int* out_1, global float* out_2) {\n" +
-        "\tout_1[0] = in[0];\n" +
-        "\tout_2[0] = ((float)in[2]);\n" +
+      "kernel void f(global const int* in, global int* out$1, global float* out$2) {\n" +
+        "\tconst long index0 = 0;\n" +
+        "\tout$1[index0] = in[0];\n" +
+        "\tout$2[index0] = ((float)in[2]);\n" +
         "}",
       c.code
     )
