@@ -11,6 +11,7 @@ Features of the new design:
 - No more CLRange: expecting compiler to do its job
 
 TODO:
+- Add (much) more tests: DataIO, CodeConversion, scheduling...
 - Implement missing DataIO[T], including ASM-optimized case classes
 - Catch up with compiler plugin:
   - Auto-vectorization
