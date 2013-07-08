@@ -158,7 +158,7 @@ trait CodeConversion extends OpenCLConverter {
         case tpe =>
           tpe -> false
       }
-      println(s"paramTpe = $paramTpe")
+      //println(s"paramTpe = $paramTpe")
 
       def getDecl(openclType: String, paramName: String) = {
         (if (paramDesc.isArray) "global " else "") +
@@ -185,7 +185,7 @@ trait CodeConversion extends OpenCLConverter {
         val t = convertTpe(rawParamTpe)
         Seq(getDecl(t, paramDesc.symbol.name.toString))
       }
-      println(s"res = $res")
+      //println(s"res = $res")
       res
     })
 

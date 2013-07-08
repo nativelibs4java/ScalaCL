@@ -346,34 +346,21 @@ trait OpenCLCodeFlattening
               FlatCode[Tree](Seq(), Seq(), Seq(tree))
           }
         case Ident(name: TermName) =>
-          // TODO
-          //val ctpe = convertTpe(tree.tpe)
           val tpe = normalize(tree.tpe) match {
             case typeRef @ TypeRef(_, _, List(elementType)) if typeRef <:< typeOf[scalacl.CLArray[_]] =>
               elementType
             case t => t
           }
-          println(s"Getting Ident $tree: $tpe (isTupleType = ${isTupleType(tpe)})")
-          val res = if (isTupleType(tpe)) {
+          if (isTupleType(tpe)) {
             val identGen = () => setType(Ident(name), tpe)
             val fiberPaths = flattenFiberPaths(tpe)
-            println(s"fiberPaths = $fiberPaths")
             val fiberValues = fiberVariableNames(name, tpe).map(x => Ident(x._1))
-            /*
-            val fiberValues = for (path <- fiberPaths) yield {
-              
-              val (fiberTree, fiberTpe) = applyFiberPath(identGen, tpe, path)
-              println(s"fiberTree = $fiberTree")
-              setType(fiberTree, fiberTpe)
-            }*/
             FlatCode[Tree](Seq(), Seq(), fiberValues)
           } else {
             FlatCode[Tree](Seq(), Seq(), Seq(tree))
           }
-          println(s"\tres = $res")
-          res
         case Literal(_) =>
-          // this ident has no known replacement !
+          // TODO?
           FlatCode[Tree](Seq(), Seq(), Seq(tree))
         case s @ Select(This(targetClass), name) =>
           FlatCode[Tree](
@@ -384,14 +371,11 @@ trait OpenCLCodeFlattening
         case Select(target, name) =>
           //println("CONVERTING select " + tree)
           val FlatCode(defs, stats, vals) = flattenTuplesAndBlocks(target, sideEffectFree = getType(target) != NoType)
-          //println(s"NAME = '$name', encoded = '${NameTransformer.encode(name.toString)}, decoded = '${NameTransformer.decode(name.toString)}") 
-          val res = FlatCode[Tree](
+          FlatCode[Tree](
             defs,
             stats,
             vals.map(v => Select(v, NameTransformer.decode(name.toString)))
           )
-          //println("\tres = " + res)
-          res
         case Apply(ident @ Ident(functionName), args) =>
           val f = args.map(flattenTuplesAndBlocks(_))
           // TODO assign vals to new vars before the calls, to ensure a correct evaluation order !
@@ -416,41 +400,17 @@ trait OpenCLCodeFlattening
         case Apply(Select(target, updateName()), List(index, value)) if isTupleType(getType(value)) =>
           val targetTpe = normalize(target.tpe).asInstanceOf[TypeRef]
           setType(target, targetTpe)
-          /*val actualLocalTarget = if (targetTpe <:< typeOf[scalacl.CLArray[_]]) {
-            val List(elementType: Type) = targetTpe.args
-            setType(target, elementType)
-          } else {
-            target
-          }*/
-          println(s"CONVERTING update $tree (isTupleType(${getType(value)}) = ${isTupleType(getType(value))})")
-          println(s"Type of target = $targetTpe (isTupleType = ${isTupleType(targetTpe)})")
           val indexVal = newVariable("index", symbolOwner, tree.pos, false, index)
 
           val flatTarget = flattenTuplesAndBlocks(target)
           val flatValue = flattenTuplesAndBlocks(value)
-          println(s"flatTarget = $flatTarget")
-          println(s"flatValue = $flatValue")
-          val res = FlatCode[Tree](
+          FlatCode[Tree](
             flatTarget.outerDefinitions ++ flatValue.outerDefinitions,
             flatTarget.statements ++ Seq(indexVal.definition) ++ flatValue.statements,
             for ((t, v) <- flatTarget.values.zip(flatValue.values)) yield {
               Apply(Select(t, updateName()), List(indexVal(), v))
             }
           )
-          println(s"res = $res")
-
-          res
-        /*
-          val mf = Seq(target, value).map(flattenTuplesAndBlocks(_))
-          val m = merge(mf  : _*) {
-            case Seq(t, v) =>
-              Seq(Apply(Select(t, updateName()), List(indexVal(), v)))
-            //case s =>
-            //  sys.error(s"CONVERTED Seq(target = $target, value = $value, mf = $mf) to $s")
-          }
-          //println(s"\tmf = $mf, m = $m")
-          m.copy(statements = Seq(indexVal.definition) ++ m.statements)
-          */
         case Apply(target, args) =>
           //println("CONVERTING apply " + tree)
           /*
