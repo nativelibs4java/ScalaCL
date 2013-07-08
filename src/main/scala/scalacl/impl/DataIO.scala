@@ -46,18 +46,18 @@ private[scalacl] trait DataIO[T] {
     allocateBuffers(length, buffers)
     buffers.toArray
   }
-  
+
   private[scalacl] def toArray(length: Int, buffers: Array[ScheduledBuffer[_]]): Array[T]
-  
+
   private[scalacl] def allocateBuffers(length: Long, values: Array[T])(implicit context: Context, m: ClassTag[T]): Array[ScheduledBuffer[_]] = {
     val pointersBuf = new ArrayBuffer[Pointer[_]]
     foreachScalar(io => pointersBuf += Pointer.allocateArray(io.pointerIO, length))
-    
+
     val pointers = pointersBuf.toArray
     for (i <- 0 until length.toInt) {
       set(i, pointers, 0, values(i))
     }
-    
+
     pointers.map(pointer => new ScheduledBuffer(context.context.createBuffer(CLMem.Usage.InputOutput, pointer)))
   }
   private[scalacl] def allocateBuffers(length: Long, out: ArrayBuffer[ScheduledBuffer[_]])(implicit context: Context): Unit

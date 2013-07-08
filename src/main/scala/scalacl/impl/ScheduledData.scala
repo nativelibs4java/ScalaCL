@@ -39,9 +39,9 @@ private[scalacl] object ScheduledData {
     outputs: Array[S2],
     operation: Array[CLEvent] => CLEvent): CLEvent = {
 
-    val nData = 
+    val nData =
       (if (inputs != null) inputs.length else 0) +
-      (if (outputs != null) outputs.length else 0)
+        (if (outputs != null) outputs.length else 0)
     val eventsToWaitFor = new ArrayBuffer[CLEvent](nData)
 
     if (inputs != null)
@@ -53,15 +53,15 @@ private[scalacl] object ScheduledData {
     try {
       event = operation(eventsToWaitFor.toArray)
       if (event != null)
-	      event.setCompletionCallback(new CLEvent.EventCallback {
-	        override def callback(status: Int) = {
-	//          println("completed")
-	          if (inputs != null)
-	            inputs.foreach(_.eventCompleted(event))
-	          if (outputs != null)
-	            outputs.foreach(_.eventCompleted(event))
-	        }
-	      })
+        event.setCompletionCallback(new CLEvent.EventCallback {
+          override def callback(status: Int) = {
+            //          println("completed")
+            if (inputs != null)
+              inputs.foreach(_.eventCompleted(event))
+            if (outputs != null)
+              outputs.foreach(_.eventCompleted(event))
+          }
+        })
       event
     } finally {
       if (inputs != null)

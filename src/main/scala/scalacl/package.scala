@@ -38,16 +38,16 @@ package object scalacl {
   implicit val intDataIO = IntDataIO
   implicit val floatDataIO = FloatDataIO
   implicit val booleanDataIO = BooleanDataIO
-  implicit def tuple2DataIO[T1 : Manifest : DataIO, T2 : Manifest : DataIO] = {
+  implicit def tuple2DataIO[T1: Manifest: DataIO, T2: Manifest: DataIO] = {
     new Tuple2DataIO[T1, T2]
   }
-  
-  implicit class ArrayConversions[A : Manifest : DataIO](array: Array[A])(implicit context: Context) {
+
+  implicit class ArrayConversions[A: Manifest: DataIO](array: Array[A])(implicit context: Context) {
     def toCLArray = CLArray[A](array: _*)
     def cl = toCLArray
   }
-  
+
   def kernel(block: Unit)(implicit contextExpr: Context): Unit = macro KernelMacros.kernelImpl
-  
+
   def task(block: Unit)(implicit contextExpr: Context): Unit = macro KernelMacros.taskImpl
 }

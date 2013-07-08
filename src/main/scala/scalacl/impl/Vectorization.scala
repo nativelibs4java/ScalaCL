@@ -41,35 +41,32 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
   val global: Universe
   import global._
   import definitions._
-  
+
   object PositiveIntConstantOrOne {
     def unapply(treeOpt: Option[Tree]): Option[Int] = Option(treeOpt) collect {
       case Some(Literal(Constant(n: Int))) => n
       case None => 1
     }
   }
-  
-  private[impl]
-  def vectorize(context: Expr[scalacl.Context], block: Tree): Option[Expr[Unit]] = {
+
+  private[impl] def vectorize(context: Expr[scalacl.Context], block: Tree): Option[Expr[Unit]] = {
     Option(block) collect {
-      case 
-        Foreach(
-          range @ IntRange(from, to, PositiveIntConstantOrOne(by), isUntil, Nil), 
-          Function(List(param), body)
-        ) 
-        =>
+      case Foreach(
+        range @ IntRange(from, to, PositiveIntConstantOrOne(by), isUntil, Nil),
+        Function(List(param), body)
+        ) =>
         // TODO: get rid of that stupid range and compute the range size by our own means.
         val rangeValDef =
           freshVal("range", typeOf[Range], range)
-        val fromValDef = 
+        val fromValDef =
           freshVal("from", IntTpe, Select(ident[Range](rangeValDef).tree, N("start")))
         //val toValDef = freshVal("to", IntTpe, to)
-        
+
         val byValDef = freshVal("by", IntTpe, Literal(Constant(by)))
-        
+
         def newSymbol(name: TermName) =
           NoSymbol.newTermSymbol(name)
-        
+
         val paramDescs = Seq(
           ParamDesc(
             symbol = param.symbol,
@@ -80,14 +77,14 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
             rangeOffset = Some(newSymbol(fromValDef.name)),
             rangeStep = Some(newSymbol(byValDef.name)))
         )
-        
+
         val f = generateCLFunction[Unit, Unit](
           f = blockToUnitFunction(block),
           kernelId = CLFunctionMacros.nextKernelId,
-          body = body, 
-          paramDescs = paramDescs 
+          body = body,
+          paramDescs = paramDescs
         )
-        
+
         expr[Unit](
           Block(
             rangeValDef,

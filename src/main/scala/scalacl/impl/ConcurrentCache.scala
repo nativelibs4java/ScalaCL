@@ -35,7 +35,7 @@ package scalacl.impl
  */
 class ConcurrentCache[K, V <: AnyRef] {
   private val map = new java.util.concurrent.ConcurrentHashMap[K, V]
-  
+
   def apply(key: K, discardValue: V => Unit)(initialValue: => V) = {
     val value = map.get(key)
     if (value != null) {

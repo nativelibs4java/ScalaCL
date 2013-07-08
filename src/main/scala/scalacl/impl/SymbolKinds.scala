@@ -38,22 +38,22 @@ trait SymbolKinds extends Tuploids with CommonScalaNames {
   val global: reflect.api.Universe
   import global._
   import definitions._
-  
+
   sealed trait SymbolKind
   object SymbolKind {
     case object ArrayLike extends SymbolKind
     case object Tuploid extends SymbolKind
     case object Other extends SymbolKind
   }
-  
+
   def kindOf(tpe: Type): SymbolKind = {
     kindOf(tpe.typeSymbol, tpe)
   }
-  
+
   def kindOf(symbol: Symbol): SymbolKind = {
     kindOf(symbol, symbol.typeSignature)
   }
-  
+
   def kindOf(symbol: Symbol, tpe: Type): SymbolKind = {
     if (tpe <:< typeOf[CLArray[_]] || tpe <:< typeOf[CLFilteredArray[_]])
       SymbolKind.ArrayLike

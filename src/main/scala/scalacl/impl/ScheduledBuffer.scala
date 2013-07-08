@@ -52,7 +52,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T])(implicit c
   private var lazyCloneModel: ScheduledBuffer[T] = _
 
   def buffer = buffer_
-  
+
   def release() = this synchronized {
     if (lazyCloneModel == null)
       buffer.release
@@ -81,7 +81,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T])(implicit c
       }
     }
   }
-  
+
   override def startWrite(out: ArrayBuffer[CLEvent]) = this synchronized {
     performClone
     lazyClones.toArray.foreach(_.performClone)
@@ -90,15 +90,15 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T])(implicit c
 
   def write(in: Pointer[T]) {
     ScheduledData.schedule(
-        Array(),
-        Array(this),
-        eventsToWaitFor => buffer.write(context.queue, in, false, eventsToWaitFor: _*)
-  	)
+      Array(),
+      Array(this),
+      eventsToWaitFor => buffer.write(context.queue, in, false, eventsToWaitFor: _*)
+    )
   }
   def read(): Pointer[T] = {
     val queue = context.queue
     val p = buffer.allocateCompatibleMemory(queue.getDevice)
-    
+
     val event = ScheduledData.schedule(
       Array(this),
       Array[ScheduledData](),
@@ -108,7 +108,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T])(implicit c
   def read(out: ArrayBuffer[CLEvent]): Pointer[T] = {
     val queue = context.queue
     val p = buffer.allocateCompatibleMemory(queue.getDevice)
-    
+
     val event = ScheduledData.schedule(
       Array(this),
       Array[ScheduledData](),
@@ -117,7 +117,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T])(implicit c
       out += event
     p
   }
-  
+
   def read(p: Pointer[T]) {
     val event = ScheduledData.schedule(
       Array(this),

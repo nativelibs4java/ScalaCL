@@ -40,8 +40,8 @@ case class KernelExecutionParameters(
     def str(n: String, a: Array[Long]) = Option(a).map(aa => n + " = { " + aa.mkString(", ") + " }").toSeq
     val strs =
       str("globalSizes", globalSizes) ++
-      str("localSizes", localSizes) ++
-      str("globalOffsets", globalOffsets)
-    getClass.getSimpleName + "(" + strs.mkString(", ") + ")" 
+        str("localSizes", localSizes) ++
+        str("globalOffsets", globalOffsets)
+    getClass.getSimpleName + "(" + strs.mkString(", ") + ")"
   }
 }

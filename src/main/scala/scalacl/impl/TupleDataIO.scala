@@ -35,8 +35,8 @@ import com.nativelibs4java.opencl.{ CLMem, CLEvent }
 import org.bridj.{ Pointer, PointerIO }
 import scala.collection.mutable.ArrayBuffer
 
-private[impl] abstract class TupleDataIO[T : Manifest] extends DataIO[T] {
-  
+private[impl] abstract class TupleDataIO[T: Manifest] extends DataIO[T] {
+
   override def toArray(length: Int, buffers: Array[ScheduledBuffer[_]]): Array[T] = {
     val eventsToWaitFor = new ArrayBuffer[CLEvent]
     val pointers = buffers.map(_.read(eventsToWaitFor).withoutValidityInformation) // unsafe, but faster
@@ -45,11 +45,11 @@ private[impl] abstract class TupleDataIO[T : Manifest] extends DataIO[T] {
   }
 }
 
-class Tuple2DataIO[T1 : Manifest : DataIO, T2 : Manifest : DataIO]
-  extends TupleDataIO[(T1, T2)] {
+class Tuple2DataIO[T1: Manifest: DataIO, T2: Manifest: DataIO]
+    extends TupleDataIO[(T1, T2)] {
   val io1 = implicitly[DataIO[T1]]
   val io2 = implicitly[DataIO[T2]]
-  
+
   override def typeString = "(" + io1.typeString + ", " + io2.typeString + ")"
   override val bufferCount = io1.bufferCount + io2.bufferCount
   private[scalacl] override def foreachScalar(f: ScalarDataIO[_] => Unit) {

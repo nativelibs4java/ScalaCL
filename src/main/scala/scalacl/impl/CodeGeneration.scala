@@ -38,9 +38,8 @@ trait CodeGeneration extends CodeConversion {
   val global: Universe
   import global._
   import definitions._
-  
-  private[impl] 
-  def expr[T](tree: Tree): Expr[T] = {
+
+  private[impl] def expr[T](tree: Tree): Expr[T] = {
     import scala.reflect.api.Mirror
     import scala.reflect.api.TreeCreator
     Expr[T](rootMirror, new TreeCreator {
@@ -49,84 +48,82 @@ trait CodeGeneration extends CodeConversion {
       }
     })
   }
-  
-  private[impl] 
-  def ident[T](vd: ValDef) = expr[T](Ident(vd.name))
-  
-  def blockToUnitFunction(block: Tree) = { 
+
+  private[impl] def ident[T](vd: ValDef) = expr[T](Ident(vd.name))
+
+  def blockToUnitFunction(block: Tree) = {
     expr[Unit => Unit](
       Function(
         List(
           ValDef(NoMods, newTermName(fresh("noarg")), TypeTree(UnitTpe), EmptyTree)
-        ), 
+        ),
         block
       )
     )
   }
-  
+
   def freshVal(nameBase: String, tpe: Type, rhs: Tree): ValDef = {
     val name = newTermName(fresh(nameBase))
     ValDef(Modifiers(), name, TypeTree(tpe), rhs)
   }
-  
-  private[impl] 
-  def generateCLFunction[A: WeakTypeTag, B: WeakTypeTag](
-      f: Expr[A => B],
-      kernelId: Long,
-      body: Tree, 
-      paramDescs: Seq[ParamDesc]): Expr[CLFunction[A, B]] = 
-  {
-    try {
-      val CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
-        body,
-        paramDescs
-      )
-      
-      val codeExpr = expr[String](Literal(Constant(code)))
-      val kernelIdExpr = expr[Long](Literal(Constant(kernelId)))
-      
-      def ident(s: global.Symbol) = 
-        Ident(s.asInstanceOf[Symbol].name)
-        // Ident(s.asInstanceOf[Symbol])
-      
-      val inputs = arrayApply[CLArray[_]](
-        capturedInputs
-          .map(d => ident(d.symbol)).toList
-      )
-      val outputs = arrayApply[CLArray[_]](
-        capturedOutputs
-          .map(d => ident(d.symbol)).toList
-      )
-      val constants = arrayApply[AnyRef](
-        capturedConstants
-          .map(d => {
-            val x = expr[Array[AnyRef]](ident(d.symbol))
-            (reify { x.splice.asInstanceOf[AnyRef] }).tree
-          }).toList
-      )
-      //println(s"""
-      //  code: $code
-      //  capturedInputs: $capturedInputs, 
-      //  capturedOutputs: $capturedOutputs, 
-      //  capturedConstants: $capturedConstants""") 
-      reify {
-        new CLFunction[A, B](
-          f.splice, 
-          new Kernel(kernelIdExpr.splice, codeExpr.splice),
-          Captures(
-            inputs = inputs.splice, 
-            outputs = outputs.splice, 
-            constants = constants.splice)
+
+  private[impl] def generateCLFunction[A: WeakTypeTag, B: WeakTypeTag](
+    f: Expr[A => B],
+    kernelId: Long,
+    body: Tree,
+    paramDescs: Seq[ParamDesc]): Expr[CLFunction[A, B]] =
+    {
+      try {
+        val CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
+          body,
+          paramDescs
         )
+
+        val codeExpr = expr[String](Literal(Constant(code)))
+        val kernelIdExpr = expr[Long](Literal(Constant(kernelId)))
+
+        def ident(s: global.Symbol) =
+          Ident(s.asInstanceOf[Symbol].name)
+        // Ident(s.asInstanceOf[Symbol])
+
+        val inputs = arrayApply[CLArray[_]](
+          capturedInputs
+            .map(d => ident(d.symbol)).toList
+        )
+        val outputs = arrayApply[CLArray[_]](
+          capturedOutputs
+            .map(d => ident(d.symbol)).toList
+        )
+        val constants = arrayApply[AnyRef](
+          capturedConstants
+            .map(d => {
+              val x = expr[Array[AnyRef]](ident(d.symbol))
+              (reify { x.splice.asInstanceOf[AnyRef] }).tree
+            }).toList
+        )
+        //println(s"""
+        //  code: $code
+        //  capturedInputs: $capturedInputs, 
+        //  capturedOutputs: $capturedOutputs, 
+        //  capturedConstants: $capturedConstants""") 
+        reify {
+          new CLFunction[A, B](
+            f.splice,
+            new Kernel(kernelIdExpr.splice, codeExpr.splice),
+            Captures(
+              inputs = inputs.splice,
+              outputs = outputs.splice,
+              constants = constants.splice)
+          )
+        }
+      } catch {
+        case ex: Throwable =>
+          error("CLFunction generation failed for { " + f + " }: " + ex)
+          null
       }
-    } catch { case ex: Throwable =>
-      error("CLFunction generation failed for { " + f + " }: " + ex)
-      null
     }
-  }
-  
-  private 
-  def arrayApply[A: TypeTag](values: List[Tree]): Expr[Array[A]] = {
+
+  private def arrayApply[A: TypeTag](values: List[Tree]): Expr[Array[A]] = {
     import definitions._
     expr[Array[A]](
       Apply(
@@ -138,5 +135,5 @@ trait CodeGeneration extends CodeConversion {
       )
     )
   }
-	
+
 }

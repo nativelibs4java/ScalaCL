@@ -58,12 +58,12 @@ private[scalacl] trait DefaultScheduledData extends ScheduledData {
   }
   private def doEventCompleted(event: CLEvent) {
     if (event.equals(dataWrite)) {
-	    dataWrite = null
-	    dataReads.clear
-	  } else {
-	    dataReads -= event
-	  }
-  } 
+      dataWrite = null
+      dataReads.clear
+    } else {
+      dataReads -= event
+    }
+  }
   override def eventCompleted(event: CLEvent) {
     locked {
       doEventCompleted(event)

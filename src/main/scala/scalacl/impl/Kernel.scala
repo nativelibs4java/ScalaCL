@@ -56,13 +56,13 @@ class Kernel(protected val id: Long, protected val sources: String) {
         kernel.enqueueNDRange(context.queue, params.globalOffsets, params.globalSizes, params.localSizes, eventsToWaitFor: _*)
     }
   }
-  
+
   override def equals(o: Any) = o.isInstanceOf[Kernel] && {
     val k = o.asInstanceOf[Kernel]
     id == k.id && (sources eq k.sources) // identity test: assume interned strings coming from class resources!
   }
-  
+
   override def hashCode = id.hashCode
-  
+
   override def toString = "Kernel(" + sources + ")"
 }

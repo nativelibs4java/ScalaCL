@@ -36,7 +36,7 @@ import scalacl.impl.ScheduledBufferComposite
 import scalacl.impl.DefaultScheduledData
 
 case class CLFilteredArray[T](array: CLArray[T], presenceMask: CLArray[Boolean])(implicit io: DataIO[T], context: Context)
-  extends ScheduledBufferComposite {
+    extends ScheduledBufferComposite {
 
   private[scalacl] override def foreachBuffer(f: ScheduledBuffer[_] => Unit) {
     array.foreachBuffer(f)
@@ -47,15 +47,15 @@ case class CLFilteredArray[T](array: CLArray[T], presenceMask: CLArray[Boolean])
   def compact: CLArray[T] = sys.error("not implemented")
 
   def toCLArray = compact
-    
+
   def toArray: Array[T] =
     toCLArray.toArray
-    
+
   def toList: List[T] =
     toArray.toList
-  
-  def toSeq: Seq[T] = 
+
+  def toSeq: Seq[T] =
     toArray.toSeq
-  
+
   override def toString = "(" + array + ", " + presenceMask + ")"
 }

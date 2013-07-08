@@ -40,26 +40,25 @@ import scala.reflect.api.Universe
 trait CodeConversion extends OpenCLConverter {
   val global: Universe
   def fresh(s: String): String
-  
+
   import global._
   import definitions._
-  
+
   def cast[A, B](a: A): B = a.asInstanceOf[B]
-  
+
   case class ParamDesc(
-    symbol: Symbol,
-    tpe: Type,
-    mode: ParamKind,
-    usage: UsageKind,
-    implicitIndexDimension: Option[Int] = None,
-    rangeOffset: Option[Symbol] = None,
-    rangeStep: Option[Symbol] = None
-  ) {
+      symbol: Symbol,
+      tpe: Type,
+      mode: ParamKind,
+      usage: UsageKind,
+      implicitIndexDimension: Option[Int] = None,
+      rangeOffset: Option[Symbol] = None,
+      rangeStep: Option[Symbol] = None) {
     assert((mode == ParamKind.ImplicitArrayElement || mode == ParamKind.RangeIndex) == (implicitIndexDimension != None))
-    def isArray = 
+    def isArray =
       mode == ParamKind.ImplicitArrayElement || mode == ParamKind.Normal && tpe <:< typeOf[CLArray[_]]
   }
-  
+
   /*
   ParamDesc(i, ParamKindRangeIndex, Some(0))
     -> get_global_id(0)
@@ -72,67 +71,66 @@ trait CodeConversion extends OpenCLConverter {
   */
   case class CodeConversionResult(
     code: String,
-	  capturedInputs: Seq[ParamDesc],
-	  capturedOutputs: Seq[ParamDesc],
-	  capturedConstants: Seq[ParamDesc]
-	)
-	
-  def convertCode(code: Tree, explicitParamDescs: Seq[ParamDesc]): CodeConversionResult = {
-	  val externalSymbols =
-	    getExternalSymbols(
-	      code, 
-	      knownSymbols = explicitParamDescs.map(_.symbol).toSet
-	    )
+    capturedInputs: Seq[ParamDesc],
+    capturedOutputs: Seq[ParamDesc],
+    capturedConstants: Seq[ParamDesc])
 
-	  val capturedParams: Seq[ParamDesc] = {
-	    for (sym <- externalSymbols.capturedSymbols) yield {
-	      val tpe = externalSymbols.symbolTypes(sym)
-	      val usage = externalSymbols.symbolUsages(sym)
+  def convertCode(code: Tree, explicitParamDescs: Seq[ParamDesc]): CodeConversionResult = {
+    val externalSymbols =
+      getExternalSymbols(
+        code,
+        knownSymbols = explicitParamDescs.map(_.symbol).toSet
+      )
+
+    val capturedParams: Seq[ParamDesc] = {
+      for (sym <- externalSymbols.capturedSymbols) yield {
+        val tpe = externalSymbols.symbolTypes(sym)
+        val usage = externalSymbols.symbolUsages(sym)
         ParamDesc(
           sym.asInstanceOf[Symbol],
           tpe.asInstanceOf[Type],
           mode = ParamKind.Normal,
           usage = usage)
-	    }
-	  }
-	  
-	  val capturedInputs = capturedParams.filter(p => p.isArray && !p.usage.isOutput)
-	  val capturedOutputs = capturedParams.filter(p => p.isArray && p.usage.isOutput)
-	  val capturedConstants =
-	    capturedParams.filter(!_.isArray) ++
-	    explicitParamDescs.filter(_.mode == ParamKind.RangeIndex).flatMap(d =>
-        Seq(
-          ParamDesc(
-            symbol = d.rangeOffset.get,
-            tpe = IntTpe,
-            mode = ParamKind.Normal,
-            usage = UsageKind.Input),
-          ParamDesc(
-            symbol = d.rangeStep.get,
-            tpe = IntTpe,
-            mode = ParamKind.Normal,
-            usage = UsageKind.Input)
+      }
+    }
+
+    val capturedInputs = capturedParams.filter(p => p.isArray && !p.usage.isOutput)
+    val capturedOutputs = capturedParams.filter(p => p.isArray && p.usage.isOutput)
+    val capturedConstants =
+      capturedParams.filter(!_.isArray) ++
+        explicitParamDescs.filter(_.mode == ParamKind.RangeIndex).flatMap(d =>
+          Seq(
+            ParamDesc(
+              symbol = d.rangeOffset.get,
+              tpe = IntTpe,
+              mode = ParamKind.Normal,
+              usage = UsageKind.Input),
+            ParamDesc(
+              symbol = d.rangeStep.get,
+              tpe = IntTpe,
+              mode = ParamKind.Normal,
+              usage = UsageKind.Input)
+          )
         )
-      )
-	  
-	  val paramDescs =
-      explicitParamDescs ++ 
-	    capturedInputs ++ 
-	    capturedOutputs ++ 
-	    capturedConstants
-	  // val flat = convert(code)
-	  val flat = flattenAndConvert(code, paramDescs.map(d => (d.symbol, d.tpe)))
-	  
-	  val globalIDIndexes =
-	    paramDescs.flatMap(_.implicitIndexDimension).toSet
-	  
-	  val globalIDValNames: Map[Int, String] =
-	    globalIDIndexes.map(i => i -> fresh("_global_id_" + i + "_")).toMap
-	  
-	  val replacements: Seq[String => String] = paramDescs.map(paramDesc => {
+
+    val paramDescs =
+      explicitParamDescs ++
+        capturedInputs ++
+        capturedOutputs ++
+        capturedConstants
+    // val flat = convert(code)
+    val flat = flattenAndConvert(code, paramDescs.map(d => (d.symbol, d.tpe)))
+
+    val globalIDIndexes =
+      paramDescs.flatMap(_.implicitIndexDimension).toSet
+
+    val globalIDValNames: Map[Int, String] =
+      globalIDIndexes.map(i => i -> fresh("_global_id_" + i + "_")).toMap
+
+    val replacements: Seq[String => String] = paramDescs.map(paramDesc => {
       val r = ("\\b(" + paramDesc.symbol.name + ")\\b").r
       // TODO handle composite types, with replacements of all possible fibers (x._1, x._2._1, x._2._2)
-	    paramDesc match {
+      paramDesc match {
         case ParamDesc(_, _, ParamKind.ImplicitArrayElement, _, Some(i), None, None) =>
           (s: String) => r.replaceAllIn(s, "$1[" + globalIDValNames(i) + "]")
         case ParamDesc(_, _, ParamKind.RangeIndex, _, Some(i), Some(from), Some(by)) =>
@@ -141,32 +139,33 @@ trait CodeConversion extends OpenCLConverter {
           (s: String) => s
       }
     })
-    
-    val globalIDStatements = globalIDValNames.toSeq.map { case (i, n) =>
-      s"size_t $n = get_global_id($i);"
+
+    val globalIDStatements = globalIDValNames.toSeq.map {
+      case (i, n) =>
+        s"size_t $n = get_global_id($i);"
     }
-    
-	  val result = 
+
+    val result =
       (FlatCode[String](statements = globalIDStatements) ++ flat).mapEachValue(s => Seq(
         replacements.foldLeft(s)((v, f) => f(v))))
-	  
+
     val params: Seq[String] = paramDescs.filter(_.mode != ParamKind.RangeIndex).map(paramDesc => {
       // TODO handle composite types, with fresh names for each fiber (x_1, x_2_1, x_2_2)
-	    val t = convertTpe(paramDesc.tpe)
+      val t = convertTpe(paramDesc.tpe)
 
-	    (if (paramDesc.isArray) "global " else "") +
-	    (if (paramDesc.usage == UsageKind.Input && paramDesc.isArray) "const " else "") +
-	    t +
-	    (if (paramDesc.mode == ParamKind.ImplicitArrayElement) " *" else " ") +
-	    paramDesc.symbol.name
+      (if (paramDesc.isArray) "global " else "") +
+        (if (paramDesc.usage == UsageKind.Input && paramDesc.isArray) "const " else "") +
+        t +
+        (if (paramDesc.mode == ParamKind.ImplicitArrayElement) " *" else " ") +
+        paramDesc.symbol.name
     })
-      
+
     val convertedCode =
       result.outerDefinitions.mkString("\n") +
-      "kernel void f(" + params.mkString(", ") + ") {\n\t" +
+        "kernel void f(" + params.mkString(", ") + ") {\n\t" +
         (result.statements ++ result.values.map(_ + ";")).mkString("\n\t") + "\n" +
-      "}"
+        "}"
     CodeConversionResult(convertedCode, capturedInputs, capturedOutputs, capturedConstants)
-	}
-	
+  }
+
 }

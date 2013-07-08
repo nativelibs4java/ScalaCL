@@ -37,28 +37,28 @@ import scala.collection.mutable.ArrayBuffer
 import com.nativelibs4java.opencl.CLMem
 import org.bridj.{ Pointer, PointerIO }
 
-abstract class ScalarDataIO[T : Manifest](io: PointerIO[_]) extends DataIO[T] {
+abstract class ScalarDataIO[T: Manifest](io: PointerIO[_]) extends DataIO[T] {
   override val typeString = implicitly[ClassTag[T]].runtimeClass.getSimpleName
   override def bufferCount = 1
-  
+
   private[scalacl] val pointerIO: PointerIO[T] = io.asInstanceOf[PointerIO[T]]
-  
+
   private[scalacl] override def foreachScalar(f: ScalarDataIO[_] => Unit) {
     f(this)
   }
-    
+
   override def toArray(length: Int, buffers: Array[ScheduledBuffer[_]]): Array[T] = {
     val Array(buffer: ScheduledBuffer[T]) = buffers
     buffer.read().getArray.asInstanceOf[Array[T]]
   }
-  
+
   override def allocateBuffers(length: Long, values: Array[T])(implicit context: Context, m: ClassTag[T]): Array[ScheduledBuffer[_]] = {
     val pointer = Pointer.pointerToArray[T](values)
     Array(new ScheduledBuffer(context.context.createBuffer(CLMem.Usage.InputOutput, pointer)))
   }
   private[scalacl] def allocateBuffer(length: Long)(implicit context: Context) =
     context.context.createBuffer(CLMem.Usage.InputOutput, pointerIO, length)
-    
+
   override def allocateBuffers(length: Long, out: ArrayBuffer[ScheduledBuffer[_]])(implicit context: Context) = {
     out += new ScheduledBuffer(allocateBuffer(length))
   }

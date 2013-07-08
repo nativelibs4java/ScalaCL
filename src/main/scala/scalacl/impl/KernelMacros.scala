@@ -40,7 +40,7 @@ import scala.reflect.macros.Context
 object KernelMacros {
   def kernelImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
     //c.typeCheck(block.tree) 
-    
+
     val vectorizer = new Vectorization with MiscMatchers with WithMacroContext {
       override val context = c
       //override val global = c.universe
@@ -48,7 +48,7 @@ object KernelMacros {
       val result =
         vectorize(
           contextExpr.asInstanceOf[global.Expr[scalacl.Context]],
-          c.typeCheck(block.tree).asInstanceOf[global.Tree]/*,
+          c.typeCheck(block.tree).asInstanceOf[global.Tree] /*,
           c.enclosingMethod.symbol.asInstanceOf[global.Symbol]*/
         )
     }
@@ -57,7 +57,7 @@ object KernelMacros {
       c.universe.reify({})
     }).asInstanceOf[c.Expr[Unit]]
   }
-  
+
   def taskImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
     val ff = CLFunctionMacros.convertTask(c)(block)
     c.universe.reify {

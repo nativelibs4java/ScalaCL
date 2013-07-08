@@ -38,56 +38,57 @@ import scala.reflect.runtime.{ currentMirror => cm }
 import scala.tools.reflect.ToolBox
 
 trait WithMacroContext {
-  
+
   val context: Context
   lazy val global = context.universe
   import global._
   import global.definitions._
-  
+
   def verbose = true
-  
+
   def withSymbol[T <: Tree](sym: Symbol, tpe: Type = NoType)(tree: T): T = {
     try {
       tree.symbol = sym
-    } catch { case _: Throwable =>
+    } catch {
+      case _: Throwable =>
       // TODO: remove this ugly stuff. 
     }
     if (tpe != NoType)
       tree.tpe = tpe
     tree
   }
-  def typed[T <: Tree](tree: T): T = 
+  def typed[T <: Tree](tree: T): T =
     context.typeCheck(tree.asInstanceOf[context.universe.Tree]).asInstanceOf[T]
-    
+
   def inferImplicitValue(pt: Type): Tree =
     context.inferImplicitValue(pt.asInstanceOf[context.universe.Type]).asInstanceOf[Tree]
-    
+
   def setInfo(sym: Symbol, tpe: Type): Symbol = {
     //sym.setInfo(tpe)
     sym
   }
-    
+
   def setType(sym: Symbol, tpe: Type): Symbol = {
     //sym.tpe = tpe
     sym
   }
-    
+
   def setType(tree: Tree, tpe: Type): Tree = {
     tree.tpe = tpe
     tree
   }
-    
-  def setPos(tree: Tree, pos: Position): Tree = { 
+
+  def setPos(tree: Tree, pos: Position): Tree = {
     tree.pos = pos
     tree
   }
-  
-  def fresh(s: String) = 
+
+  def fresh(s: String) =
     context.fresh(s)
-  
-  def typeCheck(x: Expr[_]): Tree = 
+
+  def typeCheck(x: Expr[_]): Tree =
     context.typeCheck(x.tree.asInstanceOf[context.universe.Tree]).asInstanceOf[Tree]
-    
+
   def typeCheck(tree: Tree, pt: Type): Tree = {
     if (tree.tpe =:= pt)
       tree

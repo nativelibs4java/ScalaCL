@@ -37,28 +37,23 @@ import scalaxy.components.MiscMatchers
 import scala.collection.immutable.Stack
 import scala.reflect.NameTransformer
 
-trait KernelSymbolsAnalysis 
-extends CommonScalaNames
-with MiscMatchers
-with SymbolKinds
-{ 
+trait KernelSymbolsAnalysis
+    extends CommonScalaNames
+    with MiscMatchers
+    with SymbolKinds {
   val global: reflect.api.Universe
   import global._
   import definitions._
 
   import collection._
-  
+
   case class KernelSymbols(
-    symbolUsages: mutable.HashMap[Symbol, UsageKind] = 
-      new mutable.HashMap[Symbol, UsageKind],
-    symbolTypes: mutable.HashMap[Symbol, Type] = 
-      new mutable.HashMap[Symbol, Type],
-    localSymbols: mutable.HashSet[Symbol] = 
-      new mutable.HashSet[Symbol]
-  ) {
+      symbolUsages: mutable.HashMap[Symbol, UsageKind] = new mutable.HashMap[Symbol, UsageKind],
+      symbolTypes: mutable.HashMap[Symbol, Type] = new mutable.HashMap[Symbol, Type],
+      localSymbols: mutable.HashSet[Symbol] = new mutable.HashSet[Symbol]) {
     lazy val symbols: Set[Symbol] = symbolUsages.keySet ++ localSymbols
     lazy val capturedSymbols: Seq[Symbol] = (symbols -- localSymbols).toSeq
-    
+
     def declareSymbolUsage(symbol: Symbol, tpe: Type, usage: UsageKind) {
       if (symbol == NoSymbol || symbol.isModule || symbol.isType) {
         // TODO error("Cannot declare usage of NoSymbol!")
@@ -67,7 +62,7 @@ with SymbolKinds
         val symbolKind = kindOf(symbol, actualTpe)
         if (symbolKind == SymbolKind.Other)
           sys.error("Cannot handle usage of symbol " + symbol + ": " + symbol.getClass.getName + " (with type " + actualTpe + ": " + actualTpe.getClass.getName + ")")
-        
+
         if ((tpe ne null) && actualTpe != NoType) {
           symbolTypes.get(symbol) match {
             case Some(t) =>
@@ -76,7 +71,7 @@ with SymbolKinds
               symbolTypes(symbol) = actualTpe
           }
         }
-          
+
         symbolUsages.get(symbol) match {
           case Some(u) =>
             symbolUsages(symbol) = u.merge(usage)
@@ -86,11 +81,11 @@ with SymbolKinds
       }
     }
   }
-  
+
   def getExternalSymbols(tree: Tree, knownSymbols: Set[Symbol] = Set()): KernelSymbols = {
-    
+
     val symbols = new KernelSymbols
-    
+
     new Traverser {
       override def traverse(tree: Tree) = tree match {
         case Ident(n) =>
@@ -119,7 +114,7 @@ with SymbolKinds
           }
       }
     }.traverse(tree)
-    
+
     symbols
   }
 }

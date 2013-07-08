@@ -39,31 +39,30 @@ import scalaxy.components.MiscMatchers
 import scala.collection.immutable.Stack
 import scala.reflect.NameTransformer
 
-trait OpenCLConverter 
-extends OpenCLCodeFlattening
-with CommonScalaNames
-with MiscMatchers
-with KernelSymbolsAnalysis
-{ 
+trait OpenCLConverter
+    extends OpenCLCodeFlattening
+    with CommonScalaNames
+    with MiscMatchers
+    with KernelSymbolsAnalysis {
   val global: reflect.api.Universe
   import global._
   import definitions._
 
   def nodeToStringNoComment(tree: Tree): String = tree.toString // TODO
-  
+
   var openclLabelIds = new Ids
-  
+
   var placeHolderRefs = new Stack[String]
 
   def valueCode(v: String) = FlatCode[String](Seq(), Seq(), Seq(v))
   def emptyCode = FlatCode[String](Seq(), Seq(), Seq())
   def statementCode(s: String) = FlatCode[String](Seq(), Seq(s), Seq())
-  
+
   def flattenAndConvert(
-      tree: Tree, 
-      inputSymbols: Seq[(Symbol, Type)] = Seq(), 
-      owner: Symbol = NoSymbol,
-      renameSymbols: Boolean = true): FlatCode[String] = {
+    tree: Tree,
+    inputSymbols: Seq[(Symbol, Type)] = Seq(),
+    owner: Symbol = NoSymbol,
+    renameSymbols: Boolean = true): FlatCode[String] = {
     //println(s"tree = $tree")
     val flat = flatten(tree, inputSymbols, owner, renameSymbols)
     //println(s"flat = $flat")
@@ -71,12 +70,12 @@ with KernelSymbolsAnalysis
     //println(s"res = $res")
     res
   }
-  
+
   def convert(body: Tree): FlatCode[String] = {
     def cast(expr: Tree, clType: String) =
       convert(expr).mapEachValue(v => Seq("((" + clType + ")" + v + ")"))
 
-      /*
+    /*
     def convertForeach(from: Tree, to: Tree, isUntil: Boolean, by: Tree, function: Tree) = {
         val Function(List(vd @ ValDef(paramMods, paramName, tpt, rhs)), body) = function
         val id = openclLabelIds.next
@@ -90,7 +89,7 @@ with KernelSymbolsAnalysis
         out("\n}")
     }*/
     body match {
-      case TupleCreation(tupleArgs) =>//Apply(TypeApply(Select(TupleObject(), applyName()), tupleTypes), tupleArgs) if isTopLevel =>
+      case TupleCreation(tupleArgs) => //Apply(TypeApply(Select(TupleObject(), applyName()), tupleTypes), tupleArgs) if isTopLevel =>
         tupleArgs.map(convert).reduceLeft(_ ++ _)
       case Literal(Constant(value)) =>
         if (value == ())
@@ -135,17 +134,17 @@ with KernelSymbolsAnalysis
           rv
         )
       case Apply(Select(target, applyName()), List(singleArg)) =>
-        merge(Seq(target, singleArg).map(convert):_*) { case Seq(t, a) => Seq(t + "[" + a + "]") }
+        merge(Seq(target, singleArg).map(convert): _*) { case Seq(t, a) => Seq(t + "[" + a + "]") }
       case Apply(Select(target, updateName()), List(index, value)) =>
         val convs = Seq(target, index, value).map(convert)
         //println("convs = " + convs)
         //println("target.tpe = " + target.tpe)
         merge(convs: _*) { case Seq(t, i, v) => Seq(t + "[" + i + "] = " + v) }
       case Assign(lhs, rhs) =>
-        merge(Seq(lhs, rhs).map(convert):_*) { case Seq(l, r) => Seq(l + " = " + r + ";") }
+        merge(Seq(lhs, rhs).map(convert): _*) { case Seq(l, r) => Seq(l + " = " + r + ";") }
       case Typed(expr, tpt) =>
         val t = convertTpe(tpt.tpe)
-        convert(expr).mapValues(_.map(v => "((" + t + ")" + v + ")")) 
+        convert(expr).mapValues(_.map(v => "((" + t + ")" + v + ")"))
       case DefDef(mods, name, tparams, vparamss, tpt, body) =>
         val b = new StringBuilder
         b ++= convertTpe(body.tpe) + " " + name + "("
@@ -175,15 +174,15 @@ with KernelSymbolsAnalysis
         FlatCode[String](
           convValue.outerDefinitions,
           convValue.statements ++
-          Seq(
-            constPref(paramMods) + convertTpt(tpt) + " " + paramName + (
-              if (rhs != EmptyTree) {
-                val Seq(value) = convValue.values
-                " = " + value
-              } else 
-                ""
-            ) + ";"
-          ),
+            Seq(
+              constPref(paramMods) + convertTpt(tpt) + " " + paramName + (
+                if (rhs != EmptyTree) {
+                  val Seq(value) = convValue.values
+                  " = " + value
+                } else
+                  ""
+              ) + ";"
+            ),
           Seq()
         )
       //case Typed(expr, tpe) =>
@@ -210,7 +209,7 @@ with KernelSymbolsAnalysis
         val List(right) = args
         NameTransformer.decode(name.toString) match {
           case op @ ("+" | "-" | "*" | "/" | "%" | "^" | "^^" | "&" | "&&" | "|" | "||" | "<<" | ">>" | "==" | "<" | ">" | "<=" | ">=" | "!=") =>
-            merge(Seq(left, right).map(convert):_*) {
+            merge(Seq(left, right).map(convert): _*) {
               case Seq(l, r) => Seq("(" + l + " " + op + " " + r + ")")
               //case e =>
               //  throw new RuntimeException("ugh : " + e + ", op = " + op + ", body = " + body + ", left = " + left + ", right = " + right)
@@ -218,7 +217,7 @@ with KernelSymbolsAnalysis
           // TODO
           //case n if isPackageReference(left, "scala.math") =>
           //  convertMathFunction(s.tpe, name, args)
-            //merge(Seq(right).map(convert):_*) { case Seq(v) => Seq(n + "(" + v + ")") }
+          //merge(Seq(right).map(convert):_*) { case Seq(v) => Seq(n + "(" + v + ")") }
           case n =>
             throw new RuntimeException("[ScalaCL] Unhandled method name in Scala -> OpenCL conversion : " + name + "\n\tleft = " + left + ",\n\targs = " + args + ",\n\tbody = " + body + ",\n\ttree: " + body.getClass.getName + s" (${updateName.unapply(name)})")
             valueCode("/* Error: failed to convert " + body + " */")
@@ -239,17 +238,17 @@ with KernelSymbolsAnalysis
         FlatCode[String](
           dcond ++ dcont,
           scond ++
-          Seq(
-            "while (" + vcond + ") {\n" +
-              (scont ++ vcont).mkString("\n") + "\n" +
-            "}"
-          ),
+            Seq(
+              "while (" + vcond + ") {\n" +
+                (scont ++ vcont).mkString("\n") + "\n" +
+                "}"
+            ),
           Seq()
         )
       case Apply(target, args) =>
-        merge((target :: args).map(convert):_*)(seq => {
+        merge((target :: args).map(convert): _*)(seq => {
           val t :: a = seq.toList
-          Seq(t + "(" + a.mkString(", ") + ")") 
+          Seq(t + "(" + a.mkString(", ") + ")")
         })
       case Block(statements, Literal(Constant(empty))) =>
         assert(empty == (), "Valued blocks should have been flattened in a previous phase !")
@@ -261,7 +260,7 @@ with KernelSymbolsAnalysis
     }
   }
   def convertMathFunction(functionType: Type, funName: Name, args: List[Tree]) = {
-    var outers = Seq[String]()//"#include <math.h>")
+    var outers = Seq[String]() //"#include <math.h>")
     val hasDoubleParam = args.exists(_.tpe == DoubleClass.asType.toType)
     if (hasDoubleParam)
       outers ++= Seq("#pragma OPENCL EXTENSION cl_khr_fp64: enable")
@@ -278,25 +277,26 @@ with KernelSymbolsAnalysis
       convArgs.flatMap(_.statements),
       Seq(
         funName + "(" +
-        convArgs.zip(normalizedArgs).map({ case (convArg, normalizedArg) =>
-          assert(convArg.statements.isEmpty, convArg)
-          val Seq(value) = convArg.values
-          //"(" + convertTpe(normalizedArg.tpe) + ")" + value
-          functionType match {
-            case _ //MethodType(List(param), resultType) 
-            if normalizedArg.tpe != DoubleClass.asType =>
-              "(float)" + value
-            case _ =>
-              "(" + convertTpe(normalizedArg.tpe) + ")" + value
-          }
-        }).mkString(", ") +
-        ")"
+          convArgs.zip(normalizedArgs).map({
+            case (convArg, normalizedArg) =>
+              assert(convArg.statements.isEmpty, convArg)
+              val Seq(value) = convArg.values
+              //"(" + convertTpe(normalizedArg.tpe) + ")" + value
+              functionType match {
+                case _ //MethodType(List(param), resultType) 
+                if normalizedArg.tpe != DoubleClass.asType =>
+                  "(float)" + value
+                case _ =>
+                  "(" + convertTpe(normalizedArg.tpe) + ")" + value
+              }
+          }).mkString(", ") +
+          ")"
       )
     )
   }
   def constPref(mods: Modifiers) =
-    (if (mods.hasFlag(Flag.MUTABLE)) "" else "const ") 
-      
+    (if (mods.hasFlag(Flag.MUTABLE)) "" else "const ")
+
   def convertTpt(tpt: TypeTree): String = convertTpe(tpt.tpe)
   def convertTpe(tpe: Type): String = {
     if (tpe == null) {

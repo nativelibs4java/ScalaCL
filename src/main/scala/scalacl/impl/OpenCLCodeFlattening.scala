@@ -39,23 +39,22 @@ import scala.reflect.NameTransformer
 import scala.reflect.api.Universe
 
 trait OpenCLCodeFlattening
-extends MiscMatchers
-   with TreeBuilders
-   with TupleAnalysis
-{
+    extends MiscMatchers
+    with TreeBuilders
+    with TupleAnalysis {
   import global._
   import global.definitions._
   import Flag._
-  
+
   /**
    * Phases :
    * - unique renaming
    * - tuple cartography (map symbols and treeId to TupleSlices : x._2 will be checked against x ; if is x's symbol is mapped, the resulting slice will be composed and flattened
    * - tuple + block flattening (gives (Seq[Tree], Seq[Tree]) result)
    */
-   // separate pass should return symbolsDefined, symbolsUsed
-   // DefTree vs. RefTree
-   
+  // separate pass should return symbolsDefined, symbolsUsed
+  // DefTree vs. RefTree
+
   def getDefAndRefTrees(tree: Tree) = {
     val defTrees = new ArrayBuffer[DefTree]()
     val refTrees = new ArrayBuffer[RefTree]()
@@ -74,16 +73,17 @@ extends MiscMatchers
   }
   def renameDefinedSymbolsUniquely(tree: Tree) = {
     val (defTrees, refTrees) = getDefAndRefTrees(tree)
-    val definedSymbols   = defTrees.collect { case d if d.name != null => d.symbol -> d.name } toMap
-    val usedIdentSymbols = refTrees.collect { case ident @ Ident(name) => ident.symbol -> name} toMap
-    
+    val definedSymbols = defTrees.collect { case d if d.name != null => d.symbol -> d.name } toMap
+    val usedIdentSymbols = refTrees.collect { case ident @ Ident(name) => ident.symbol -> name } toMap
+
     val outerSymbols = usedIdentSymbols.keys.toSet.diff(definedSymbols.keys.toSet)
     val nameCollisions = (definedSymbols ++ usedIdentSymbols).groupBy(_._2).filter(_._2.size > 1)
-    val renamings = nameCollisions.flatMap(_._2) map { case (sym, name) =>
-      val newName: Name = N(fresh(name.toString))
-      (sym, newName)
+    val renamings = nameCollisions.flatMap(_._2) map {
+      case (sym, name) =>
+        val newName: Name = N(fresh(name.toString))
+        (sym, newName)
     } toMap
-    
+
     if (renamings.isEmpty)
       tree
     else
@@ -93,9 +93,9 @@ extends MiscMatchers
           def setAttrs(newTree: Tree) =
             //newTree
             //withSymbol(tree.symbol, tree.tpe) {
-              typeCheck(newTree, tree.tpe)
-            //}
-            
+            typeCheck(newTree, tree.tpe)
+          //}
+
           renamings.get(tree.symbol).map(newName => {
             tree match {
               case ValDef(mods, name, tpt, rhs) =>
@@ -103,7 +103,7 @@ extends MiscMatchers
               case DefDef(mods, name, tparams, vparams, tpt, rhs) =>
                 setAttrs(treeCopy.DefDef(tree, mods, newName, tparams, vparams, super.transform(tpt), super.transform(rhs)))
               case Ident(name) =>
-                setAttrs(treeCopy.Ident(tree, newName)) 
+                setAttrs(treeCopy.Ident(tree, newName))
               case _ =>
                 super.transform(tree)
             }
@@ -113,10 +113,10 @@ extends MiscMatchers
   }
 
   def flatten(
-      tree: Tree, 
-      inputSymbols: Seq[(Symbol, Type)] = Seq(), 
-      owner: Symbol = NoSymbol,
-      renameSymbols: Boolean = true): FlatCode[Tree] = {
+    tree: Tree,
+    inputSymbols: Seq[(Symbol, Type)] = Seq(),
+    owner: Symbol = NoSymbol,
+    renameSymbols: Boolean = true): FlatCode[Tree] = {
     val actualTree =
       if (renameSymbols)
         renameDefinedSymbolsUniquely(tree)
@@ -126,11 +126,10 @@ extends MiscMatchers
     val flattener = new TuplesAndBlockFlattener(tupleAnalyzer)
     flattener.flattenTuplesAndBlocksWithInputSymbols(actualTree, inputSymbols, owner)
   }
-  
-  class TuplesAndBlockFlattener(val tupleAnalyzer: TupleAnalyzer) 
-  {
+
+  class TuplesAndBlockFlattener(val tupleAnalyzer: TupleAnalyzer) {
     import tupleAnalyzer._
-    
+
     def isOpenCLIntrinsicTuple(components: List[Type]) = {
       components.size match {
         case 2 | 4 | 8 | 16 =>
@@ -160,21 +159,21 @@ extends MiscMatchers
       }
     }
     def isUnitOrNoType(tpe: Type) = tpe == NoType || tpe == UnitTpe
-    
-    def makeValuesSideEffectFree(code: FlatCode[Tree], symbolOwner: Symbol) = 
-    {
-      //code /*
-      var hasNewStatements = false
-      val vals = for (value <- code.values) yield {
-        value match {
-          case Select(ScalaMathFunction(_, _, _), toFloatName()) =>
-            // special case for non-double math :
-            // exp(20: Float).toFloat
-            (Seq(), value)
-          case ScalaMathFunction(_, _, _) =>//Apply(f @ Select(left, name), args) if left.toString == "scala.math.package" =>
-            // TODO this is not fair : ScalaMathFunction should have worked here !!!
-            (Seq(), value)
-          /*case Apply(s @ Select(left, name), args) if NameTransformer.decode(name.toString) match {
+
+    def makeValuesSideEffectFree(code: FlatCode[Tree], symbolOwner: Symbol) =
+      {
+        //code /*
+        var hasNewStatements = false
+        val vals = for (value <- code.values) yield {
+          value match {
+            case Select(ScalaMathFunction(_, _, _), toFloatName()) =>
+              // special case for non-double math :
+              // exp(20: Float).toFloat
+              (Seq(), value)
+            case ScalaMathFunction(_, _, _) => //Apply(f @ Select(left, name), args) if left.toString == "scala.math.package" =>
+              // TODO this is not fair : ScalaMathFunction should have worked here !!!
+              (Seq(), value)
+            /*case Apply(s @ Select(left, name), args) if NameTransformer.decode(name.toString) match {
               case op @ ("+" | "-" | "*" | "/" | "%" | "^" | "^^" | "&" | "&&" | "|" | "||" | "<<" | ">>" | "==" | "<" | ">" | "<=" | ">=" | "!=") =>
                 true
               case n if left.toString == "scala.math.package" =>
@@ -183,57 +182,59 @@ extends MiscMatchers
                 false
           } =>
             (Seq(), value)*/
-          case Ident(_) | Select(_, _) | ValDef(_, _, _, _) | Literal(_) | NumberConversion(_, _) | Typed(_, _) | Apply(_, List(_)) =>
-            // already side-effect-free (?)
-            (Seq(), value)
-          case _ if isUnitOrNoType(getType(value)) =>
-            (Seq(), value)
-          case _ =>
-            assert(getType(value) != NoType, value + ": " + value.getClass.getName)// + " = " + nodeToString(value) + ")")
-            val tempVar = newVariable("tmp", symbolOwner, value.pos, false, value)
-            //println("Creating temp variable " + tempVar.symbol + " for " + value)
-            hasNewStatements = true
-            for (slice <- getTreeSlice(value))
-              setSlice(tempVar.definition, slice)
-              
-            (Seq(tempVar.definition), tempVar())
-        }
-      }
-      if (!hasNewStatements)
-        code
-      else
-        FlatCode[Tree](
-          code.outerDefinitions,
-          code.statements ++ vals.flatMap(_._1),
-          vals.map(_._2)
-        )
-    }
-    def flattenTuplesAndBlocksWithInputSymbols(tree: Tree, inputSymbols: Seq[(Symbol, Type)], symbolOwner: Symbol): FlatCode[Tree] = {
-      //setSlice(inputSymbol, TupleSlice(inputSymbol, 0, flattenedTypes.size))
-        
-      val fiberVars = inputSymbols.flatMap { case (inputSymbol, inputType) =>
-        val flattenedTypes = flattenTypes(inputType)
-        //println(s"flattenTypes($inputSymbol, $inputType) = $flattenedTypes")
-        if (flattenedTypes.size == 1) {
-          sliceReplacements ++= Seq(TupleSlice(inputSymbol, 0, 1) -> (() => ident(inputSymbol, inputType, inputSymbol.name)))
-          Seq()
-        } else {
-          val fiberPaths = flattenFiberPaths(inputType)
-          //println("flattenedTypes = " + flattenedTypes)
-          //println(s"fiberPaths = $fiberPaths")
-          fiberPaths.zip(flattenedTypes).zipWithIndex map { case ((path, tpe), i) =>
-            val (fiberExpr, fiberTpe) = applyFiberPath(() => {
-              val res = ident(inputSymbol, inputType, inputSymbol.name)
-              setSlice(res, TupleSlice(inputSymbol, i, 1))
-              res
-            }, path)
-            //setType(fiberExpr, tpe)
-            val fiberVar = newVariable(inputSymbol.name + "$" + path.map(_ + 1).mkString("$"), symbolOwner, tree.pos, false, fiberExpr, fiberTpe)
-            sliceReplacements ++= Seq(TupleSlice(inputSymbol, i, 1) -> fiberVar.identGen)
-            //println(s"fiberExpr = $fiberExpr, fiberVar = $fiberVar")
-            fiberVar
+            case Ident(_) | Select(_, _) | ValDef(_, _, _, _) | Literal(_) | NumberConversion(_, _) | Typed(_, _) | Apply(_, List(_)) =>
+              // already side-effect-free (?)
+              (Seq(), value)
+            case _ if isUnitOrNoType(getType(value)) =>
+              (Seq(), value)
+            case _ =>
+              assert(getType(value) != NoType, value + ": " + value.getClass.getName) // + " = " + nodeToString(value) + ")")
+              val tempVar = newVariable("tmp", symbolOwner, value.pos, false, value)
+              //println("Creating temp variable " + tempVar.symbol + " for " + value)
+              hasNewStatements = true
+              for (slice <- getTreeSlice(value))
+                setSlice(tempVar.definition, slice)
+
+              (Seq(tempVar.definition), tempVar())
           }
         }
+        if (!hasNewStatements)
+          code
+        else
+          FlatCode[Tree](
+            code.outerDefinitions,
+            code.statements ++ vals.flatMap(_._1),
+            vals.map(_._2)
+          )
+      }
+    def flattenTuplesAndBlocksWithInputSymbols(tree: Tree, inputSymbols: Seq[(Symbol, Type)], symbolOwner: Symbol): FlatCode[Tree] = {
+      //setSlice(inputSymbol, TupleSlice(inputSymbol, 0, flattenedTypes.size))
+
+      val fiberVars = inputSymbols.flatMap {
+        case (inputSymbol, inputType) =>
+          val flattenedTypes = flattenTypes(inputType)
+          //println(s"flattenTypes($inputSymbol, $inputType) = $flattenedTypes")
+          if (flattenedTypes.size == 1) {
+            sliceReplacements ++= Seq(TupleSlice(inputSymbol, 0, 1) -> (() => ident(inputSymbol, inputType, inputSymbol.name)))
+            Seq()
+          } else {
+            val fiberPaths = flattenFiberPaths(inputType)
+            //println("flattenedTypes = " + flattenedTypes)
+            //println(s"fiberPaths = $fiberPaths")
+            fiberPaths.zip(flattenedTypes).zipWithIndex map {
+              case ((path, tpe), i) =>
+                val (fiberExpr, fiberTpe) = applyFiberPath(() => {
+                  val res = ident(inputSymbol, inputType, inputSymbol.name)
+                  setSlice(res, TupleSlice(inputSymbol, i, 1))
+                  res
+                }, path)
+                //setType(fiberExpr, tpe)
+                val fiberVar = newVariable(inputSymbol.name + "$" + path.map(_ + 1).mkString("$"), symbolOwner, tree.pos, false, fiberExpr, fiberTpe)
+                sliceReplacements ++= Seq(TupleSlice(inputSymbol, i, 1) -> fiberVar.identGen)
+                //println(s"fiberExpr = $fiberExpr, fiberVar = $fiberVar")
+                fiberVar
+            }
+          }
       }
       //println(s"fiberVars = $fiberVars, sliceReplacements = $sliceReplacements, inputSymbols = $inputSymbols")
       val top @ FlatCode(outerDefinitions, statements, values) = flattenTuplesAndBlocks(tree)(symbolOwner)
@@ -294,17 +295,18 @@ extends MiscMatchers
               //println("Tree " + tree + " has no associated slice")
               Seq(tree)
           }
-        } catch { case ex: Throwable =>
-          ex.printStackTrace
-          Seq(tree)
+        } catch {
+          case ex: Throwable =>
+            ex.printStackTrace
+            Seq(tree)
         }
     }
-    
+
     def flattenTuplesAndBlocks(initialTree: Tree, sideEffectFree: Boolean = true)(implicit symbolOwner: Symbol): FlatCode[Tree] = {
-      val tree = initialTree//replace(initialTree)
+      val tree = initialTree //replace(initialTree)
       // If the tree is mapped to a slice and that slice is mapped to a replacement, then replace the tree by an ident to the corresponding name+symbol
       val res: FlatCode[Tree] = tree match {
-        case Block(statements, value) => 
+        case Block(statements, value) =>
           // Flatten blocks up
           statements.map(flattenTuplesAndBlocks(_).noValues).reduceLeft(_ ++ _) >> flattenTuplesAndBlocks(value)
         case TupleCreation(components) =>
@@ -314,7 +316,7 @@ extends MiscMatchers
             sub.flatMap(_.statements),
             sub.flatMap(_.values)
           )
-        case TupleComponent(target, i) =>//if getTreeSlice(target).collect(sliceReplacements) != None =>
+        case TupleComponent(target, i) => //if getTreeSlice(target).collect(sliceReplacements) != None =>
           getTreeSlice(target, recursive = true) match {
             case Some(slice) =>
               //println("Found slice " + slice + " for tuple component " + target + " i = " + i)
@@ -354,9 +356,9 @@ extends MiscMatchers
             f.flatMap(_.outerDefinitions),
             f.flatMap(_.statements),
             Seq(
-              typeCheck(//withSymbol(tree.symbol, tree.tpe) {
+              typeCheck( //withSymbol(tree.symbol, tree.tpe) {
                 Apply(
-                  Ident(ident.symbol),//withSymbol(ident.symbol, ident.tpe) { Ident(functionName) }, 
+                  Ident(ident.symbol), //withSymbol(ident.symbol, ident.tpe) { Ident(functionName) }, 
                   f.flatMap(_.values)
                 ),
                 tree.tpe
@@ -364,17 +366,17 @@ extends MiscMatchers
             )
           )
         case Assign(lhs, rhs) =>
-          merge(Seq(lhs, rhs).map(flattenTuplesAndBlocks(_)):_*) { 
-            case Seq(l, r) => 
-              Seq(Assign(l, r)) 
+          merge(Seq(lhs, rhs).map(flattenTuplesAndBlocks(_)): _*) {
+            case Seq(l, r) =>
+              Seq(Assign(l, r))
           }
         case Apply(Select(target, updateName()), List(index, value)) if isTupleType(getType(value)) =>
           //println(s"CONVERTING update $tree (isTupleType(${getType(value)}) = ${isTupleType(getType(value))})")
           val indexVal = newVariable("index", symbolOwner, tree.pos, false, index)
-          
+
           val mf = Seq(target, value).map(flattenTuplesAndBlocks(_))
-          val m = merge(mf/*Seq(target, value).map(flattenTuplesAndBlocks(_))*/:_*) { 
-            case Seq(t, v) => 
+          val m = merge(mf /*Seq(target, value).map(flattenTuplesAndBlocks(_))*/ : _*) {
+            case Seq(t, v) =>
               Seq(Apply(Select(t, updateName()), List(indexVal(), v)))
             //case s =>
             //  sys.error(s"CONVERTED Seq(target = $target, value = $value, mf = $mf) to $s")
@@ -391,9 +393,9 @@ extends MiscMatchers
                 case op @ ("+" | "-" | "*" | "/" | "%" | "^" | "&" | "|" | "==" ) =>
                   Some(out("(", left, " ", op, " ", args(0), ")")
           */
-          val fc1 @ FlatCode(defs1, stats1, vals1) = 
+          val fc1 @ FlatCode(defs1, stats1, vals1) =
             flattenTuplesAndBlocks(target, sideEffectFree = getType(target) != NoType)
-           
+
           val argsConv = args.map(flattenTuplesAndBlocks(_))
           val tpes = flattenTypes(getType(tree))
           // TODO assign vals to new vars before the calls, to ensure a correct evaluation order !
@@ -401,10 +403,10 @@ extends MiscMatchers
           val result = FlatCode[Tree](
             defs1 ++ argsConv.flatMap(_.outerDefinitions),
             stats1 ++ argsConv.flatMap(_.statements),
-            vals1.zip(tpes).map { 
-              case (target, tpe) => 
+            vals1.zip(tpes).map {
+              case (target, tpe) =>
                 val args = argsConv.map(_.values)
-                setType(Apply(target, args.flatten), tpe) 
+                setType(Apply(target, args.flatten), tpe)
             }
           )
           //println(s"CONVERTED apply $tree\n\tresult = $result, \n\ttpes = $tpes, \n\targsConv = $argsConv, \n\tvals1 = $vals1, fc1 = $fc1")
@@ -417,16 +419,16 @@ extends MiscMatchers
           val flatContent = content.map(flattenTuplesAndBlocks(_)).reduceLeft(_ >> _)
           val Seq(flatConditionValue) = flatCondition.values
           FlatCode[Tree](
-            flatCondition.outerDefinitions ++ flatContent.outerDefinitions, 
+            flatCondition.outerDefinitions ++ flatContent.outerDefinitions,
             flatCondition.statements ++
-            Seq(
-              whileLoop(
-                symbolOwner, 
-                tree, 
-                flatConditionValue,
-                Block((flatContent.statements ++ flatContent.values :+ newUnit): _*)
-              )
-            ),
+              Seq(
+                whileLoop(
+                  symbolOwner,
+                  tree,
+                  flatConditionValue,
+                  Block((flatContent.statements ++ flatContent.values :+ newUnit): _*)
+                )
+              ),
             Seq()
           )
         case If(condition, thenDo, otherwise) =>
@@ -452,8 +454,8 @@ extends MiscMatchers
               case _ =>
                 Seq(
                   If(
-                    conditionVar(), 
-                    Block((st.toList ++ vt.toList :+ newUnit): _*), 
+                    conditionVar(),
+                    Block((st.toList ++ vt.toList :+ newUnit): _*),
                     Block((so.toList ++ vo.toList :+ newUnit): _*)
                   )
                 )
@@ -503,22 +505,24 @@ extends MiscMatchers
             )
           } else {
             val splitSyms = //: Map[TupleSlice, (String, Symbol)] =
-              flattenedTypes.zipWithIndex.map({ case (tpe, i) =>
-                val name = newTermName(fresh(paramName + "_" + (i + 1)))
-                val sym = setInfo(symbolOwner.newTermSymbol(name, tree.pos, LOCAL), tpe)
-                (TupleSlice(tree.symbol, i, 1), (name, sym))//() => ident(sym, name))
+              flattenedTypes.zipWithIndex.map({
+                case (tpe, i) =>
+                  val name = newTermName(fresh(paramName + "_" + (i + 1)))
+                  val sym = setInfo(symbolOwner.newTermSymbol(name, tree.pos, LOCAL), tpe)
+                  (TupleSlice(tree.symbol, i, 1), (name, sym)) //() => ident(sym, name))
               })
 
             //println("splitSyms = " + splitSyms)
             if (splitSyms.size != 1 && isVal)
-              sliceReplacements ++= splitSyms.map { case (slice, (name, sym)) =>
-                val rep = ident(sym, sym.typeSignature, name)//slice.toTreeGen(replace(_, false), tupleAnalyzer)()
-                //println("New replacement for " + slice + " = " + rep + " (but name = " + name + ", sym = " + sym + ")")
-                (slice, () => rep)
+              sliceReplacements ++= splitSyms.map {
+                case (slice, (name, sym)) =>
+                  val rep = ident(sym, sym.typeSignature, name) //slice.toTreeGen(replace(_, false), tupleAnalyzer)()
+                  //println("New replacement for " + slice + " = " + rep + " (but name = " + name + ", sym = " + sym + ")")
+                  (slice, () => rep)
               }
 
             val FlatCode(defs, stats, flattenedValues) = flattenTuplesAndBlocks(rhs)(tree.symbol)
-            
+
             if (isVal)
               for (((splitSlice, (splitName, splitSym)), value) <- splitSyms.zip(flattenedValues)) {
                 for (slice <- getTreeSlice(value)) {
@@ -526,20 +530,21 @@ extends MiscMatchers
                   setSlice(splitSym, slice)
                 }
               }
-              
+
             //println(s"""splitSyms = $splitSyms, flattenedValues = $flattenedValues, flattenedTypes = $flattenedTypes""")
-          
+
             FlatCode[Tree](
               defs,
-              stats ++ splitSyms.zip(flattenedValues).zip(flattenedTypes).map({ case (((slice, (name, sym)), value), tpe) =>
-                val vv = value
-                val vd = withSymbol(sym, tpe) {
-                  ValDef(Modifiers(NoFlags), name, TypeTree(tpe), replace(value))
-                }
-                //println("vd = " + vd)
-                vd
+              stats ++ splitSyms.zip(flattenedValues).zip(flattenedTypes).map({
+                case (((slice, (name, sym)), value), tpe) =>
+                  val vv = value
+                  val vd = withSymbol(sym, tpe) {
+                    ValDef(Modifiers(NoFlags), name, TypeTree(tpe), replace(value))
+                  }
+                  //println("vd = " + vd)
+                  vd
               }),
-              Seq()//splitSyms.map({ case (slice, (name, sym)) => ident(sym, name) })
+              Seq() //splitSyms.map({ case (slice, (name, sym)) => ident(sym, name) })
             )
           }
         case Match(selector, List(CaseDef(pat, guard, body))) =>
@@ -552,7 +557,7 @@ extends MiscMatchers
             case Some(slice) =>
               val subMatcher = new BoundTuple(slice)
               val subMatcher(m) = pat
-              
+
               //val info = getTupleInfo(slice.baseSymbol.tpe)
               //if (false)
               for ((sym, subSlice) <- m) {
@@ -563,10 +568,10 @@ extends MiscMatchers
                 //println("Not Adding replacement for slice " + boundSlice + " to " + rep())
                 //println("Adding replacement for slice " + boundSlice + " to " + subSlice)
                 setSlice(sym, subSlice)
-                                                //sliceReplacements ++= Seq(boundSlice -> rep)
+                //sliceReplacements ++= Seq(boundSlice -> rep)
                 if (subSlice.sliceLength == 1)
                   sliceReplacements ++= Seq(boundSlice -> subSlice.toTreeGen(tupleAnalyzer))
-                  //(() => applyFiberPath(subSlice.toTreeGen(replace), path)))
+                //(() => applyFiberPath(subSlice.toTreeGen(replace), path)))
               }
               /*for ((path, i) <- info.flattenPaths.zipWithIndex) {
                 val subSlice = TupleSlice(slice.baseSymbol, i, 1)
@@ -574,7 +579,7 @@ extends MiscMatchers
                   Seq(subSlice -> subSlice.toTreeGen(replace(_, false), tupleAnalyzer))
                   //(() => applyFiberPath(subSlice.toTreeGen(replace), path)))
               }*/
-              
+
               flattenTuplesAndBlocks(body)
             case _ =>
               //println("selector: " + selector.getClass.getName + " = " + selector)// + " = " + nodeToString(selector))
@@ -583,14 +588,14 @@ extends MiscMatchers
               //println("extract(selector).symbol = " + extract(selector).symbol)
               //println("sliceReplacements = \n\t" + sliceReplacements.mkString("\n\t"))
               throw new RuntimeException("Unable to connect the matched pattern with its corresponding single case")
-              //FlatCode[Tree](Seq(), Seq(), Seq())
+            //FlatCode[Tree](Seq(), Seq(), Seq())
           }
         case EmptyTree => {
           println("CodeFlattening  -  WARNING EmptyTree! Should this ever happen?")
           FlatCode[Tree](Seq(), Seq(), Seq())
         }
         case _ =>
-          assert(false, "Case not handled in tuples and blocks flattening : " + tree + ": " + tree.getClass.getName)// + ") :\n\t" + nodeToString(tree))
+          assert(false, "Case not handled in tuples and blocks flattening : " + tree + ": " + tree.getClass.getName) // + ") :\n\t" + nodeToString(tree))
           FlatCode[Tree](Seq(), Seq(), Seq())
       }
       //res.printDebug(s"RAW $res")
@@ -608,7 +613,7 @@ extends MiscMatchers
         println("res = \n\t" + res.toString.replaceAll("\n", "\n\t"))
         println("ret = \n\t" + ret.toString.replaceAll("\n", "\n\t"))
       }
-      
+
       val out = ret.mapValues(s => s.flatMap(replaceValues))
       //out.printDebug("out")
       out
