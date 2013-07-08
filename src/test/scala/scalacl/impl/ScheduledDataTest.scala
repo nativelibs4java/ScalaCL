@@ -38,6 +38,7 @@ import org.hamcrest.CoreMatchers._
 import com.nativelibs4java.opencl.CLEvent
 import com.nativelibs4java.opencl.MockEvent
 import com.nativelibs4java.opencl.library.OpenCLLibrary._
+import com.nativelibs4java.opencl.library.IOpenCLImplementation._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -47,7 +48,7 @@ class ScheduledDataTest {
     val inEvt = new MockEvent(1)
     val outEvt = new MockEvent(2)
     val opEvt = new MockEvent(3)
-    
+
     val in = new MockScheduledData {
       override def startRead(out: ArrayBuffer[CLEvent]) {
         super.startRead(out)
@@ -60,13 +61,13 @@ class ScheduledDataTest {
         out += outEvt
       }
     }
-    
+
     ScheduledData.schedule(Array(in), Array(out), events => {
       assertEquals(Seq(inEvt, outEvt), events.toSeq)
       opEvt
     })
     assertNotNull(opEvt.completionCallback)
-    
+
     assertEquals(
       "in calls don't match",
       Seq(
@@ -79,7 +80,7 @@ class ScheduledDataTest {
         'startWrite -> List(List(inEvt)),
         'endWrite -> List(opEvt)),
       out.calls)
-    
+
     opEvt.completionCallback.callback(CL_COMPLETE)
     for (d <- Seq(in, out))
       assertEquals(

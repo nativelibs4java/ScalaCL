@@ -118,7 +118,7 @@ trait CodeGeneration extends CodeConversion {
         }
       } catch {
         case ex: Throwable =>
-          error("CLFunction generation failed for { " + f + " }: " + ex)
+          sys.error("CLFunction generation failed for { " + f + " }: " + ex)
           null
       }
     }
