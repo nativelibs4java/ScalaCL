@@ -101,15 +101,16 @@ class OpenCLCodeFlatteningTest
   @Test
   def simpleTupleReference {
     val p = (10, 12)
+    val Seq(p$1, p$2, pp$1, pp$2) = 1 to 4
     assertEquals(
       code(
         statements = List(
-          reify { val p$10 = p._1 }, // TODO: remove these two unneeded decls
-          reify { val p$21 = p._2 }
+          reify { val pp$1 = p$1 }, // TODO: remove these two unneeded decls
+          reify { val pp$2 = p$2 }
         ),
         values = List(
-          reify { p._1 },
-          reify { p._2 }
+          reify { pp$1 },
+          reify { pp$2 }
         )
       ),
       flat(

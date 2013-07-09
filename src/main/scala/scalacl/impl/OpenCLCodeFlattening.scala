@@ -55,8 +55,8 @@ trait OpenCLCodeFlattening
   // separate pass should return symbolsDefined, symbolsUsed
   // DefTree vs. RefTree
 
-  def fiberVariableName(rootName: Name, path: List[Int]): Name = {
-    rootName + "$" + path.map(_ + 1).mkString("$"): TermName
+  def fiberVariableName(rootName: Name, path: List[Int]): TermName = {
+    (rootName :: path.map(_ + 1)).mkString("$")
   }
 
   def fiberVariableNames(rootName: Name, rootTpe: Type): Seq[(Name, Type)] = {
@@ -224,40 +224,8 @@ trait OpenCLCodeFlattening
     }
 
     def flattenTuplesAndBlocksWithInputSymbols(tree: Tree, inputSymbols: Seq[(Symbol, Type)], symbolOwner: Symbol): FlatCode[Tree] = {
-      //setSlice(inputSymbol, TupleSlice(inputSymbol, 0, flattenedTypes.size))
 
-      val fiberVars = inputSymbols.flatMap {
-        case (inputSymbol, inputType) =>
-          val flattenedTypes = flattenTypes(inputType)
-          //println(s"flattenTypes($inputSymbol, $inputType) = $flattenedTypes")
-          if (flattenedTypes.size == 1) {
-            sliceReplacements ++= Seq(TupleSlice(inputSymbol, 0, 1) -> (() => ident(inputSymbol, inputType, inputSymbol.name)))
-            Seq()
-          } else {
-            val fiberPaths = flattenFiberPaths(inputType)
-            //println("flattenedTypes = " + flattenedTypes)
-            //println(s"fiberPaths = $fiberPaths")
-            fiberPaths.zip(flattenedTypes).zipWithIndex map {
-              case ((path, tpe), i) =>
-                val (fiberExpr, fiberTpe) = applyFiberPath(() => {
-                  val res = ident(inputSymbol, inputType, inputSymbol.name)
-                  setSlice(res, TupleSlice(inputSymbol, i, 1))
-                  res
-                }, path)
-                //setType(fiberExpr, tpe)
-                val fiberVar = newVariable(fiberVariableName(inputSymbol.name, path).toString, symbolOwner, tree.pos, false, fiberExpr, fiberTpe)
-                sliceReplacements ++= Seq(TupleSlice(inputSymbol, i, 1) -> fiberVar.identGen)
-                //println(s"fiberExpr = $fiberExpr, fiberVar = $fiberVar")
-                fiberVar
-            }
-          }
-      }
-      //println(s"fiberVars = $fiberVars, sliceReplacements = $sliceReplacements, inputSymbols = $inputSymbols")
       val top @ FlatCode(outerDefinitions, statements, values) = flattenTuplesAndBlocks(tree)(symbolOwner)
-      //top.printDebug("top")
-      //println(s"top = $top")
-      //top
-      //*
       def lastMinuteReplace = {
         val trans = new Transformer {
           override def transform(tree: Tree) =
@@ -265,19 +233,11 @@ trait OpenCLCodeFlattening
         }
         trans transform _
       }
-      val replaced = FlatCode[Tree](
+      FlatCode[Tree](
         outerDefinitions map lastMinuteReplace,
-        (fiberVars.map(_.definition) ++ statements) map lastMinuteReplace,
+        statements map lastMinuteReplace,
         values map lastMinuteReplace
       )
-      //replaced.printDebug("replaced")
-      replaced
-      //*/
-      /*FlatCode[Tree](
-        outerDefinitions,
-        fiberVars.map(_.definition) ++ statements,
-        values
-      )*/
     }
     def replace(tree: Tree): Tree =
       replaceValues(tree) match {
@@ -294,21 +254,14 @@ trait OpenCLCodeFlattening
             case Some(slice) if slice.baseSymbol != tree.symbol =>
               sliceReplacements.get(slice) match {
                 case Some(identGen) =>
-                  val ident = identGen()
-                  //setSlice(ident, slice)
-                  //println("Replacing " + tree + " by " + ident + " (slice = " + slice + ")")
-                  Seq(ident)
+                  Seq(identGen())
                 case None =>
                   for (i <- 0 until slice.sliceLength) yield {
-                    val subSlice = slice.subSlice(i, 1)
-                    val ident = subSlice.toTreeGen(tupleAnalyzer)()
-                    //println("Replacing " + tree + " by slice ident " + ident + " (slice = " + slice + ")")
-                    //println("Tree " + tree + " has associated slice " + slice + ", extracting subSlice " + subSlice + " = " + ident)
-                    ident
+                    Ident(fiberVariableName(slice.baseSymbol.name, List(i))
+                    )
                   }
               }
             case _ =>
-              //println("Tree " + tree + " has no associated slice")
               Seq(tree)
           }
         } catch {
@@ -335,7 +288,6 @@ trait OpenCLCodeFlattening
         case TupleComponent(target, i) => //if getTreeSlice(target).collect(sliceReplacements) != None =>
           getTreeSlice(target, recursive = true) match {
             case Some(slice) =>
-              //println("Found slice " + slice + " for tuple component " + target + " i = " + i)
               sliceReplacements.get(slice) match {
                 case Some(rep) =>
                   FlatCode[Tree](Seq(), Seq(), Seq(rep()))
@@ -383,9 +335,9 @@ trait OpenCLCodeFlattening
             f.flatMap(_.outerDefinitions),
             f.flatMap(_.statements),
             Seq(
-              typeCheck( //withSymbol(tree.symbol, tree.tpe) {
+              typeCheck(
                 Apply(
-                  Ident(ident.symbol), //withSymbol(ident.symbol, ident.tpe) { Ident(functionName) }, 
+                  Ident(ident.symbol),
                   f.flatMap(_.values)
                 ),
                 tree.tpe
@@ -413,14 +365,6 @@ trait OpenCLCodeFlattening
           )
         case Apply(target, args) =>
           //println("CONVERTING apply " + tree)
-          /*
-          val convArgs = args.map(flattenTuplesAndBlocks(_, symbolOwner))
-          target match { 
-            case Select(leftOperand, name) if args.length == 1 =>
-              NameTransformer.decode(name.toString) match {
-                case op @ ("+" | "-" | "*" | "/" | "%" | "^" | "&" | "|" | "==" ) =>
-                  Some(out("(", left, " ", op, " ", args(0), ")")
-          */
           val fc1 @ FlatCode(defs1, stats1, vals1) =
             flattenTuplesAndBlocks(target, sideEffectFree = getType(target) != NoType)
 
@@ -491,9 +435,6 @@ trait OpenCLCodeFlattening
           )
         case Typed(expr, tpt) =>
           flattenTuplesAndBlocks(expr).mapValues(_.map(Typed(_, tpt)))
-        case ValDef(_, _, _, _) if isTupleType(getType(tree)) =>
-          // Skipping tuple definitions
-          FlatCode[Tree](Seq(), Seq(), Seq())
         case ValDef(paramMods, paramName, tpt, rhs) =>
           val isVal = !paramMods.hasFlag(MUTABLE)
           // val p = {
@@ -507,74 +448,24 @@ trait OpenCLCodeFlattening
           val FlatCode(defs, stats, values) = flattenTuplesAndBlocks(replace(rhs))(tree.symbol)
           //val flatValues = values.flatMap(replaceValues)
           val tpe = getType(tree)
-          val flattenedTypes = if (tpe != NoType) {
-            val types = flattenTypes(tpe)
-            assert(values.size == types.size, "values = " + values + ", flattenedTypes = " + types + ", tree = " + tree + ", tree.symbol = " + tree.symbol)
-            types
-          } else {
-            values.map(getType _)
-          }
-          //for ((value, i) <- values.zipWithIndex; slice <- getTreeSlice(value)) {
-          //  setSlice(tree, slice.subSlice(i, 1))
-          //}
-          //println(s"""tree = { $tree }: ${tpe}, flattenedTypes = $flattenedTypes""")
-          if (flattenedTypes.size == 1) {
-            //assert(values.size == 1, "values = " + values + ", flattenedTypes = " + flattenedTypes + ", tree = " + tree)
-            val List(value) = values
-            val vd = withSymbol(tree.symbol, tpe) {
-              ValDef(paramMods, paramName, tpt, value)
-            }
-            //println("single vd = " + vd)
-            //replace(value) // TODO REMOVE THIS DEBUG LINE
-            FlatCode[Tree](
-              defs,
-              stats :+ vd,
-              Seq()
-            )
-          } else {
-            val splitSyms = //: Map[TupleSlice, (String, Symbol)] =
-              flattenedTypes.zipWithIndex.map({
-                case (tpe, i) =>
-                  val name = newTermName(fresh(paramName + "_" + (i + 1)))
-                  val sym = setInfo(symbolOwner.newTermSymbol(name, tree.pos, LOCAL), tpe)
-                  (TupleSlice(tree.symbol, i, 1), (name, sym)) //() => ident(sym, name))
-              })
+          assert(tpe != null, "tpe is null")
 
-            //println("splitSyms = " + splitSyms)
-            if (splitSyms.size != 1 && isVal)
-              sliceReplacements ++= splitSyms.map {
-                case (slice, (name, sym)) =>
-                  val rep = ident(sym, sym.typeSignature, name) //slice.toTreeGen(replace(_, false), tupleAnalyzer)()
-                  //println("New replacement for " + slice + " = " + rep + " (but name = " + name + ", sym = " + sym + ")")
-                  (slice, () => rep)
-              }
+          val fiberTypes = flattenTypes(tpe)
+          val fiberPaths = flattenFiberPaths(tpe)
+          assert(values.size == fiberTypes.size, "values = " + values + ", fiberTypes = " + fiberTypes + ", fiberPaths = " + fiberPaths + ", tree = " + tree + ", tree.symbol = " + tree.symbol)
 
-            val FlatCode(defs, stats, flattenedValues) = flattenTuplesAndBlocks(rhs)(tree.symbol)
+          FlatCode[Tree](
+            defs,
+            stats ++
+              fiberTypes.zip(fiberPaths).zip(values).map({
+                case ((fiberType, fiberPath), value) =>
+                  val fiberName = fiberVariableName(paramName, fiberPath)
 
-            if (isVal)
-              for (((splitSlice, (splitName, splitSym)), value) <- splitSyms.zip(flattenedValues)) {
-                for (slice <- getTreeSlice(value)) {
-                  //println("Forwarded split slice " + slice + " from value " + value + " to split symbol " + splitSym)
-                  setSlice(splitSym, slice)
-                }
-              }
-
-            //println(s"""splitSyms = $splitSyms, flattenedValues = $flattenedValues, flattenedTypes = $flattenedTypes""")
-
-            FlatCode[Tree](
-              defs,
-              stats ++ splitSyms.zip(flattenedValues).zip(flattenedTypes).map({
-                case (((slice, (name, sym)), value), tpe) =>
-                  val vv = value
-                  val vd = withSymbol(sym, tpe) {
-                    ValDef(Modifiers(NoFlags), name, TypeTree(tpe), replace(value))
-                  }
-                  //println("vd = " + vd)
-                  vd
+                  ValDef(Modifiers(NoFlags), fiberName, TypeTree(fiberType), replace(value))
               }),
-              Seq() //splitSyms.map({ case (slice, (name, sym)) => ident(sym, name) })
-            )
-          }
+            Seq()
+          )
+
         case Match(selector, List(CaseDef(pat, guard, body))) =>
           def extract(tree: Tree): Tree = tree match {
             case Typed(expr, tpt) => extract(expr)
@@ -586,37 +477,18 @@ trait OpenCLCodeFlattening
               val subMatcher = new BoundTuple(slice)
               val subMatcher(m) = pat
 
-              //val info = getTupleInfo(slice.baseSymbol.tpe)
-              //if (false)
               for ((sym, subSlice) <- m) {
                 val info = getTupleInfo(sym.typeSignature)
                 val boundSlice = TupleSlice(sym, 0, info.flattenTypes.size)
                 val rep = subSlice.toTreeGen(tupleAnalyzer)
-                //setSlice(rep, subSlice)
-                //println("Not Adding replacement for slice " + boundSlice + " to " + rep())
-                //println("Adding replacement for slice " + boundSlice + " to " + subSlice)
                 setSlice(sym, subSlice)
-                //sliceReplacements ++= Seq(boundSlice -> rep)
                 if (subSlice.sliceLength == 1)
                   sliceReplacements ++= Seq(boundSlice -> subSlice.toTreeGen(tupleAnalyzer))
-                //(() => applyFiberPath(subSlice.toTreeGen(replace), path)))
               }
-              /*for ((path, i) <- info.flattenPaths.zipWithIndex) {
-                val subSlice = TupleSlice(slice.baseSymbol, i, 1)
-                sliceReplacements ++=
-                  Seq(subSlice -> subSlice.toTreeGen(replace(_, false), tupleAnalyzer))
-                  //(() => applyFiberPath(subSlice.toTreeGen(replace), path)))
-              }*/
 
               flattenTuplesAndBlocks(body)
             case _ =>
-              //println("selector: " + selector.getClass.getName + " = " + selector)// + " = " + nodeToString(selector))
-              //println("selector.symbol = " + selector.symbol)
-              //println("extract(selector): " + extract(selector).getClass.getName + " = " + extract(selector))// + " = " + nodeToString(extract(selector)))
-              //println("extract(selector).symbol = " + extract(selector).symbol)
-              //println("sliceReplacements = \n\t" + sliceReplacements.mkString("\n\t"))
               throw new RuntimeException("Unable to connect the matched pattern with its corresponding single case")
-            //FlatCode[Tree](Seq(), Seq(), Seq())
           }
         case EmptyTree => {
           println("CodeFlattening  -  WARNING EmptyTree! Should this ever happen?")
@@ -624,10 +496,9 @@ trait OpenCLCodeFlattening
         }
         case _ =>
           new RuntimeException().printStackTrace()
-          assert(false, "Case not handled in tuples and blocks flattening : " + tree + ": " + tree.getClass.getName) // + ") :\n\t" + nodeToString(tree))
+          assert(false, "Case not handled in tuples and blocks flattening : " + tree + ": " + tree.getClass.getName)
           FlatCode[Tree](Seq(), Seq(), Seq())
       }
-      //res.printDebug(s"RAW $res")
       val ret = if (sideEffectFree)
         makeValuesSideEffectFree(
           res,

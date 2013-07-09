@@ -41,7 +41,7 @@ import collection.mutable.ArrayBuffer
 class Kernel(protected val id: Long, protected val sources: String) {
   def getKernel(context: Context): CLKernel = {
     context.kernels(this, _.release) {
-      println("sources = " + sources)
+      //println("sources = " + sources)
       val Array(k) = context.context.createProgram(sources).createKernels
       k
     }
