@@ -105,7 +105,7 @@ class OpenCLCodeFlatteningTest
     assertEquals(
       code(
         statements = List(
-          reify { val pp$1 = p$1 }, // TODO: remove these two unneeded decls
+          reify { val pp$1 = p$1 },
           reify { val pp$2 = p$2 }
         ),
         values = List(

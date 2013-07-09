@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import ls.Plugin._
 
 import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform.scalariformSettings
@@ -14,61 +15,81 @@ object ScalaCLBuild extends Build {
     .setPreference(DoubleIndentClassDeclaration, true)
     .setPreference(PreserveDanglingCloseParenthesis, false)
     
-	val sharedSettings = 
+  lazy val sonatypeSettings = Seq(
+    publishMavenStyle := true,
+    resolvers += Resolver.sonatypeRepo("snapshots"),
+    publishTo <<= version { (v: String) =>
+      val nexus = "https://oss.sonatype.org/"
+      if (v.trim.endsWith("-SNAPSHOT"))
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    })
+
+  lazy val infoSettings = Seq(
+    organization := "com.nativelibs4java",
+    version := "0.3-SNAPSHOT",
+    licenses := Seq("BSD-3-Clause" -> url("http://www.opensource.org/licenses/BSD-3-Clause")),
+    homepage := Some(url("https://github.com/ochafik/ScalaCL")),
+    pomIncludeRepository := { _ => false },
+    pomExtra := (
+      <scm>
+        <url>git@github.com:ochafik/ScalaCL.git</url>
+        <connection>scm:git:git@github.com:ochafik/ScalaCL.git</connection>
+      </scm>
+      <developers>
+        <developer>
+          <id>ochafik</id>
+          <name>Olivier Chafik</name>
+          <url>http://ochafik.com/</url>
+        </developer>
+      </developers>
+    ),
+    (LsKeys.docsUrl in LsKeys.lsync) <<= homepage,
+    (LsKeys.tags in LsKeys.lsync) :=
+       Seq("opencl", "GPGPU", "macro", "GPU", "JavaCL"),
+    (description in LsKeys.lsync) :=
+      "OpenCL-powered and macro-powered data structures to store and transform data straight on the graphic card, using an API akin to Scala collections. Scala closures are transformed to OpenCL kernels automagically by macros, during compilation.",
+    LsKeys.ghUser := Some("ochafik"),
+    LsKeys.ghRepo := Some("ScalaCL"))
+
+	lazy val standardSettings = 
 	  Defaults.defaultSettings ++ 
 	  scalariformSettings ++ 
+	  sonatypeSettings ++
+	  infoSettings ++
 	  Seq(
-      organization := "com.nativelibs4java",
-      version := "0.3-SNAPSHOT",
-      
       fork := true,
       
       scalaVersion := "2.10.2",
       scalacOptions ++= Seq(
         "-language:experimental.macros",
-        "-deprecation"
-        //"-Ymacro-debug-lite"
-        //"-Xlog-free-terms", 
-        //"-unchecked",
+        "-encoding", "UTF-8",
+        "-optimise", 
+        "-deprecation",
+        "-feature",
+        "-unchecked"
       ),
       
-      resolvers += "Sonatype OSS Repository" at "http://oss.sonatype.org/content/repositories/snapshots",
-      
       libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-compiler" % _),
-      libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-reflect" % _),
-        
+      libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-reflect" % _),    
+      libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-compiler" % _),
       libraryDependencies ++= Seq(
-        "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT",
-        //"com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
-        "com.novocode" % "junit-interface" % "0.5" % "test->default"
-      ),    
-  
-      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
+        "junit" % "junit" % "4.10" % "test",
+        "com.novocode" % "junit-interface" % "0.8" % "test"
+      )
     )
 	
-  val scalaxyPath = "../Scalaxy"
-  
-  def log(s: String) = println("[scalacl] " + s)
-  
-	lazy val useLocalScalaxy = {
-	  val exists = new File(scalaxyPath).exists
-	  if (exists) {
-	    log(scalaxyPath + " exists: building Scalaxy as part of ScalaCL")
-	  } else {
-	    log(scalaxyPath + " does not exist. If you want to modify it, please clone it with:\n\tgit clone git://github.com/ochafik/Scalaxy ../Scalaxy\n")
-	  }
-	  exists
-	}
-	
-  def addLocalOrRemoteDependencies(project: Project, dependenciesAndTheirLocalPaths: List[(ModuleID, String)]): Project = {
+  def addLocalOrRemoteDependencies(project: Project, dependenciesAndTheirLocalPaths: List[(ModuleID, String, String)]): Project = {
     dependenciesAndTheirLocalPaths match {
       case Nil =>
         project
-      case (dependency, dependencyProjectRoot) :: rest =>
+      case (dependency, dependencyProjectRoot, gitURL) :: rest =>
         addLocalOrRemoteDependencies(
           if (new File(dependencyProjectRoot).exists()) {
             project.dependsOn(ProjectRef(file(dependencyProjectRoot), dependency.name))
           } else {
+            println(dependencyProjectRoot + " does not exist. If you want to modify " + dependency.name + ", please clone it with:\n\tgit clone " + gitURL + " " + dependencyProjectRoot + "\n")
             project.copy(
               settings = (project: ProjectDefinition[_]).settings ++ Seq(
                 libraryDependencies ++= Seq(dependency)
@@ -85,12 +106,22 @@ object ScalaCLBuild extends Build {
       Project(
         id = "ScalaCL",
         base = file("."),
-        settings = sharedSettings ++ Seq(
-          name := "scalacl"
+        settings = standardSettings ++ Seq(
+          name := "scalacl",
+          scalacOptions ++= Seq(
+            "-language:experimental.macros"
+          ),
+          libraryDependencies ++= Seq(
+            "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT"
+          )
         )
       ),
       List(
-        "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT" -> "../Scalaxy"
+        (
+          "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
+          "../Scalaxy",
+          "git://github.com/ochafik/Scalaxy.git"
+        )
       )
     )
 }
