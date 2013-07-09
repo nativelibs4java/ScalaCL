@@ -215,12 +215,17 @@ trait OpenCLConverter
                 //case e =>
                 //  throw new RuntimeException("ugh : " + e + ", op = " + op + ", body = " + body + ", left = " + left + ", right = " + right)
               }
-            // TODO
-            //case n if isPackageReference(left, "scala.math") =>
-            //  convertMathFunction(s.tpe, name, args)
+            case n if left.symbol == ScalaMathPackage => //isPackageReference(left, "scala.math") =>
+              convertMathFunction(s.tpe, name, args)
             //merge(Seq(right).map(convert):_*) { case Seq(v) => Seq(n + "(" + v + ")") }
             case n =>
-              throw new RuntimeException("[ScalaCL] Unhandled method name in Scala -> OpenCL conversion : " + name + "\n\tleft = " + left + ",\n\targs = " + args + ",\n\tbody = " + body + ",\n\ttree: " + body.getClass.getName + s" (${updateName.unapply(name)})")
+              throw new RuntimeException(
+                s"[ScalaCL] Unhandled method name in Scala -> OpenCL conversion : $name\n" +
+                  s"\tleft = $left\n" +
+                  s"\tleft.sym = ${left.symbol}\n" +
+                  s"\targs = $args\n" +
+                  s"\tbody = $body\n" +
+                  s"\ttree: ${body.getClass.getName} (${updateName.unapply(name)})")
               valueCode("/* Error: failed to convert " + body + " */")
           }
         case s @ Select(expr, fun) =>

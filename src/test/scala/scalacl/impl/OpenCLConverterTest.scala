@@ -71,7 +71,7 @@ class OpenCLConverterTest
     assertEquals(
       code(
         Seq(),
-        Seq("cos(10)")
+        Seq("cos((float)10.0)")
       ),
       conv(reify {
         cos(10)
