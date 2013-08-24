@@ -29,13 +29,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package scalacl.impl
+
+import scala.language.postfixOps
+
 import scalaxy.components._
 import scalaxy.components.FlatCodes._
 
 import scala.collection.immutable.Stack
 import scala.collection.mutable.ArrayBuffer
 
-import scala.reflect.NameTransformer
+import scala.reflect.NameTransformer.{ encode, decode }
 import scala.reflect.api.Universe
 
 trait OpenCLCodeFlattening
@@ -326,7 +329,7 @@ trait OpenCLCodeFlattening
           FlatCode[Tree](
             defs,
             stats,
-            vals.map(v => Select(v, NameTransformer.decode(name.toString)))
+            vals.map(v => Select(v, decode(name.toString): TermName))
           )
         case Apply(ident @ Ident(functionName), args) =>
           val f = args.map(flattenTuplesAndBlocks(_))
@@ -398,7 +401,7 @@ trait OpenCLCodeFlattening
                   symbolOwner,
                   tree,
                   flatConditionValue,
-                  Block((flatContent.statements ++ flatContent.values :+ newUnit): _*)
+                  Block(flatContent.statements.toList ++ flatContent.values, newUnit)
                 )
               ),
             Seq()
@@ -427,8 +430,8 @@ trait OpenCLCodeFlattening
                 Seq(
                   If(
                     conditionVar(),
-                    Block((st.toList ++ vt.toList :+ newUnit): _*),
-                    Block((so.toList ++ vo.toList :+ newUnit): _*)
+                    Block(st.toList ++ vt.toList, newUnit),
+                    Block(so.toList ++ vo.toList, newUnit)
                   )
                 )
             }

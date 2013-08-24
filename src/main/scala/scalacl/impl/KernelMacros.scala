@@ -53,7 +53,7 @@ object KernelMacros {
         )
     }
     vectorizer.result.getOrElse({
-      c.error(c.enclosingPosition, "Kernel vectorization failed (only top-level foreach loops on ranges with constant positive steop are supported right now)")
+      c.error(c.enclosingPosition, "Kernel vectorization failed (only top-level foreach loops on ranges with constant positive step are supported right now)")
       c.universe.reify({})
     }).asInstanceOf[c.Expr[Unit]]
   }

@@ -87,12 +87,13 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
 
         expr[Unit](
           Block(
-            rangeValDef,
-            fromValDef,
-            byValDef,
-            reify(
-              f.splice(context.splice, new KernelExecutionParameters(ident[Range](rangeValDef).splice.size))
-            ).tree
+            rangeValDef ::
+              fromValDef ::
+              byValDef ::
+              reify(
+                f.splice(context.splice, new KernelExecutionParameters(ident[Range](rangeValDef).splice.size))
+              ).tree :: Nil,
+            EmptyTree
           )
         )
     }

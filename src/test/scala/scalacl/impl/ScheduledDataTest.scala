@@ -38,7 +38,7 @@ import org.hamcrest.CoreMatchers._
 import com.nativelibs4java.opencl.CLEvent
 import com.nativelibs4java.opencl.MockEvent
 import com.nativelibs4java.opencl.library.OpenCLLibrary._
-import com.nativelibs4java.opencl.library.IOpenCLImplementation._
+import com.nativelibs4java.opencl.library.IOpenCLLibrary._
 
 import scala.collection.mutable.ArrayBuffer
 
