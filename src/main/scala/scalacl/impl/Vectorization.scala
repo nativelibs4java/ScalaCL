@@ -93,7 +93,7 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
               reify(
                 f.splice(context.splice, new KernelExecutionParameters(ident[Range](rangeValDef).splice.size))
               ).tree :: Nil,
-            EmptyTree
+            Literal(Constant({}))
           )
         )
     }
