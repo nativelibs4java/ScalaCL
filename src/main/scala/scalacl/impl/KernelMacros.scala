@@ -52,10 +52,11 @@ object KernelMacros {
           c.enclosingMethod.symbol.asInstanceOf[global.Symbol]*/
         )
     }
-    vectorizer.result.getOrElse({
+    val result = vectorizer.result.asInstanceOf[Option[c.Expr[Unit]]]
+    result.getOrElse({
       c.error(c.enclosingPosition, "Kernel vectorization failed (only top-level foreach loops on ranges with constant positive step are supported right now)")
-      c.universe.reify({})
-    }).asInstanceOf[c.Expr[Unit]]
+      c.literalUnit
+    })
   }
 
   def taskImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
