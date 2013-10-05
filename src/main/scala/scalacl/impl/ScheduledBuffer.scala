@@ -45,13 +45,32 @@ ScheduledBuffer:
 
  */
 
-private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T])(implicit context: Context) extends DefaultScheduledData {
+private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffer: Boolean = true)(implicit context: Context) extends DefaultScheduledData {
 
   private var buffer_ = initialBuffer
   private var lazyClones = new ArrayBuffer[ScheduledBuffer[T]]
   private var lazyCloneModel: ScheduledBuffer[T] = _
 
+  val length = buffer_.getElementCount
+
+  if (clearBuffer) {
+    clear();
+  }
+
   def buffer = buffer_
+
+  def clear() = {
+    val byteLength = buffer_.getByteCount
+    kernel {
+      // TODO: optimize clear
+      for (i <- 0L until byteLength) {
+        this(i) = 0.asInstanceOf[T]
+      }
+    }
+  }
+
+  def apply(index: Long): T = ???
+  def update(index: Long, value: T): Unit = ???
 
   def release() = this synchronized {
     if (lazyCloneModel == null)

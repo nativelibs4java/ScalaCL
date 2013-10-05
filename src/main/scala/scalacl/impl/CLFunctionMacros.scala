@@ -47,64 +47,31 @@ private[impl] object CLFunctionMacros {
     import c.universe._
     import definitions._
 
-    val outSymbol = c.enclosingMethod.symbol.newTermSymbol(newTermName(c.fresh("out")))
-
     val inputTpe = implicitly[c.WeakTypeTag[A]].tpe
     val outputTpe = implicitly[c.WeakTypeTag[B]].tpe
 
-    def isUnit(t: Type) =
-      t <:< UnitTpe || t == NoType
+    //val outputName = 
+    val outputSymbol = c.enclosingMethod.symbol.newTermSymbol(newTermName(c.fresh("out")))
 
-    val Function(params, body) = c.typeCheck(f.tree)
-
-    val bodyToConvert =
-      if (isUnit(outputTpe)) {
-        body
-      } else {
-        Assign(Ident(outSymbol).setType(outputTpe), body)
-      }
-
-    val generation = new CodeGeneration with WithMacroContext {
+    val generation = new CodeGeneration with WithMacroContext with WithResult[c.Expr[CLFunction[A, B]]] {
       override val context = c
-      //override val global = c.universe
-      //override def fresh(s: String) = c.fresh(s)
-
       import global._
 
-      val inputParamDesc: Option[ParamDesc] = if (isUnit(inputTpe.asInstanceOf[global.Type])) None else Some({
-        val List(param) = params
-        ParamDesc(
-          symbol = cast(param.symbol),
-          tpe = cast(inputTpe),
-          mode = ParamKind.ImplicitArrayElement,
-          usage = UsageKind.Input,
-          implicitIndexDimension = Some(0))
-      })
-
-      val outputParamDesc: Option[ParamDesc] = if (isUnit(outputTpe.asInstanceOf[global.Type])) None else Some({
-        ParamDesc(
-          symbol = cast(outSymbol),
-          tpe = cast(outputTpe),
-          mode = ParamKind.ImplicitArrayElement,
-          usage = UsageKind.Output,
-          implicitIndexDimension = Some(0))
-      })
-
-      val result = generateCLFunction[A, B](
+      val result = convertFunction(
         f = cast(f),
         kernelId = nextKernelId,
-        body = cast(bodyToConvert),
-        paramDescs = inputParamDesc.toSeq ++ outputParamDesc.toSeq
-      )
+        inputTpe = cast(inputTpe),
+        outputSymbol = cast(outputSymbol),
+        outputTpe = cast(outputTpe)).asInstanceOf[c.Expr[CLFunction[A, B]]]
     }
-    generation.result.asInstanceOf[c.Expr[CLFunction[A, B]]]
+    generation.result
   }
 
   private[impl] def convertTask(c: Context)(block: c.Expr[Unit]): c.Expr[CLFunction[Unit, Unit]] = {
     import c.universe._
     import definitions._
 
-    val generation = new CodeGeneration with WithMacroContext {
+    val generation = new CodeGeneration with WithMacroContext with WithExprResult[CLFunction[Unit, Unit]] {
       override val context = c
       //override val global = c.universe
       //override def fresh(s: String) = c.fresh(s)

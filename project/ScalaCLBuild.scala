@@ -59,8 +59,10 @@ object ScalaCLBuild extends Build {
 	  sonatypeSettings ++
 	  infoSettings ++
 	  Seq(
+      resolvers += "Local Maven Repository" at "file://" + Path.userHome + "/.m2/repository",
+
       fork := true,
-      
+
       scalaVersion := "2.10.2",
       scalacOptions ++= Seq(
         "-language:experimental.macros",
@@ -79,7 +81,7 @@ object ScalaCLBuild extends Build {
         "com.novocode" % "junit-interface" % "0.8" % "test"
       )
     )
-	
+
   def addLocalOrRemoteDependencies(project: Project, dependenciesAndTheirLocalPaths: List[(ModuleID, String, String)]): Project = {
     dependenciesAndTheirLocalPaths match {
       case Nil =>
@@ -100,7 +102,7 @@ object ScalaCLBuild extends Build {
         )
     }
   }
-  
+
   lazy val ScalaCL = 
     addLocalOrRemoteDependencies(
       Project(
@@ -119,6 +121,11 @@ object ScalaCLBuild extends Build {
       List(
         (
           "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
+          "../Scalaxy",
+          "git://github.com/ochafik/Scalaxy.git"
+        ),
+        (
+          "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
           "../Scalaxy",
           "git://github.com/ochafik/Scalaxy.git"
         )

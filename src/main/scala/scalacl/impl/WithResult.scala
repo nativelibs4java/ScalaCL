@@ -29,41 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package scalacl.impl
+import scalacl.CLArray
+import scalacl.CLFilteredArray
 
-import scala.reflect
-import scalaxy.components.MiscMatchers
-import scalaxy.components.WithMacroContext
+import scala.reflect.api.Universe
 
-import language.experimental.macros
+trait WithResult[T] {
+  val global: Universe
+  import global._
 
-import scala.reflect.macros.Context
+  def result: T
+}
 
-object KernelMacros {
-  def kernelImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
-    //c.typeCheck(block.tree) 
+trait WithExprResult[T] {
+  val global: Universe
+  import global._
 
-    val vectorizer = new Vectorization with MiscMatchers with WithMacroContext with WithResult[Option[reflect.api.Universe#Expr[Unit]]] {
-      override val context = c
-      //override val global = c.universe
-      //override def fresh(s: String) = c.fresh(s)
-      val result =
-        vectorize(
-          contextExpr.asInstanceOf[global.Expr[scalacl.Context]],
-          c.typeCheck(block.tree).asInstanceOf[global.Tree] /*,
-          c.enclosingMethod.symbol.asInstanceOf[global.Symbol]*/
-        )
-    }
-    val result = vectorizer.result.asInstanceOf[Option[c.Expr[Unit]]]
-    result.getOrElse({
-      c.error(c.enclosingPosition, "Kernel vectorization failed (only top-level foreach loops on ranges with constant positive step are supported right now)")
-      c.literalUnit
-    })
-  }
-
-  def taskImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
-    val ff = CLFunctionMacros.convertTask(c)(block)
-    c.universe.reify {
-      ff.splice(contextExpr.splice)
-    }
-  }
+  def result: Expr[T]
 }

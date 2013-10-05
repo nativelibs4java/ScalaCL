@@ -30,7 +30,11 @@
  */
 import com.nativelibs4java.opencl.CLMem
 
-import language.experimental.macros
+import scala.language.experimental.macros
+import scala.language.implicitConversions
+
+import scalaxy.reified._
+import scala.reflect.runtime.universe.TypeTag
 
 package object scalacl {
   import impl._
@@ -50,4 +54,29 @@ package object scalacl {
   def kernel(block: Unit)(implicit contextExpr: Context): Unit = macro KernelMacros.kernelImpl
 
   def task(block: Unit)(implicit contextExpr: Context): Unit = macro KernelMacros.taskImpl
+}
+
+package scalacl {
+  class Precomp(sources: String*)
+  class CLFunc[A, B](val value: ReifiedValue[A => B], val precomp: Precomp) extends (A => B) {
+    def apply(a: A): B = value.value(a)
+  }
+  object CLFunc {
+    implicit def fun2clfun[A: TypeTag, B: TypeTag](f: A => B): CLFunc[A, B] = macro internal.fun2clfun[A, B]
+
+    object internal {
+      def fun2clfun[A: c.WeakTypeTag, B: c.WeakTypeTag](c: scala.reflect.macros.Context)(f: c.Expr[(A => B)])(ta: c.Expr[TypeTag[A]], tb: c.Expr[TypeTag[B]]): c.Expr[CLFunc[A, B]] = {
+        import c.universe._
+
+        // TODO: use Reified API to create reified value here, choking appropriately upon unsupported captures.
+
+        // TODO: static compilation here.
+        reify {
+          implicit val tta = ta.splice
+          implicit val ttb = tb.splice
+          new CLFunc[A, B](f.splice: ReifiedValue[A => B], new Precomp(""))
+        }
+      }
+    }
+  }
 }

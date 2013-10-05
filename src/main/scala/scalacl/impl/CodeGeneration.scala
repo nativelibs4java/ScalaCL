@@ -67,17 +67,65 @@ trait CodeGeneration extends CodeConversion {
     ValDef(Modifiers(), name, TypeTree(tpe), rhs)
   }
 
+  def convertFunction[A: WeakTypeTag, B: WeakTypeTag](f: Expr[A => B], kernelId: Long,
+    inputTpe: Type,
+    outputSymbol: Symbol,
+    outputTpe: Type): Expr[CLFunction[A, B]] = {
+
+    def isUnit(t: Type) =
+      t <:< UnitTpe || t == NoType
+
+    val Function(params, body) = typeCheck(f.tree, WildcardType)
+
+    val bodyToConvert =
+      if (isUnit(outputTpe)) {
+        body
+      } else {
+        Assign(setType(Ident(outputSymbol), outputTpe), body)
+      }
+
+    val inputParamDesc: Option[ParamDesc] = if (isUnit(inputTpe.asInstanceOf[global.Type])) None else Some({
+      val List(param) = params
+      ParamDesc(
+        symbol = cast(param.symbol),
+        tpe = cast(inputTpe),
+        mode = ParamKind.ImplicitArrayElement,
+        usage = UsageKind.Input,
+        implicitIndexDimension = Some(0))
+    })
+
+    val outputParamDesc: Option[ParamDesc] = if (isUnit(outputTpe.asInstanceOf[global.Type])) None else Some({
+      ParamDesc(
+        symbol = cast(outputSymbol),
+        tpe = cast(outputTpe),
+        mode = ParamKind.ImplicitArrayElement,
+        usage = UsageKind.Output,
+        implicitIndexDimension = Some(0))
+    })
+
+    val result = generateCLFunction[A, B](
+      f = cast(f),
+      kernelId = kernelId,
+      body = cast(bodyToConvert),
+      paramDescs = inputParamDesc.toSeq ++ outputParamDesc.toSeq
+    )
+    result
+  }
+
   private[impl] def generateCLFunction[A: WeakTypeTag, B: WeakTypeTag](
     f: Expr[A => B],
     kernelId: Long,
     body: Tree,
     paramDescs: Seq[ParamDesc]): Expr[CLFunction[A, B]] =
     {
+      println("Generating CL function for " + f)
       try {
-        val CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
+        val cr @ CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
           body,
           paramDescs
         )
+
+        println("Conversion result: " + cr)
 
         val codeExpr = expr[String](Literal(Constant(code)))
         val kernelIdExpr = expr[Long](Literal(Constant(kernelId)))

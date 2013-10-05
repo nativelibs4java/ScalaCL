@@ -28,74 +28,37 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scalaxy.components
+package scalacl
+import impl._
 
-import language.experimental.macros
-import scala.reflect.macros.Context
+import org.junit._
+import Assert._
 
-import scala.reflect.runtime.{ universe => ru }
-import scala.reflect.runtime.{ currentMirror => cm }
-import scala.tools.reflect.ToolBox
-
-trait WithMacroContext {
-
-  val context: Context
-  lazy val global = context.universe
-  import global._
-  import global.definitions._
-
-  def verbose = true
-
-  def withSymbol[T <: Tree](sym: Symbol, tpe: Type = NoType)(tree: T): T = {
+class CLFuncTest {
+  @Test
+  def simple {
+    implicit val context = Context.best
     try {
-      tree.symbol = sym
-    } catch {
-      case _: Throwable =>
-      // TODO: remove this ugly stuff. 
+      val a = new CLArray[Int](3)
+      val v = 10
+      // task {
+      //   a(1) = 10 * v
+      // }
+      // println(a.toSeq)
+      // assertEquals(Seq(0, 100, 0), a.toSeq)
+
+      val f: CLFunc[Int, Double] = (x: Int) => {
+        x * 2.0
+      }
+
+      println(f)
+      println(f.value)
+
+      val ff = CLFuncUtils.convert(f)
+      println(ff)
+
+    } finally {
+      context.release()
     }
-    if (tpe != NoType)
-      tree.tpe = tpe
-    tree
-  }
-  def typed[T <: Tree](tree: T): T =
-    context.typeCheck(tree.asInstanceOf[context.universe.Tree]).asInstanceOf[T]
-
-  def inferImplicitValue(pt: Type): Tree =
-    context.inferImplicitValue(pt.asInstanceOf[context.universe.Type]).asInstanceOf[Tree]
-
-  def setInfo(sym: Symbol, tpe: Type): Symbol = {
-    //sym.setInfo(tpe)
-    sym
-  }
-
-  def setType(sym: Symbol, tpe: Type): Symbol = {
-    //sym.tpe = tpe
-    sym
-  }
-
-  def setType(tree: Tree, tpe: Type): Tree = {
-    tree.tpe = tpe
-    tree
-  }
-
-  def setPos(tree: Tree, pos: Position): Tree = {
-    tree.pos = pos
-    tree
-  }
-
-  def fresh(s: String) =
-    context.fresh(s)
-
-  def typeCheck(x: Expr[_]): Tree =
-    context.typeCheck(x.tree.asInstanceOf[context.universe.Tree]).asInstanceOf[Tree]
-
-  def typeCheck(tree: Tree, pt: Type): Tree = {
-    if (tree.tpe =:= pt)
-      tree
-    else
-      context.typeCheck(
-        tree.asInstanceOf[context.universe.Tree],
-        pt.asInstanceOf[context.universe.Type]
-      ).asInstanceOf[Tree]
   }
 }
