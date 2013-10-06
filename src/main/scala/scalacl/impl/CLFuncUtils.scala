@@ -67,11 +67,11 @@ object CLFuncUtils {
       val outputSymbol = NoSymbol.newTermSymbol(newTermName(fresh("out")))
 
       val result = convertFunction[A, B](
-        f = cast(body),
+        f = castTree(body),
         kernelId = -1,
-        inputTpe = cast(inputTpe),
-        outputSymbol = cast(outputSymbol),
-        outputTpe = cast(outputTpe)).asInstanceOf[ru.Expr[CLFunction[A, B]]]
+        inputTpe = castType(inputTpe),
+        outputSymbol = castSymbol(outputSymbol),
+        outputTpe = castType(outputTpe)).asInstanceOf[ru.Expr[CLFunction[A, B]]]
     }
     val functionExpr = generation.result //.asInstanceOf[ru.Expr[CLFunction[A, B]]]
     println("functionExpr: " + functionExpr)

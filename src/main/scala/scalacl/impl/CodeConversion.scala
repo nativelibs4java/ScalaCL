@@ -37,14 +37,12 @@ import scalacl.CLFilteredArray
 
 import scala.reflect.api.Universe
 
-trait CodeConversion extends OpenCLConverter {
+trait CodeConversion extends OpenCLConverter with UniverseCasts {
   val global: Universe
   def fresh(s: String): String
 
   import global._
   import definitions._
-
-  def cast[A, B](a: A): B = a.asInstanceOf[B]
 
   case class ParamDesc(
       symbol: Symbol,

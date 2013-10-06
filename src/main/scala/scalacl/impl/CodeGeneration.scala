@@ -87,8 +87,8 @@ trait CodeGeneration extends CodeConversion {
     val inputParamDesc: Option[ParamDesc] = if (isUnit(inputTpe.asInstanceOf[global.Type])) None else Some({
       val List(param) = params
       ParamDesc(
-        symbol = cast(param.symbol),
-        tpe = cast(inputTpe),
+        symbol = castSymbol(param.symbol),
+        tpe = castType(inputTpe),
         mode = ParamKind.ImplicitArrayElement,
         usage = UsageKind.Input,
         implicitIndexDimension = Some(0))
@@ -96,17 +96,17 @@ trait CodeGeneration extends CodeConversion {
 
     val outputParamDesc: Option[ParamDesc] = if (isUnit(outputTpe.asInstanceOf[global.Type])) None else Some({
       ParamDesc(
-        symbol = cast(outputSymbol),
-        tpe = cast(outputTpe),
+        symbol = castSymbol(outputSymbol),
+        tpe = castType(outputTpe),
         mode = ParamKind.ImplicitArrayElement,
         usage = UsageKind.Output,
         implicitIndexDimension = Some(0))
     })
 
     val result = generateCLFunction[A, B](
-      f = cast(f),
+      f = castExpr(f),
       kernelId = kernelId,
-      body = cast(bodyToConvert),
+      body = castTree(bodyToConvert),
       paramDescs = inputParamDesc.toSeq ++ outputParamDesc.toSeq
     )
     result

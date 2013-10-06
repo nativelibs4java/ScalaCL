@@ -58,11 +58,11 @@ private[impl] object CLFunctionMacros {
       import global._
 
       val result = convertFunction[A, B](
-        f = cast(f),
+        f = castExpr(f),
         kernelId = nextKernelId,
-        inputTpe = cast(inputTpe),
-        outputSymbol = cast(outputSymbol),
-        outputTpe = cast(outputTpe)).asInstanceOf[c.Expr[CLFunction[A, B]]]
+        inputTpe = castType(inputTpe),
+        outputSymbol = castSymbol(outputSymbol),
+        outputTpe = castType(outputTpe)).asInstanceOf[c.Expr[CLFunction[A, B]]]
     }
     generation.result
   }
@@ -78,11 +78,11 @@ private[impl] object CLFunctionMacros {
 
       // Create a fake Unit => Unit function.
       val typedBlock = c.typeCheck(block.tree)
-      val f = blockToUnitFunction(cast(typedBlock))
+      val f = blockToUnitFunction(castTree(typedBlock))
       val result = generateCLFunction[Unit, Unit](
-        f = cast(f),
+        f = castExpr(f),
         kernelId = nextKernelId,
-        body = cast(typedBlock),
+        body = castTree(typedBlock),
         paramDescs = Seq()
       )
     }
