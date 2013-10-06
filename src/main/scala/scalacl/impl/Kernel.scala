@@ -38,7 +38,7 @@ import collection.mutable.ArrayBuffer
 /**
  * Thin wrapper for OpenCL kernel sources, which can act as a fast cache key for the corresponding CLKernel
  */
-class Kernel(protected val id: Long, protected val sources: String) {
+class Kernel(protected val sources: String, protected val id: Option[Long] = None) {
   def getKernel(context: Context): CLKernel = {
     context.kernels(this, _.release) {
       //println("sources = " + sources)

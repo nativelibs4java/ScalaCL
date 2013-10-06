@@ -59,9 +59,9 @@ class KernelTest {
   @Test
   def testEquality {
     val sources = "aa"
-    same(new Kernel(1, sources), new Kernel(1, sources))
-    diff(new Kernel(1, sources), new Kernel(2, sources), false)
-    diff(new Kernel(1, sources), new Kernel(1, "a" + ('b' - 1)), true)
+    same(new Kernel(id = Some(1), sources), new Kernel(id = Some(1), sources))
+    diff(new Kernel(id = Some(1), sources), new Kernel(id = Some(2), sources), false)
+    diff(new Kernel(id = Some(1), sources), new Kernel(id = Some(1), "a" + ('b' - 1)), true)
   }
 
   def same(a: AnyRef, b: AnyRef) = {
