@@ -58,7 +58,12 @@ private[scalacl] trait DataIO[T] {
       set(i, pointers, 0, values(i))
     }
 
-    pointers.map(pointer => new ScheduledBuffer(context.context.createBuffer(CLMem.Usage.InputOutput, pointer)))
+    pointers.map(pointer =>
+      new ScheduledBuffer(
+        context.context.createBuffer(CLMem.Usage.InputOutput, pointer),
+        clearBuffer = false
+      )
+    )
   }
   private[scalacl] def allocateBuffers(length: Long, out: ArrayBuffer[ScheduledBuffer[_]])(implicit context: Context): Unit
   private[scalacl] def get(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int): T

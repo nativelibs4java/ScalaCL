@@ -45,7 +45,19 @@ ScheduledBuffer:
 
  */
 
-private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffer: Boolean = true)(implicit context: Context) extends DefaultScheduledData {
+object ScheduledBuffer {
+  private val clearBytesKernel = new Kernel(
+    """
+    kernel void f(global char* buffer, long length) {
+      size_t i = get_global_id(0);
+      if (i >= length) return;
+      buffer[i] = 0;
+    }
+    """
+  )
+}
+
+private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffer: Boolean)(implicit context: Context) extends DefaultScheduledData {
 
   private var buffer_ = initialBuffer
   private var lazyClones = new ArrayBuffer[ScheduledBuffer[T]]
@@ -60,13 +72,18 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
   def buffer = buffer_
 
   def clear() = {
-    val byteLength = buffer_.getByteCount
-    kernel {
-      // TODO: optimize clear
-      for (i <- 0L until byteLength) {
-        this(i) = 0.asInstanceOf[T]
-      }
-    }
+    val b = buffer
+    val byteCount = b.getByteCount
+    ScheduledData.schedule(
+      Array[ScheduledData](),
+      Array(this),
+      ScheduledBuffer.clearBytesKernel.enqueue(
+        context,
+        KernelExecutionParameters(globalSizes = Array(byteCount)),
+        args = Array(b, byteCount.asInstanceOf[AnyRef]),
+        _
+      )
+    )
   }
 
   def apply(index: Long): T = ???
@@ -80,7 +97,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
     if (lazyCloneModel != null) {
       lazyCloneModel.clone
     } else {
-      val c = new ScheduledBuffer(buffer)
+      val c = new ScheduledBuffer(buffer, clearBuffer = false)
       c.lazyCloneModel = this
       lazyClones += c
       c

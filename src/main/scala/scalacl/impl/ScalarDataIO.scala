@@ -54,13 +54,18 @@ abstract class ScalarDataIO[T: Manifest](io: PointerIO[_]) extends DataIO[T] {
 
   override def allocateBuffers(length: Long, values: Array[T])(implicit context: Context, m: ClassTag[T]): Array[ScheduledBuffer[_]] = {
     val pointer = Pointer.pointerToArray[T](values)
-    Array(new ScheduledBuffer(context.context.createBuffer(CLMem.Usage.InputOutput, pointer)))
+    Array(
+      new ScheduledBuffer(
+        context.context.createBuffer(CLMem.Usage.InputOutput, pointer),
+        clearBuffer = false
+      )
+    )
   }
   private[scalacl] def allocateBuffer(length: Long)(implicit context: Context) =
     context.context.createBuffer(CLMem.Usage.InputOutput, pointerIO, length)
 
   override def allocateBuffers(length: Long, out: ArrayBuffer[ScheduledBuffer[_]])(implicit context: Context) = {
-    out += new ScheduledBuffer(allocateBuffer(length))
+    out += new ScheduledBuffer(allocateBuffer(length), clearBuffer = true)
   }
 }
 

@@ -53,13 +53,9 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
   private[impl] def vectorize(context: Expr[scalacl.Context], block: Tree): Option[Expr[Unit]] = {
     Option(block) collect {
       case Foreach(
-        range @ NumRange(numTpe, from, to, PositiveIntConstantOrOne(by), isUntil, Nil),
+        range @ NumRange(rangeTpe, numTpe, from, to, PositiveIntConstantOrOne(by), isUntil, Nil),
         Function(List(param), body)
         ) =>
-        val rangeTpe =
-          if (numTpe == IntTpe) typeOf[Range]
-          else if (numTpe == LongTpe) typeOf[NumericRange[Long]]
-          else sys.error("Unsupported numeric range element type: " + numTpe)
         // TODO: get rid of that stupid range and compute the range size by our own means.
         val rangeValDef =
           freshVal("range", rangeTpe, range)

@@ -125,8 +125,6 @@ trait CodeGeneration extends CodeConversion {
           paramDescs
         )
 
-        println("Conversion result: " + cr)
-
         val codeExpr = expr[String](Literal(Constant(code)))
         val kernelIdExpr = expr[Long](Literal(Constant(kernelId)))
 
@@ -166,6 +164,7 @@ trait CodeGeneration extends CodeConversion {
         }
       } catch {
         case ex: Throwable =>
+          // ex.printStackTrace()
           sys.error("CLFunction generation failed for { " + f + " }: " + ex)
           null
       }

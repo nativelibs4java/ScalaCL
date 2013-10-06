@@ -57,7 +57,7 @@ private[impl] object CLFunctionMacros {
       override val context = c
       import global._
 
-      val result = convertFunction(
+      val result = convertFunction[A, B](
         f = cast(f),
         kernelId = nextKernelId,
         inputTpe = cast(inputTpe),
