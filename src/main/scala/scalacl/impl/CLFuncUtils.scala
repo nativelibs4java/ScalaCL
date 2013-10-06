@@ -32,13 +32,15 @@ package scalacl
 package impl
 
 import scala.reflect.runtime.{ universe => ru }
+import scala.reflect.runtime.universe.TypeTag
 
 import scalaxy.components.WithRuntimeUniverse
+import scalaxy.reified.internal.CompilerUtils
 import scalaxy.reified.internal.Utils.optimisingToolbox
 import scalaxy.reified.internal.Optimizer.{ optimize, getFreshNameGenerator }
 
 object CLFuncUtils {
-  def convert[A, B](f: CLFunc[A, B]): CLFunction[A, B] = {
+  def convert[A: TypeTag, B: TypeTag](f: CLFunc[A, B]): CLFunction[A, B] = {
     val toolbox = optimisingToolbox
 
     val generation = new CodeGeneration with WithRuntimeUniverse with WithResult[ru.Expr[CLFunction[A, B]]] {
@@ -67,7 +69,7 @@ object CLFuncUtils {
       val outputSymbol = NoSymbol.newTermSymbol(newTermName(fresh("out")))
 
       val result = convertFunction[A, B](
-        f = castTree(body),
+        f = expr[A => B](castTree(optimizedAST)),
         kernelId = -1,
         inputTpe = castType(inputTpe),
         outputSymbol = castSymbol(outputSymbol),
@@ -76,7 +78,7 @@ object CLFuncUtils {
     val functionExpr = generation.result //.asInstanceOf[ru.Expr[CLFunction[A, B]]]
     println("functionExpr: " + functionExpr)
 
-    val compiled = toolbox.compile(toolbox.resetAllAttrs(functionExpr.tree.asInstanceOf[toolbox.u.Tree]))
+    val compiled = CompilerUtils.compile(functionExpr.tree)
     println("Compiled function expr: " + compiled)
     val function = compiled().asInstanceOf[CLFunction[A, B]]
     println("Function: " + function)
