@@ -35,6 +35,7 @@ import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.runtime.universe.TypeTag
 
 import scalaxy.components.WithRuntimeUniverse
+import scalaxy.reified.internal.Utils
 import scalaxy.reified.internal.CompilerUtils
 import scalaxy.reified.internal.Utils.optimisingToolbox
 import scalaxy.reified.internal.Optimizer.{ optimize, getFreshNameGenerator }
