@@ -67,15 +67,16 @@ trait CodeGeneration extends CodeConversion {
     ValDef(Modifiers(), name, TypeTree(tpe), rhs)
   }
 
-  def convertFunction[A: WeakTypeTag, B: WeakTypeTag](f: Expr[A => B], kernelId: Long,
-    inputTpe: Type,
-    outputSymbol: Symbol,
-    outputTpe: Type): Expr[CLFunction[A, B]] = {
+  def convertFunction[A: WeakTypeTag, B: WeakTypeTag](
+    f: Expr[A => B], kernelId: Long, outputSymbol: Symbol): Expr[CLFunction[A, B]] = {
 
     def isUnit(t: Type) =
       t <:< UnitTpe || t == NoType
 
-    val Function(params, body) = typeCheck(f.tree, WildcardType)
+    val Function(List(param), body) = typeCheck(f.tree, WildcardType)
+
+    val inputTpe = param.symbol.typeSignature
+    val outputTpe = body.tpe
 
     val bodyToConvert =
       if (isUnit(outputTpe)) {
@@ -84,15 +85,13 @@ trait CodeGeneration extends CodeConversion {
         Assign(setType(Ident(outputSymbol), outputTpe), body)
       }
 
-    val inputParamDesc: Option[ParamDesc] = if (isUnit(inputTpe.asInstanceOf[global.Type])) None else Some({
-      val List(param) = params
+    val inputParamDesc =
       ParamDesc(
         symbol = castSymbol(param.symbol),
         tpe = castType(inputTpe),
         mode = ParamKind.ImplicitArrayElement,
         usage = UsageKind.Input,
         implicitIndexDimension = Some(0))
-    })
 
     val outputParamDesc: Option[ParamDesc] = if (isUnit(outputTpe.asInstanceOf[global.Type])) None else Some({
       ParamDesc(
@@ -103,13 +102,35 @@ trait CodeGeneration extends CodeConversion {
         implicitIndexDimension = Some(0))
     })
 
+    println(s"""
+      inputParamDesc: $inputParamDesc
+      outputParamDesc: $outputParamDesc
+      bodyToConvert: $bodyToConvert
+    """)
+
     val result = generateCLFunction[A, B](
       f = castExpr(f),
       kernelId = kernelId,
       body = castTree(bodyToConvert),
-      paramDescs = inputParamDesc.toSeq ++ outputParamDesc.toSeq
+      paramDescs = List(inputParamDesc) ++ outputParamDesc.toSeq
     )
     result
+  }
+
+  def castAnyToAnyRef(value: Tree, valueTpe: Type): Tree =
+    Typed(value, TypeTree(getWrapperType(valueTpe)))
+
+  def getWrapperType(tpe: Type): Type = tpe match {
+    case _ if tpe <:< typeOf[AnyRef] => tpe
+    case IntTpe => typeOf[java.lang.Integer]
+    case ShortTpe => typeOf[java.lang.Short]
+    case ByteTpe => typeOf[java.lang.Byte]
+    case CharTpe => typeOf[java.lang.Character]
+    case LongTpe => typeOf[java.lang.Long]
+    case FloatTpe => typeOf[java.lang.Float]
+    case DoubleTpe => typeOf[java.lang.Double]
+    case BooleanTpe => typeOf[java.lang.Boolean]
+    case _ => typeOf[AnyRef]
   }
 
   private[impl] def generateCLFunction[A: WeakTypeTag, B: WeakTypeTag](
@@ -142,16 +163,13 @@ trait CodeGeneration extends CodeConversion {
         )
         val constants = arrayApply[AnyRef](
           capturedConstants
-            .map(d => {
-              val x = expr[Array[AnyRef]](ident(d.symbol))
-              (reify { x.splice.asInstanceOf[AnyRef] }).tree
-            }).toList
+            .map(d => castAnyToAnyRef(ident(d.symbol), d.tpe)).toList
         )
-        //println(s"""
-        //  code: $code
-        //  capturedInputs: $capturedInputs, 
-        //  capturedOutputs: $capturedOutputs, 
-        //  capturedConstants: $capturedConstants""") 
+        println(s"""
+         code: $code
+         capturedInputs: $capturedInputs, 
+         capturedOutputs: $capturedOutputs, 
+         capturedConstants: $capturedConstants""")
         reify {
           new CLFunction[A, B](
             f.splice,
@@ -164,7 +182,7 @@ trait CodeGeneration extends CodeConversion {
         }
       } catch {
         case ex: Throwable =>
-          // ex.printStackTrace()
+          ex.printStackTrace()
           sys.error("CLFunction generation failed for { " + f + " }: " + ex)
           null
       }

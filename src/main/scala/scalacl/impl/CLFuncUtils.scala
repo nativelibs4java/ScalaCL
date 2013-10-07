@@ -51,38 +51,30 @@ object CLFuncUtils {
       val ast = expr.tree
 
       val optimizedAST = optimize(ast, toolbox)
-      val ru.Function(List(param), body) = optimizedAST
+      val ru.Function(List(_), body) = optimizedAST
 
-      println(s"""
-        f.value: ${f.value}
-        ast: $ast
-        optimizedAST: $optimizedAST
-        param: $param
-        param.symbol: ${param.symbol}
-        captures: $captures
-      """)
+      // println(s"""
+      //   f.value: ${f.value}
+      //   ast: $ast
+      //   optimizedAST: $optimizedAST
+      //   param: $param
+      //   param.symbol: ${param.symbol}
+      //   captures: $captures
+      // """)
 
       val freshName = getFreshNameGenerator(ast)
       def fresh(s: String) = freshName(s).toString
 
-      val inputTpe = param.tpe
-      val outputTpe = body.tpe
       val outputSymbol = NoSymbol.newTermSymbol(newTermName(fresh("out")))
 
       val result = convertFunction[A, B](
         f = expr[A => B](castTree(optimizedAST)),
         kernelId = -1,
-        inputTpe = castType(inputTpe),
-        outputSymbol = castSymbol(outputSymbol),
-        outputTpe = castType(outputTpe)).asInstanceOf[ru.Expr[CLFunction[A, B]]]
+        outputSymbol = castSymbol(outputSymbol)).asInstanceOf[ru.Expr[CLFunction[A, B]]]
     }
-    val functionExpr = generation.result //.asInstanceOf[ru.Expr[CLFunction[A, B]]]
-    println("functionExpr: " + functionExpr)
-
-    val compiled = CompilerUtils.compile(functionExpr.tree)
-    println("Compiled function expr: " + compiled)
-    val function = compiled().asInstanceOf[CLFunction[A, B]]
-    println("Function: " + function)
-    function
+    val functionExpr = generation.result
+    println(s"FUNCTION EXPR: $functionExpr")
+    val compiled = CompilerUtils.compile(functionExpr.tree, toolbox)
+    compiled().asInstanceOf[CLFunction[A, B]]
   }
 }

@@ -36,6 +36,7 @@ import scalacl.CLArray
 import scalacl.CLFilteredArray
 
 import scala.reflect.api.Universe
+import scala.util.matching.Regex
 
 trait CodeConversion extends OpenCLConverter with UniverseCasts {
   val global: Universe
@@ -130,7 +131,7 @@ trait CodeConversion extends OpenCLConverter with UniverseCasts {
       // TODO handle composite types, with replacements of all possible fibers (x._1, x._2._1, x._2._2)
       paramDesc match {
         case ParamDesc(_, _, ParamKind.ImplicitArrayElement, _, Some(i), None, None) =>
-          (s: String) => r.replaceAllIn(s, "$1[" + globalIDValNames(i) + "]")
+          (s: String) => r.replaceAllIn(s, "$1[" + Regex.quoteReplacement(globalIDValNames(i)) + "]")
         case ParamDesc(_, _, ParamKind.RangeIndex, _, Some(i), Some(from), Some(by)) =>
           (s: String) => r.replaceAllIn(s, "(" + from.name + " + " + globalIDValNames(i) + " * " + by.name + ")")
         case _ =>

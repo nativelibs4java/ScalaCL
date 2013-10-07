@@ -47,10 +47,6 @@ private[impl] object CLFunctionMacros {
     import c.universe._
     import definitions._
 
-    val inputTpe = implicitly[c.WeakTypeTag[A]].tpe
-    val outputTpe = implicitly[c.WeakTypeTag[B]].tpe
-
-    //val outputName = 
     val outputSymbol = c.enclosingMethod.symbol.newTermSymbol(newTermName(c.fresh("out")))
 
     val generation = new CodeGeneration with WithMacroContext with WithResult[c.Expr[CLFunction[A, B]]] {
@@ -60,9 +56,7 @@ private[impl] object CLFunctionMacros {
       val result = convertFunction[A, B](
         f = castExpr(f),
         kernelId = nextKernelId,
-        inputTpe = castType(inputTpe),
-        outputSymbol = castSymbol(outputSymbol),
-        outputTpe = castType(outputTpe)).asInstanceOf[c.Expr[CLFunction[A, B]]]
+        outputSymbol = castSymbol(outputSymbol)).asInstanceOf[c.Expr[CLFunction[A, B]]]
     }
     generation.result
   }

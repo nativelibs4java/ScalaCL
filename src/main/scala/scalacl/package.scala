@@ -66,15 +66,15 @@ package scalacl {
 
     object internal {
       def fun2clfun[A: c.WeakTypeTag, B: c.WeakTypeTag](c: scala.reflect.macros.Context)(f: c.Expr[(A => B)])(ta: c.Expr[TypeTag[A]], tb: c.Expr[TypeTag[B]]): c.Expr[CLFunc[A, B]] = {
-        import c.universe._
+        //import c.universe._
 
         // TODO: use Reified API to create reified value here, choking appropriately upon unsupported captures.
 
         // TODO: static compilation here.
-        reify {
+        c.universe.reify {
           implicit val tta = ta.splice
           implicit val ttb = tb.splice
-          new CLFunc[A, B](f.splice: ReifiedValue[A => B], new Precomp(""))
+          new CLFunc[A, B](f.splice, new Precomp(""))
         }
       }
     }
