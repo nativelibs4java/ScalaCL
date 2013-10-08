@@ -40,8 +40,8 @@ import scala.reflect.macros.Context
 private[impl] object CLFunctionMacros {
   private lazy val random = new java.util.Random(System.currentTimeMillis)
 
-  /// These ids are not necessarily unique, but their values should be dispersed well
-  private[impl] def nextKernelId = random.nextLong
+  // These ids are not necessarily unique, but their values should be dispersed well
+  private[impl] def nextKernelSalt = random.nextLong
 
   private[impl] def convertFunction[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context)(f: c.Expr[A => B]): c.Expr[CLFunction[A, B]] = {
     import c.universe._
@@ -55,7 +55,7 @@ private[impl] object CLFunctionMacros {
 
       val result = convertFunction[A, B](
         f = castExpr(f),
-        kernelId = nextKernelId,
+        kernelSalt = nextKernelSalt,
         outputSymbol = castSymbol(outputSymbol)).asInstanceOf[c.Expr[CLFunction[A, B]]]
     }
     generation.result
@@ -75,7 +75,7 @@ private[impl] object CLFunctionMacros {
       val f = blockToUnitFunction(castTree(typedBlock))
       val result = generateCLFunction[Unit, Unit](
         f = castExpr(f),
-        kernelId = nextKernelId,
+        kernelSalt = nextKernelSalt,
         body = castTree(typedBlock),
         paramDescs = Seq()
       )

@@ -68,7 +68,7 @@ trait CodeGeneration extends CodeConversion {
   }
 
   def convertFunction[A: WeakTypeTag, B: WeakTypeTag](
-    f: Expr[A => B], kernelId: Long, outputSymbol: Symbol): Expr[CLFunction[A, B]] = {
+    f: Expr[A => B], kernelSalt: Long, outputSymbol: Symbol): Expr[CLFunction[A, B]] = {
 
     def isUnit(t: Type) =
       t <:< UnitTpe || t == NoType
@@ -115,7 +115,7 @@ trait CodeGeneration extends CodeConversion {
 
     val result = generateCLFunction[A, B](
       f = castExpr(f),
-      kernelId = kernelId,
+      kernelSalt = kernelSalt,
       body = castTree(bodyToConvert),
       paramDescs = List(inputParamDesc) ++ outputParamDesc.toSeq
     )
@@ -140,7 +140,7 @@ trait CodeGeneration extends CodeConversion {
 
   private[impl] def generateCLFunction[A: WeakTypeTag, B: WeakTypeTag](
     f: Expr[A => B],
-    kernelId: Long,
+    kernelSalt: Long,
     body: Tree,
     paramDescs: Seq[ParamDesc]): Expr[CLFunction[A, B]] =
     {
@@ -156,7 +156,7 @@ trait CodeGeneration extends CodeConversion {
         )
 
         val codeExpr = expr[String](Literal(Constant(code)))
-        val kernelIdExpr = expr[Long](Literal(Constant(kernelId)))
+        val kernelSaltExpr = expr[Long](Literal(Constant(kernelSalt)))
 
         def ident(s: global.Symbol) =
           Ident(s.asInstanceOf[Symbol].name)
@@ -182,7 +182,7 @@ trait CodeGeneration extends CodeConversion {
         reify {
           new CLFunction[A, B](
             f.splice,
-            new Kernel(codeExpr.splice, id = Some(kernelIdExpr.splice)),
+            new Kernel(salt = kernelSaltExpr.splice, codeExpr.splice),
             Captures(
               inputs = inputs.splice,
               outputs = outputs.splice,

@@ -81,7 +81,7 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
 
         val f = generateCLFunction[Unit, Unit](
           f = blockToUnitFunction(block),
-          kernelId = CLFunctionMacros.nextKernelId,
+          kernelSalt = CLFunctionMacros.nextKernelSalt,
           body = body,
           paramDescs = paramDescs
         )

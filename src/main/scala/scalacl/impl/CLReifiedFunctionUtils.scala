@@ -74,7 +74,7 @@ object CLReifiedFunctionUtils {
 
       val result = convertFunction[A, B](
         f = expr[A => B](castTree(optimizedAST)),
-        kernelId = -1,
+        kernelSalt = -1,
         outputSymbol = castSymbol(outputSymbol)).asInstanceOf[ru.Expr[CLFunction[A, B]]]
     }
     val functionExpr = generation.result
