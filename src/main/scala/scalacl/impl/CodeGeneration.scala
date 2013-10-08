@@ -182,7 +182,7 @@ trait CodeGeneration extends CodeConversion {
         reify {
           new CLFunction[A, B](
             f.splice,
-            new Kernel(sources = codeExpr.splice, salt = kernelSaltExpr.splice),
+            new KernelDef(sources = codeExpr.splice, salt = kernelSaltExpr.splice),
             Captures(
               inputs = inputs.splice,
               outputs = outputs.splice,

@@ -39,7 +39,7 @@ import scalacl.Context
 
 case class CLFunction[U, V](
   f: U => V,
-  kernel: Kernel,
+  kernelDef: KernelDef,
   captures: Captures = Captures())
     extends Function1[U, V] {
 
@@ -92,7 +92,7 @@ case class CLFunction[U, V](
           if (captures.constants != null)
             args ++= captures.constants
 
-          kernel.enqueue(context, params, args.toArray, eventsToWaitFor)
+          kernelDef.enqueue(context, params, args.toArray, eventsToWaitFor)
         })
     }
 }

@@ -38,7 +38,7 @@ import collection.mutable.ArrayBuffer
 /**
  * Thin wrapper for OpenCL kernel sources, which can act as a fast cache key for the corresponding CLKernel
  */
-class Kernel(protected val sources: String, protected val salt: Long) {
+class KernelDef(protected val sources: String, protected val salt: Long) {
   def getKernel(context: Context): CLKernel = {
     context.kernels(this, _.release) {
       val Array(k) = context.context.createProgram(sources).createKernels
@@ -56,17 +56,17 @@ class Kernel(protected val sources: String, protected val salt: Long) {
     }
   }
 
-  override def equals(o: Any) = o.isInstanceOf[Kernel] && {
-    val k = o.asInstanceOf[Kernel]
+  override def equals(o: Any) = o.isInstanceOf[KernelDef] && {
+    val k = o.asInstanceOf[KernelDef]
     salt == k.salt && (sources == k.sources)
   }
 
   // Only use salt to compute hashCode
   override def hashCode = salt.hashCode
 
-  override def toString = "Kernel(" + sources + ")"
+  override def toString = "KernelDef(" + sources + ")"
 }
 
-object Kernel {
+object KernelDef {
   final val CLEAR_SALT = -1
 }

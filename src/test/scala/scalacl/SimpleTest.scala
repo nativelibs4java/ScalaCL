@@ -43,7 +43,7 @@ class SimpleTest {
     val factor = 20.5f
     val trans = new CLFunction[Int, Int](
       v => (v * factor).toInt,
-      new Kernel(
+      new KernelDef(
         """
         kernel void f(global const int* input, global int* output, float factor) {
           int i = get_global_id(0);
@@ -57,7 +57,7 @@ class SimpleTest {
 
     val pred = new CLFunction[Int, Boolean](
       v => v % 2 == 0,
-      new Kernel(
+      new KernelDef(
         """
         kernel void f(global const int* input, global char* output) {
           int i = get_global_id(0);

@@ -46,7 +46,7 @@ ScheduledBuffer:
  */
 
 object ScheduledBuffer {
-  private val clearBytesKernel = new Kernel(
+  private val clearBytesKernel = new KernelDef(
     """
     kernel void f(global char* buffer, long length) {
       size_t i = get_global_id(0);
@@ -54,7 +54,7 @@ object ScheduledBuffer {
       buffer[i] = 0;
     }
     """,
-    salt = Kernel.CLEAR_SALT
+    salt = KernelDef.CLEAR_SALT
   )
 }
 
