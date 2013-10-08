@@ -82,7 +82,9 @@ trait CodeGeneration extends CodeConversion {
       if (isUnit(outputTpe)) {
         body
       } else {
-        Assign(setType(Ident(outputSymbol), outputTpe), body)
+        Assign(
+          setType(Ident(outputSymbol), outputTpe),
+          body)
       }
 
     val inputParamDesc =
@@ -102,11 +104,11 @@ trait CodeGeneration extends CodeConversion {
         implicitIndexDimension = Some(0))
     })
 
-    println(s"""
-      inputParamDesc: $inputParamDesc
-      outputParamDesc: $outputParamDesc
-      bodyToConvert: $bodyToConvert
-    """)
+    // println(s"""
+    //   inputParamDesc: $inputParamDesc
+    //   outputParamDesc: $outputParamDesc
+    //   bodyToConvert: $bodyToConvert
+    // """)
 
     val result = generateCLFunction[A, B](
       f = castExpr(f),
@@ -139,7 +141,11 @@ trait CodeGeneration extends CodeConversion {
     body: Tree,
     paramDescs: Seq[ParamDesc]): Expr[CLFunction[A, B]] =
     {
-      println("Generating CL function for " + f)
+      // println(s"""
+      //   Generating CL function for:
+      //     f = $f
+      //     paramDescs = $paramDescs
+      // """)
       try {
         val cr @ CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
           body,

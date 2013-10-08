@@ -127,13 +127,15 @@ trait CodeConversion extends OpenCLConverter with UniverseCasts {
       globalIDIndexes.map(i => i -> fresh("_global_id_" + i + "_")).toMap
 
     val replacements: Seq[String => String] = paramDescs.map(paramDesc => {
-      val r = ("\\b(" + paramDesc.symbol.name + ")\\b").r
+      val r = ("\\b(" + Regex.quoteReplacement(paramDesc.symbol.name.toString) + ")\\b").r
       // TODO handle composite types, with replacements of all possible fibers (x._1, x._2._1, x._2._2)
       paramDesc match {
         case ParamDesc(_, _, ParamKind.ImplicitArrayElement, _, Some(i), None, None) =>
-          (s: String) => r.replaceAllIn(s, "$1[" + Regex.quoteReplacement(globalIDValNames(i)) + "]")
+          (s: String) =>
+            r.replaceAllIn(s, "$1" + Regex.quoteReplacement("[" + globalIDValNames(i) + "]"))
         case ParamDesc(_, _, ParamKind.RangeIndex, _, Some(i), Some(from), Some(by)) =>
-          (s: String) => r.replaceAllIn(s, "(" + from.name + " + " + globalIDValNames(i) + " * " + by.name + ")")
+          (s: String) =>
+            r.replaceAllIn(s, Regex.quoteReplacement("(" + from.name + " + " + globalIDValNames(i) + " * " + by.name + ")"))
         case _ =>
           (s: String) => s
       }
