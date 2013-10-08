@@ -47,14 +47,14 @@ ScheduledBuffer:
 
 object ScheduledBuffer {
   private val clearBytesKernel = new Kernel(
-    salt = Kernel.CLEAR_SALT,
     """
     kernel void f(global char* buffer, long length) {
       size_t i = get_global_id(0);
       if (i >= length) return;
       buffer[i] = 0;
     }
-    """
+    """,
+    salt = Kernel.CLEAR_SALT
   )
 }
 

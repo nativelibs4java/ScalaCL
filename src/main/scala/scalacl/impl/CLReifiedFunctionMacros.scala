@@ -31,42 +31,34 @@
 package scalacl
 package impl
 
-import com.nativelibs4java.opencl._
-import java.util.concurrent.locks._
-import collection.mutable.ArrayBuffer
+import scalaxy.reified._
+import scala.reflect.runtime.universe.TypeTag
 
-/**
- * Thin wrapper for OpenCL kernel sources, which can act as a fast cache key for the corresponding CLKernel
- */
-class Kernel(protected val sources: String, protected val salt: Long) {
-  def getKernel(context: Context): CLKernel = {
-    context.kernels(this, _.release) {
-      val Array(k) = context.context.createProgram(sources).createKernels
-      k
+object CLReifiedFunctionMacros {
+  def fun2clfun[A: c.WeakTypeTag, B: c.WeakTypeTag](c: scala.reflect.macros.Context)(f: c.Expr[(A => B)])(ta: c.Expr[TypeTag[A]], tb: c.Expr[TypeTag[B]]): c.Expr[CLReifiedFunction[A, B]] = {
+
+    // TODO: choking appropriately upon unsupported captures.
+
+    // Attempt to pre-convert the function.
+    // This may fail if the tree contains free types: in that case, the reified value
+    // tree will need to be converted at runtime.
+    val precompiledFunctionExpr: c.Expr[Option[CLFunction[A, B]]] =
+      // try {
+      //   val expr = CLFunctionMacros.convertFunction[A, B](c)(f)
+      //   c.universe.reify(Some(expr.splice))
+      // } catch {
+      //   case ex: Throwable =>
+      //     ex.printStackTrace()
+      c.universe.reify(None)
+    // }
+
+    // TODO: perform static precompilation here.
+    c.universe.reify {
+      implicit val tta = ta.splice
+      implicit val ttb = tb.splice
+      new CLReifiedFunction[A, B](
+        f.splice,
+        precompiledFunctionExpr.splice)
     }
   }
-  def enqueue(context: Context, params: KernelExecutionParameters, args: Array[AnyRef], eventsToWaitFor: Array[CLEvent]): CLEvent = {
-    var kernel = getKernel(context)
-    kernel synchronized {
-      kernel.setArgs(args: _*)
-      if (params == null)
-        kernel.enqueueTask(context.queue, eventsToWaitFor: _*)
-      else
-        kernel.enqueueNDRange(context.queue, params.globalOffsets, params.globalSizes, params.localSizes, eventsToWaitFor: _*)
-    }
-  }
-
-  override def equals(o: Any) = o.isInstanceOf[Kernel] && {
-    val k = o.asInstanceOf[Kernel]
-    salt == k.salt && (sources == k.sources)
-  }
-
-  // Only use salt to compute hashCode
-  override def hashCode = salt.hashCode
-
-  override def toString = "Kernel(" + sources + ")"
-}
-
-object Kernel {
-  final val CLEAR_SALT = -1
 }

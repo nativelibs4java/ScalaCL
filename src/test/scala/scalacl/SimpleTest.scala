@@ -51,7 +51,8 @@ class SimpleTest {
           return;
           output[i] = (int)(input[i] * factor);
         }
-        """),
+        """,
+        salt = -1),
       Captures(constants = Array(factor.asInstanceOf[AnyRef])))
 
     val pred = new CLFunction[Int, Boolean](
@@ -64,7 +65,8 @@ class SimpleTest {
           return;
           output[i] = input[i] % 2 == 0;
         }
-        """))
+        """,
+        salt = -1))
 
     val values = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
     val a = CLArray[Int](values: _*)

@@ -54,7 +54,7 @@ object CLReifiedFunctionUtils {
       val body = optimizedAST match {
         case ru.Block(Nil, ru.Function(List(_), body)) => body
         case ru.Function(List(_), body) => body
-        case ru.Block(ru.Function(List(_), body), EmptyTree) => body
+        // case ru.Block(ru.Function(List(_), body), EmptyTree) => body
       }
       // val ru.Function(List(_), body) = optimizedAST
 
