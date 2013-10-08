@@ -47,7 +47,7 @@ case class CLReifiedFunction[A: TypeTag, B: TypeTag](
     extends (A => B) {
 
   def apply(a: A): B = value.value(a)
-  def apply()(implicit ev1: U =:= Unit) = f({}.asInstanceOf[U])
+  def apply()(implicit ev1: A =:= Unit) = value.value({}.asInstanceOf[A])
 
   lazy val function = precompiledFunction.getOrElse(CLReifiedFunctionUtils.convert(this))
 }
