@@ -55,7 +55,10 @@ class CLReifiedFunctionTest {
       println(f)
       println(f.value)
       println(f.function)
-      println(a.map(f.function))
+      assertArrayEquals(
+        Array(20.0, 40.0, 60.0),
+        a.map(f.function).toArray,
+        0)
 
     } finally {
       context.release()

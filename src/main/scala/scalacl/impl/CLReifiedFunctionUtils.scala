@@ -78,7 +78,7 @@ object CLReifiedFunctionUtils {
         outputSymbol = castSymbol(outputSymbol)).asInstanceOf[ru.Expr[CLFunction[A, B]]]
     }
     val functionExpr = generation.result
-    println(s"FUNCTION EXPR: $functionExpr")
+    // println(s"FUNCTION EXPR: $functionExpr")
     val compiled = CompilerUtils.compile(functionExpr.tree, toolbox)
     compiled().asInstanceOf[CLFunction[A, B]]
   }
