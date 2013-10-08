@@ -73,7 +73,10 @@ trait CodeGeneration extends CodeConversion {
     def isUnit(t: Type) =
       t <:< UnitTpe || t == NoType
 
-    val Function(List(param), body) = typeCheck(f.tree, WildcardType)
+    val (param, body) = typeCheck(f.tree, WildcardType) match {
+      case Function(List(param), body) => (param, body)
+      case Block(Nil, Function(List(param), body)) => (param, body)
+    }
 
     val inputTpe = param.symbol.typeSignature
     val outputTpe = body.tpe
@@ -171,11 +174,11 @@ trait CodeGeneration extends CodeConversion {
           capturedConstants
             .map(d => castAnyToAnyRef(ident(d.symbol), d.tpe)).toList
         )
-        println(s"""
-         code: $code
-         capturedInputs: $capturedInputs, 
-         capturedOutputs: $capturedOutputs, 
-         capturedConstants: $capturedConstants""")
+        // println(s"""
+        //  code: $code
+        //  capturedInputs: $capturedInputs, 
+        //  capturedOutputs: $capturedOutputs, 
+        //  capturedConstants: $capturedConstants""")
         reify {
           new CLFunction[A, B](
             f.splice,

@@ -40,8 +40,8 @@ import scalaxy.reified.internal.CompilerUtils
 import scalaxy.reified.internal.Utils.optimisingToolbox
 import scalaxy.reified.internal.Optimizer.{ optimize, getFreshNameGenerator }
 
-object CLFuncUtils {
-  def convert[A: TypeTag, B: TypeTag](f: CLFunc[A, B]): CLFunction[A, B] = {
+object CLReifiedFunctionUtils {
+  def convert[A: TypeTag, B: TypeTag](f: CLReifiedFunction[A, B]): CLFunction[A, B] = {
     val toolbox = optimisingToolbox
 
     val generation = new CodeGeneration with WithRuntimeUniverse with WithResult[ru.Expr[CLFunction[A, B]]] {
@@ -51,7 +51,12 @@ object CLFuncUtils {
       val ast = expr.tree
 
       val optimizedAST = optimize(ast, toolbox)
-      val ru.Function(List(_), body) = optimizedAST
+      val body = optimizedAST match {
+        case ru.Block(Nil, ru.Function(List(_), body)) => body
+        case ru.Function(List(_), body) => body
+        case ru.Block(ru.Function(List(_), body), EmptyTree) => body
+      }
+      // val ru.Function(List(_), body) = optimizedAST
 
       // println(s"""
       //   f.value: ${f.value}

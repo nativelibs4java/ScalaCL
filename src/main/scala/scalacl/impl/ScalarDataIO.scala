@@ -76,11 +76,39 @@ object IntDataIO extends ScalarDataIO[Int](PointerIO.getIntInstance) {
     buffers(bufferOffset).setIntAtIndex(index, value)
 }
 
+object ShortDataIO extends ScalarDataIO[Short](PointerIO.getShortInstance) {
+  override def get(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int) =
+    buffers(bufferOffset).getShortAtIndex(index)
+  override def set(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int, value: Short) =
+    buffers(bufferOffset).setShortAtIndex(index, value)
+}
+
+object ByteDataIO extends ScalarDataIO[Byte](PointerIO.getByteInstance) {
+  override def get(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int) =
+    buffers(bufferOffset).getByteAtIndex(index)
+  override def set(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int, value: Byte) =
+    buffers(bufferOffset).setByteAtIndex(index, value)
+}
+
+object LongDataIO extends ScalarDataIO[Long](PointerIO.getLongInstance) {
+  override def get(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int) =
+    buffers(bufferOffset).getLongAtIndex(index)
+  override def set(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int, value: Long) =
+    buffers(bufferOffset).setLongAtIndex(index, value)
+}
+
 object FloatDataIO extends ScalarDataIO[Float](PointerIO.getFloatInstance) {
   override def get(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int) =
     buffers(bufferOffset).getFloatAtIndex(index)
   override def set(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int, value: Float) =
     buffers(bufferOffset).setFloatAtIndex(index, value)
+}
+
+object DoubleDataIO extends ScalarDataIO[Double](PointerIO.getDoubleInstance) {
+  override def get(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int) =
+    buffers(bufferOffset).getDoubleAtIndex(index)
+  override def set(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int, value: Double) =
+    buffers(bufferOffset).setDoubleAtIndex(index, value)
 }
 
 object BooleanDataIO extends ScalarDataIO[Boolean](PointerIO.getBooleanInstance) {

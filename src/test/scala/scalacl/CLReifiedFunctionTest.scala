@@ -34,12 +34,13 @@ import impl._
 import org.junit._
 import Assert._
 
-class CLFuncTest {
+class CLReifiedFunctionTest {
   @Test
   def simple {
+    implicitly[DataIO[Double]]
     implicit val context = Context.best
     try {
-      val a = new CLArray[Int](3)
+      val a = CLArray[Int](1, 2, 3)
       val v = 10
       // task {
       //   a(1) = 10 * v
@@ -47,15 +48,14 @@ class CLFuncTest {
       // println(a.toSeq)
       // assertEquals(Seq(0, 100, 0), a.toSeq)
 
-      val f: CLFunc[Int, Double] = (x: Int) => {
-        x * 2.0
+      val f: CLReifiedFunction[Int, Double] = (x: Int) => {
+        x * 2.0 * v
       }
 
       println(f)
       println(f.value)
-
-      val ff = CLFuncUtils.convert(f)
-      println(ff)
+      println(f.function)
+      println(a.map(f.function))
 
     } finally {
       context.release()

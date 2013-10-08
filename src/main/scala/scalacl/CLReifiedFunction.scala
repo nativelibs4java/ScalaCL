@@ -28,6 +28,11 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package scalacl
+
+import scalacl.impl.CLFunction
+import scalacl.impl.CLReifiedFunctionUtils
+
 import com.nativelibs4java.opencl.CLMem
 
 import scala.language.experimental.macros
@@ -36,26 +41,29 @@ import scala.language.implicitConversions
 import scalaxy.reified._
 import scala.reflect.runtime.universe.TypeTag
 
-package object scalacl {
-  import impl._
+case class CLReifiedFunction[A: TypeTag, B: TypeTag](
+  value: ReifiedValue[A => B], precompiledFunction: Option[CLFunction[A, B]])
+    extends (A => B) {
 
-  implicit val byteDataIO = ByteDataIO
-  implicit val shortDataIO = ShortDataIO
-  implicit val intDataIO = IntDataIO
-  implicit val longDataIO = LongDataIO
-  implicit val floatDataIO = FloatDataIO
-  implicit val doubleDataIO = DoubleDataIO
-  implicit val booleanDataIO = BooleanDataIO
-  implicit def tuple2DataIO[T1: Manifest: DataIO, T2: Manifest: DataIO] = {
-    new Tuple2DataIO[T1, T2]
+  def apply(a: A): B = value.value(a)
+
+  lazy val function = precompiledFunction.getOrElse(CLReifiedFunctionUtils.convert(this))
+}
+
+object CLReifiedFunction {
+  implicit def fun2clfun[A: TypeTag, B: TypeTag](f: A => B): CLReifiedFunction[A, B] = macro internal.fun2clfun[A, B]
+
+  object internal {
+    def fun2clfun[A: c.WeakTypeTag, B: c.WeakTypeTag](c: scala.reflect.macros.Context)(f: c.Expr[(A => B)])(ta: c.Expr[TypeTag[A]], tb: c.Expr[TypeTag[B]]): c.Expr[CLReifiedFunction[A, B]] = {
+
+      // TODO: use Reified API to create reified value here, choking appropriately upon unsupported captures.
+
+      // TODO: perform static precompilation here.
+      c.universe.reify {
+        implicit val tta = ta.splice
+        implicit val ttb = tb.splice
+        new CLReifiedFunction[A, B](f.splice, None)
+      }
+    }
   }
-
-  implicit class ArrayConversions[A: Manifest: DataIO](array: Array[A])(implicit context: Context) {
-    def toCLArray = CLArray[A](array: _*)
-    def cl = toCLArray
-  }
-
-  def kernel(block: Unit)(implicit contextExpr: Context): Unit = macro KernelMacros.kernelImpl
-
-  def task(block: Unit)(implicit contextExpr: Context): Unit = macro KernelMacros.taskImpl
 }

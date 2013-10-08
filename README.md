@@ -13,7 +13,7 @@ Features of the new design:
 TODO:
 - Finish Scalaxy/Reified integration (started under CLFunc / CLFuncUtils)
 - Add more tests: DataIO, CodeConversion, scheduling, uniqueness / caching of kernels
-- Implement missing DataIO[T], support case classes as tuples
+- Implement more DataIO[T], support case classes as tuples
 - Catch up with compiler plugin:
   - Auto-vectorization
      - 1D works
