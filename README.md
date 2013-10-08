@@ -11,15 +11,15 @@ Features of the new design:
 - No more CLRange: expecting compiler to do its job
 
 TODO:
-- Add (much) more tests: DataIO, CodeConversion, scheduling...
-- Implement missing DataIO[T], including ASM-optimized case classes
+- Finish Scalaxy/Reified integration (started under CLFunc / CLFuncUtils)
+- Add more tests: DataIO, CodeConversion, scheduling, uniqueness / caching of kernels
+- Implement missing DataIO[T], support case classes as tuples
 - Catch up with compiler plugin:
   - Auto-vectorization
-     - 1D works, now add 2D
+     - 1D works
+     - Add 2D
      - add filters
   - Import Scalaxy streams, make them work with scala.reflection.api.Universe
-  - Add argument flattening logic to compiler plugin (with intermediate tree vals for tuples)
-  - Create top-level objects for kernels code or use source file + pos as unique key
 - Plug some v2 runtime code back (filtered array compaction, reduceSymmetric, parallel sums...)
 - Benchmarks!
 
