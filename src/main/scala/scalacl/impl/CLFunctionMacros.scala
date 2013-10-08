@@ -47,7 +47,7 @@ private[impl] object CLFunctionMacros {
     import c.universe._
     import definitions._
 
-    val outputSymbol = c.enclosingMethod.symbol.newTermSymbol(newTermName(c.fresh("out")))
+    val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
     val generation = new CodeGeneration with WithMacroContext with WithResult[c.Expr[CLFunction[A, B]]] {
       override val context = c
