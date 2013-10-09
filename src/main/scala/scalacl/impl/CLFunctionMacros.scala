@@ -63,20 +63,19 @@ private[impl] object CLFunctionMacros {
     import c.universe._
     import definitions._
 
-    val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
-
     WithResult(
       new CodeGeneration with WithMacroContext with WithResult[c.Expr[CLFunction[Unit, Unit]]] {
         override val context = c
 
         // Create a fake Unit => Unit function.
-        val f = blockToUnitFunction(castTree(c.typeCheck(block.tree)))
-        val functionKernelExpr =
-          functionToFunctionKernel[Unit, Unit](
-            f = castExpr(f),
-            kernelSalt = KernelDef.nextKernelSalt,
-            outputSymbol = castSymbol(outputSymbol))
+        val typedBlock = c.typeCheck(block.tree)
+        val functionKernelExpr = generateFunctionKernel[Unit, Unit](
+          kernelSalt = KernelDef.nextKernelSalt,
+          body = castTree(typedBlock),
+          paramDescs = Seq()
+        )
 
+        val f = blockToUnitFunction(castTree(typedBlock))
         val result = reify(
           new CLFunction[Unit, Unit](f.splice, functionKernelExpr.splice)
         ).asInstanceOf[Result]

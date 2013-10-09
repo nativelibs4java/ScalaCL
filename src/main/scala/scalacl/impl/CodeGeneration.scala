@@ -90,22 +90,29 @@ trait CodeGeneration extends CodeConversion {
           body)
       }
 
-    val inputParamDesc =
-      ParamDesc(
-        symbol = castSymbol(param.symbol),
-        tpe = castType(inputTpe),
-        mode = ParamKind.ImplicitArrayElement,
-        usage = UsageKind.Input,
-        implicitIndexDimension = Some(0))
+    val inputParamDesc: Option[ParamDesc] =
+      if (isUnit(inputTpe.asInstanceOf[global.Type]))
+        None
+      else
+        Some(
+          ParamDesc(
+            symbol = castSymbol(param.symbol),
+            tpe = castType(inputTpe),
+            mode = ParamKind.ImplicitArrayElement,
+            usage = UsageKind.Input,
+            implicitIndexDimension = Some(0)))
 
-    val outputParamDesc: Option[ParamDesc] = if (isUnit(outputTpe.asInstanceOf[global.Type])) None else Some({
-      ParamDesc(
-        symbol = castSymbol(outputSymbol),
-        tpe = castType(outputTpe),
-        mode = ParamKind.ImplicitArrayElement,
-        usage = UsageKind.Output,
-        implicitIndexDimension = Some(0))
-    })
+    val outputParamDesc: Option[ParamDesc] =
+      if (isUnit(outputTpe.asInstanceOf[global.Type]))
+        None
+      else
+        Some(
+          ParamDesc(
+            symbol = castSymbol(outputSymbol),
+            tpe = castType(outputTpe),
+            mode = ParamKind.ImplicitArrayElement,
+            usage = UsageKind.Output,
+            implicitIndexDimension = Some(0)))
 
     println(s"""
       inputParamDesc: $inputParamDesc
@@ -116,7 +123,7 @@ trait CodeGeneration extends CodeConversion {
     generateFunctionKernel[A, B](
       kernelSalt = kernelSalt,
       body = castTree(bodyToConvert),
-      paramDescs = List(inputParamDesc) ++ outputParamDesc.toSeq
+      paramDescs = inputParamDesc.toSeq ++ outputParamDesc.toSeq
     )
   }
 
