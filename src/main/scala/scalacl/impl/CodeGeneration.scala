@@ -114,11 +114,11 @@ trait CodeGeneration extends CodeConversion {
             usage = UsageKind.Output,
             implicitIndexDimension = Some(0)))
 
-    println(s"""
-      inputParamDesc: $inputParamDesc
-      outputParamDesc: $outputParamDesc
-      bodyToConvert: $bodyToConvert
-    """)
+    // println(s"""
+    //   inputParamDesc: $inputParamDesc
+    //   outputParamDesc: $outputParamDesc
+    //   bodyToConvert: $bodyToConvert
+    // """)
 
     generateFunctionKernel[A, B](
       kernelSalt = kernelSalt,
