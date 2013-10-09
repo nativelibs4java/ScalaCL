@@ -45,19 +45,22 @@ private[impl] object CLFunctionMacros {
 
     val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
-    type Result = c.Expr[FunctionKernel[A, B]]
-    val generation = new CodeGeneration with WithMacroContext with WithResult[Result] {
-      override val context = c
-      import global._
+    WithResult(
+      new CodeGeneration with WithMacroContext with WithResult[c.Expr[CLFunction[A, B]]] {
+        override val context = c
+        import global._
 
-      val result = functionToFunctionKernel[A, B](
-        f = castExpr(f),
-        kernelSalt = KernelDef.nextKernelSalt,
-        outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
-    }
+        val functionKernelExpr = functionToFunctionKernel[A, B](
+          f = castExpr(f),
+          kernelSalt = KernelDef.nextKernelSalt,
+          outputSymbol = castSymbol(outputSymbol))
 
-    val functionKernelExpr = generation.result
-    reify(new CLFunction[A, B](f.splice, functionKernelExpr.splice))
+        val result = reify(
+          new CLFunction[A, B](f.splice, functionKernelExpr.splice)
+        ).asInstanceOf[Result]
+      }
+    )
+
   }
 
   private[impl] def convertTask(c: Context)(block: c.Expr[Unit]): c.Expr[CLFunction[Unit, Unit]] = {
@@ -66,24 +69,22 @@ private[impl] object CLFunctionMacros {
 
     val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
-    type Result = c.Expr[CLFunction[Unit, Unit]]
-    val generation = new CodeGeneration with WithMacroContext with WithResult[Result] {
-      override val context = c
+    WithResult(
+      new CodeGeneration with WithMacroContext with WithResult[c.Expr[CLFunction[Unit, Unit]]] {
+        override val context = c
 
-      // Create a fake Unit => Unit function.
-      val f = blockToUnitFunction(castTree(c.typeCheck(block.tree)))
-      val functionKernelExpr =
-        functionToFunctionKernel[Unit, Unit](
-          f = castExpr(f),
-          kernelSalt = KernelDef.nextKernelSalt,
-          outputSymbol = castSymbol(outputSymbol))
+        // Create a fake Unit => Unit function.
+        val f = blockToUnitFunction(castTree(c.typeCheck(block.tree)))
+        val functionKernelExpr =
+          functionToFunctionKernel[Unit, Unit](
+            f = castExpr(f),
+            kernelSalt = KernelDef.nextKernelSalt,
+            outputSymbol = castSymbol(outputSymbol))
 
-      val result = reify(
-        new CLFunction[Unit, Unit](f.splice, functionKernelExpr.splice)).asInstanceOf[Result]
-    }
-
-    generation.result
-
-    generation.result.asInstanceOf[Result]
+        val result = reify(
+          new CLFunction[Unit, Unit](f.splice, functionKernelExpr.splice)
+        ).asInstanceOf[Result]
+      }
+    )
   }
 }

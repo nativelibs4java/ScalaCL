@@ -37,13 +37,11 @@ import scala.reflect.api.Universe
 trait WithResult[T] {
   val global: Universe
   import global._
+  type Result = T
 
   def result: T
 }
 
-trait WithExprResult[T] {
-  val global: Universe
-  import global._
-
-  def result: Expr[T]
+object WithResult {
+  def apply[T](wr: WithResult[T]): T = wr.result
 }

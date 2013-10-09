@@ -53,24 +53,23 @@ object CLReifiedFunctionMacros {
       try {
         val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
-        type Result = c.Expr[FunctionKernel[A, B]]
-        val generation = new CodeGeneration with WithMacroContext with WithResult[Result] {
-          override val context = c
-          import global._
+        val functionKernelExpr = WithResult(
+          new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel[A, B]]] {
+            override val context = c
+            import global._
 
-          val result = functionToFunctionKernel[A, B](
-            f = castExpr(f),
-            kernelSalt = KernelDef.nextKernelSalt,
-            outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
-        }
-        val functionKernelExpr = generation.result
-        //val expr = CLFunctionMacros.convertFunction[A, B](c)(f)v
-
-        c.universe.reify(Some(functionKernelExpr.splice))
+            val result = functionToFunctionKernel[A, B](
+              f = castExpr(f),
+              kernelSalt = KernelDef.nextKernelSalt,
+              outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
+          }
+        )
+        reify(Some(functionKernelExpr.splice))
       } catch {
         case ex: Throwable =>
           ex.printStackTrace()
-          c.universe.reify(None)
+          c.warning(f.pos, "Couldn't precompile this function (will rely on reified value).")
+          reify(None)
       }
 
     // TODO: perform static precompilation here.
