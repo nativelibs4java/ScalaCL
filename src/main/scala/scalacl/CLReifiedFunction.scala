@@ -30,9 +30,12 @@
  */
 package scalacl
 
+import scalacl.impl.Captures
 import scalacl.impl.CLFunction
 import scalacl.impl.CLReifiedFunctionMacros
 import scalacl.impl.CLReifiedFunctionUtils
+import scalacl.impl.FunctionKernel
+import scalacl.impl.KernelDef
 
 import com.nativelibs4java.opencl.CLMem
 
@@ -43,13 +46,15 @@ import scalaxy.reified._
 import scala.reflect.runtime.universe.TypeTag
 
 case class CLReifiedFunction[A: TypeTag, B: TypeTag](
-  value: ReifiedValue[A => B], precompiledFunction: Option[CLFunction[A, B]])
+  value: ReifiedValue[A => B], preparedFunctionKernel: Option[FunctionKernel[A, B]])
     extends (A => B) {
 
   def apply(a: A): B = value.value(a)
   def apply()(implicit ev1: A =:= Unit) = value.value({}.asInstanceOf[A])
 
-  lazy val function = precompiledFunction.getOrElse(CLReifiedFunctionUtils.convert(this))
+  lazy val functionKernel =
+    preparedFunctionKernel.getOrElse(
+      CLReifiedFunctionUtils.functionKernel(this))
 }
 
 object CLReifiedFunction {

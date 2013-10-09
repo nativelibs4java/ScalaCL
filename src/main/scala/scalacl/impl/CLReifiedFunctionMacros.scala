@@ -34,23 +34,44 @@ package impl
 import scalaxy.reified._
 import scala.reflect.runtime.universe.TypeTag
 
-object CLReifiedFunctionMacros {
-  def fun2clfun[A: c.WeakTypeTag, B: c.WeakTypeTag](c: scala.reflect.macros.Context)(f: c.Expr[(A => B)])(ta: c.Expr[TypeTag[A]], tb: c.Expr[TypeTag[B]]): c.Expr[CLReifiedFunction[A, B]] = {
+import scalaxy.components.WithMacroContext
 
+import language.experimental.macros
+import scala.reflect.macros.Context
+
+object CLReifiedFunctionMacros {
+  def fun2clfun[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context)(f: c.Expr[(A => B)])(ta: c.Expr[TypeTag[A]], tb: c.Expr[TypeTag[B]]): c.Expr[CLReifiedFunction[A, B]] = {
+
+    import c.universe._
     // TODO: choking appropriately upon unsupported captures.
 
     // Attempt to pre-convert the function.
     // This may fail if the tree contains free types: in that case, the reified value
     // tree will need to be converted at runtime.
-    val precompiledFunctionExpr: c.Expr[Option[CLFunction[A, B]]] =
-      // try {
-      //   val expr = CLFunctionMacros.convertFunction[A, B](c)(f)
-      //   c.universe.reify(Some(expr.splice))
-      // } catch {
-      //   case ex: Throwable =>
-      //     ex.printStackTrace()
-      c.universe.reify(None)
-    // }
+
+    val precompiledFunctionExpr: c.Expr[Option[FunctionKernel[A, B]]] =
+      try {
+        val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
+
+        type Result = c.Expr[FunctionKernel[A, B]]
+        val generation = new CodeGeneration with WithMacroContext with WithResult[Result] {
+          override val context = c
+          import global._
+
+          val result = functionToFunctionKernel[A, B](
+            f = castExpr(f),
+            kernelSalt = KernelDef.nextKernelSalt,
+            outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
+        }
+        val functionKernelExpr = generation.result
+        //val expr = CLFunctionMacros.convertFunction[A, B](c)(f)v
+
+        c.universe.reify(Some(functionKernelExpr.splice))
+      } catch {
+        case ex: Throwable =>
+          ex.printStackTrace()
+          c.universe.reify(None)
+      }
 
     // TODO: perform static precompilation here.
     c.universe.reify {

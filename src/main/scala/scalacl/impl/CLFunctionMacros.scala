@@ -38,10 +38,6 @@ import language.experimental.macros
 import scala.reflect.macros.Context
 
 private[impl] object CLFunctionMacros {
-  private lazy val random = new java.util.Random(System.currentTimeMillis)
-
-  // These ids are not necessarily unique, but their values should be dispersed well
-  private[impl] def nextKernelSalt = random.nextLong
 
   private[impl] def convertFunction[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context)(f: c.Expr[A => B]): c.Expr[CLFunction[A, B]] = {
     import c.universe._
@@ -49,37 +45,45 @@ private[impl] object CLFunctionMacros {
 
     val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
-    val generation = new CodeGeneration with WithMacroContext with WithResult[c.Expr[CLFunction[A, B]]] {
+    type Result = c.Expr[FunctionKernel[A, B]]
+    val generation = new CodeGeneration with WithMacroContext with WithResult[Result] {
       override val context = c
       import global._
 
-      val result = convertFunction[A, B](
+      val result = functionToFunctionKernel[A, B](
         f = castExpr(f),
-        kernelSalt = nextKernelSalt,
-        outputSymbol = castSymbol(outputSymbol)).asInstanceOf[c.Expr[CLFunction[A, B]]]
+        kernelSalt = KernelDef.nextKernelSalt,
+        outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
     }
-    generation.result
+
+    val functionKernelExpr = generation.result
+    reify(new CLFunction[A, B](f.splice, functionKernelExpr.splice))
   }
 
   private[impl] def convertTask(c: Context)(block: c.Expr[Unit]): c.Expr[CLFunction[Unit, Unit]] = {
     import c.universe._
     import definitions._
 
-    val generation = new CodeGeneration with WithMacroContext with WithExprResult[CLFunction[Unit, Unit]] {
+    val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
+
+    type Result = c.Expr[CLFunction[Unit, Unit]]
+    val generation = new CodeGeneration with WithMacroContext with WithResult[Result] {
       override val context = c
-      //override val global = c.universe
-      //override def fresh(s: String) = c.fresh(s)
 
       // Create a fake Unit => Unit function.
-      val typedBlock = c.typeCheck(block.tree)
-      val f = blockToUnitFunction(castTree(typedBlock))
-      val result = generateCLFunction[Unit, Unit](
-        f = castExpr(f),
-        kernelSalt = nextKernelSalt,
-        body = castTree(typedBlock),
-        paramDescs = Seq()
-      )
+      val f = blockToUnitFunction(castTree(c.typeCheck(block.tree)))
+      val functionKernelExpr =
+        functionToFunctionKernel[Unit, Unit](
+          f = castExpr(f),
+          kernelSalt = KernelDef.nextKernelSalt,
+          outputSymbol = castSymbol(outputSymbol))
+
+      val result = reify(
+        new CLFunction[Unit, Unit](f.splice, functionKernelExpr.splice)).asInstanceOf[Result]
     }
-    generation.result.asInstanceOf[c.Expr[CLFunction[Unit, Unit]]]
+
+    generation.result
+
+    generation.result.asInstanceOf[Result]
   }
 }

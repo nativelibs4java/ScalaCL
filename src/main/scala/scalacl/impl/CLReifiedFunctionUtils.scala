@@ -41,10 +41,11 @@ import scalaxy.reified.internal.Utils.optimisingToolbox
 import scalaxy.reified.internal.Optimizer.{ optimize, getFreshNameGenerator }
 
 object CLReifiedFunctionUtils {
-  def convert[A: TypeTag, B: TypeTag](f: CLReifiedFunction[A, B]): CLFunction[A, B] = {
+  def functionKernel[A: TypeTag, B: TypeTag](f: CLReifiedFunction[A, B]): FunctionKernel[A, B] = {
     val toolbox = optimisingToolbox
 
-    val generation = new CodeGeneration with WithRuntimeUniverse with WithResult[ru.Expr[CLFunction[A, B]]] {
+    type Result = ru.Expr[FunctionKernel[A, B]]
+    val generation = new CodeGeneration with WithRuntimeUniverse with WithResult[Result] {
 
       import global._
       val (expr, captures) = f.value.expr()
@@ -54,32 +55,21 @@ object CLReifiedFunctionUtils {
       val body = optimizedAST match {
         case ru.Block(Nil, ru.Function(List(_), body)) => body
         case ru.Function(List(_), body) => body
-        // case ru.Block(ru.Function(List(_), body), EmptyTree) => body
       }
-      // val ru.Function(List(_), body) = optimizedAST
-
-      // println(s"""
-      //   f.value: ${f.value}
-      //   ast: $ast
-      //   optimizedAST: $optimizedAST
-      //   param: $param
-      //   param.symbol: ${param.symbol}
-      //   captures: $captures
-      // """)
 
       val freshName = getFreshNameGenerator(ast)
       def fresh(s: String) = freshName(s).toString
 
       val outputSymbol = NoSymbol.newTermSymbol(newTermName(fresh("out")))
 
-      val result = convertFunction[A, B](
+      val result = functionToFunctionKernel[A, B](
         f = expr[A => B](castTree(optimizedAST)),
         kernelSalt = -1,
-        outputSymbol = castSymbol(outputSymbol)).asInstanceOf[ru.Expr[CLFunction[A, B]]]
+        outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
     }
-    val functionExpr = generation.result
+    val functionKernelExpr = generation.result
     // println(s"FUNCTION EXPR: $functionExpr")
-    val compiled = CompilerUtils.compile(functionExpr.tree, toolbox)
-    compiled().asInstanceOf[CLFunction[A, B]]
+    val compiled = CompilerUtils.compile(functionKernelExpr.tree, toolbox)
+    compiled().asInstanceOf[FunctionKernel[A, B]]
   }
 }

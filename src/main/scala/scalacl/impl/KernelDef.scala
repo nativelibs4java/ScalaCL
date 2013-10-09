@@ -69,4 +69,9 @@ class KernelDef(protected val sources: String, protected val salt: Long) {
 
 object KernelDef {
   final val CLEAR_SALT = -1
+
+  private lazy val random = new java.util.Random(System.currentTimeMillis)
+
+  // These ids are not necessarily unique, but their values should be dispersed well
+  private[impl] def nextKernelSalt = random.nextLong
 }

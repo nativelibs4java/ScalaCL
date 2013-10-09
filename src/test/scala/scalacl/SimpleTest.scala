@@ -31,8 +31,6 @@
 package scalacl
 package impl
 
-import com.nativelibs4java.opencl.CLMem
-
 import org.junit._
 import Assert._
 

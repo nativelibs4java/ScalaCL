@@ -67,8 +67,8 @@ trait CodeGeneration extends CodeConversion {
     ValDef(Modifiers(), name, TypeTree(tpe), rhs)
   }
 
-  def convertFunction[A: WeakTypeTag, B: WeakTypeTag](
-    f: Expr[A => B], kernelSalt: Long, outputSymbol: Symbol): Expr[CLFunction[A, B]] = {
+  def functionToFunctionKernel[A: WeakTypeTag, B: WeakTypeTag](
+    f: Expr[A => B], kernelSalt: Long, outputSymbol: Symbol): Expr[FunctionKernel[A, B]] = {
 
     def isUnit(t: Type) =
       t <:< UnitTpe || t == NoType
@@ -113,13 +113,11 @@ trait CodeGeneration extends CodeConversion {
     //   bodyToConvert: $bodyToConvert
     // """)
 
-    val result = generateCLFunction[A, B](
-      f = castExpr(f),
+    generateFunctionKernel[A, B](
       kernelSalt = kernelSalt,
       body = castTree(bodyToConvert),
       paramDescs = List(inputParamDesc) ++ outputParamDesc.toSeq
     )
-    result
   }
 
   def castAnyToAnyRef(value: Tree, valueTpe: Type): Tree =
@@ -138,64 +136,74 @@ trait CodeGeneration extends CodeConversion {
     case _ => typeOf[AnyRef]
   }
 
-  private[impl] def generateCLFunction[A: WeakTypeTag, B: WeakTypeTag](
-    f: Expr[A => B],
+  // private[impl] def generateCLFunction[A: WeakTypeTag, B: WeakTypeTag](
+  //   f: Expr[A => B],
+  //   kernelSalt: Long,
+  //   body: Tree,
+  //   paramDescs: Seq[ParamDesc]): Expr[CLFunction[A, B]] = {
+
+  //   try {
+  //     val functionKernelExpr = generateFunctionKernel[A, B](f, kernelSalt, body, paramDescs)
+
+  //     reified(new CLFunction[A, B](f.splice, functionKernelExpr.splice))
+  //   } catch {
+  //     case ex: Throwable =>
+  //       ex.printStackTrace()
+  //       sys.error("CLFunction generation failed for { " + f + " }: " + ex)
+  //       null
+  //   }
+  // }
+
+  private[impl] def generateFunctionKernel[A: WeakTypeTag, B: WeakTypeTag](
     kernelSalt: Long,
     body: Tree,
-    paramDescs: Seq[ParamDesc]): Expr[CLFunction[A, B]] =
-    {
-      // println(s"""
-      //   Generating CL function for:
-      //     f = $f
-      //     paramDescs = $paramDescs
-      // """)
-      try {
-        val cr @ CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
-          body,
-          paramDescs
-        )
+    paramDescs: Seq[ParamDesc]): Expr[FunctionKernel[A, B]] = {
 
-        val codeExpr = expr[String](Literal(Constant(code)))
-        val kernelSaltExpr = expr[Long](Literal(Constant(kernelSalt)))
+    // println(s"""
+    //   Generating CL function for:
+    //     f = $f
+    //     paramDescs = $paramDescs
+    // """)
+    val cr @ CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
+      body,
+      paramDescs
+    )
 
-        def ident(s: global.Symbol) =
-          Ident(s.asInstanceOf[Symbol].name)
-        // Ident(s.asInstanceOf[Symbol])
+    val codeExpr = expr[String](Literal(Constant(code)))
+    val kernelSaltExpr = expr[Long](Literal(Constant(kernelSalt)))
 
-        val inputs = arrayApply[CLArray[_]](
-          capturedInputs
-            .map(d => ident(d.symbol)).toList
-        )
-        val outputs = arrayApply[CLArray[_]](
-          capturedOutputs
-            .map(d => ident(d.symbol)).toList
-        )
-        val constants = arrayApply[AnyRef](
-          capturedConstants
-            .map(d => castAnyToAnyRef(ident(d.symbol), d.tpe)).toList
-        )
-        // println(s"""
-        //  code: $code
-        //  capturedInputs: $capturedInputs, 
-        //  capturedOutputs: $capturedOutputs, 
-        //  capturedConstants: $capturedConstants""")
-        reify {
-          new CLFunction[A, B](
-            f.splice,
-            new KernelDef(sources = codeExpr.splice, salt = kernelSaltExpr.splice),
-            Captures(
-              inputs = inputs.splice,
-              outputs = outputs.splice,
-              constants = constants.splice)
-          )
-        }
-      } catch {
-        case ex: Throwable =>
-          ex.printStackTrace()
-          sys.error("CLFunction generation failed for { " + f + " }: " + ex)
-          null
-      }
-    }
+    def ident(s: global.Symbol) =
+      Ident(s.asInstanceOf[Symbol].name)
+    // Ident(s.asInstanceOf[Symbol])
+
+    val inputs = arrayApply[CLArray[_]](
+      capturedInputs
+        .map(d => ident(d.symbol)).toList
+    )
+    val outputs = arrayApply[CLArray[_]](
+      capturedOutputs
+        .map(d => ident(d.symbol)).toList
+    )
+    val constants = arrayApply[AnyRef](
+      capturedConstants
+        .map(d => castAnyToAnyRef(ident(d.symbol), d.tpe)).toList
+    )
+    // println(s"""
+    //  code: $code
+    //  capturedInputs: $capturedInputs, 
+    //  capturedOutputs: $capturedOutputs, 
+    //  capturedConstants: $capturedConstants""")
+    reify(
+      new FunctionKernel[A, B](
+        new KernelDef(
+          sources = codeExpr.splice,
+          salt = kernelSaltExpr.splice),
+        Captures(
+          inputs = inputs.splice,
+          outputs = outputs.splice,
+          constants = constants.splice))
+    )
+  }
 
   private def arrayApply[A: TypeTag](values: List[Tree]): Expr[Array[A]] = {
     import definitions._

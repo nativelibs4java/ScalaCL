@@ -105,7 +105,7 @@ class CLArray[T](
   private def execute[U](f: CLFunction[T, U], output: CLArray[U]) {
     val clf = f.asInstanceOf[CLFunction[T, U]]
     val params = KernelExecutionParameters(Array(length))
-    clf.apply(context, params, this, output)
+    clf.functionKernel.apply(context, params, this, output)
   }
 
   def filter(f: T => Boolean): CLFilteredArray[T] = macro CLArrayMacros.filterImpl[T]

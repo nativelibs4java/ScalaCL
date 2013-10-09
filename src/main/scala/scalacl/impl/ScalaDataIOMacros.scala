@@ -44,8 +44,8 @@
 //     val ta = weakTypeTag[A].tpe
 //     val name = ta.typeSymbol.name.toString
 
-//     def term(n: String) = Ident(n: TermName)
-//     def sel(target: Tree, n: String) = Select(target, n: TermName)
+//     def term(n: TermName) = Ident(n)
+//     def sel(target: Tree, n: TermName) = Select(target, n)
 
 //     val pointerIOExpr = c.Expr[PointerIO[A]](
 //       sel(
