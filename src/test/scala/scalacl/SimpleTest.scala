@@ -41,30 +41,32 @@ class SimpleTest {
     val factor = 20.5f
     val trans = new CLFunction[Int, Int](
       v => (v * factor).toInt,
-      new KernelDef(
-        """
-        kernel void f(global const int* input, global int* output, float factor) {
-          int i = get_global_id(0);
-          if (i >= get_global_size(0))
-          return;
-          output[i] = (int)(input[i] * factor);
-        }
-        """,
-        salt = -1),
-      Captures(constants = Array(factor.asInstanceOf[AnyRef])))
+      new FunctionKernel(
+        new KernelDef(
+          """
+          kernel void f(global const int* input, global int* output, float factor) {
+            int i = get_global_id(0);
+            if (i >= get_global_size(0))
+            return;
+            output[i] = (int)(input[i] * factor);
+          }
+          """,
+          salt = -1),
+        Captures(constants = Array(factor.asInstanceOf[AnyRef]))))
 
     val pred = new CLFunction[Int, Boolean](
       v => v % 2 == 0,
-      new KernelDef(
-        """
-        kernel void f(global const int* input, global char* output) {
-          int i = get_global_id(0);
-          if (i >= get_global_size(0))
-          return;
-          output[i] = input[i] % 2 == 0;
-        }
-        """,
-        salt = -1))
+      new FunctionKernel(
+        new KernelDef(
+          """
+          kernel void f(global const int* input, global char* output) {
+            int i = get_global_id(0);
+            if (i >= get_global_size(0))
+            return;
+            output[i] = input[i] % 2 == 0;
+          }
+          """,
+          salt = -1)))
 
     val values = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
     val a = CLArray[Int](values: _*)

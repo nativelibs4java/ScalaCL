@@ -110,9 +110,9 @@ trait OpenCLCodeFlattening
         // TODO rename the symbols themselves ??
         override def transform(tree: Tree): Tree = {
           def setAttrs(newTree: Tree) =
-            newTree
-          //withSymbol(tree.symbol, tree.tpe) {
-          // typeCheck(newTree, tree.tpe)
+            // newTree
+            //withSymbol(tree.symbol, tree.tpe) {
+            typeCheck(newTree, tree.tpe)
           //}
 
           renamings.get(tree.symbol).map(newName => {

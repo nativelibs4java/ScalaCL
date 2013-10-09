@@ -49,31 +49,31 @@ object CLReifiedFunctionMacros {
     // This may fail if the tree contains free types: in that case, the reified value
     // tree will need to be converted at runtime.
 
-    val precompiledFunctionExpr: c.Expr[Option[FunctionKernel[A, B]]] =
-      try {
-        val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
+    val precompiledFunctionExpr: c.Expr[Option[FunctionKernel /*[A, B]*/ ]] =
+      // try {
+      //   val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
-        val functionKernelExpr = WithResult(
-          new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel[A, B]]] {
-            override val context = c
-            import global._
+      //   val functionKernelExpr = WithResult(
+      //     new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel/*[A, B]*/]] {
+      //       override val context = c
+      //       import global._
 
-            val result = functionToFunctionKernel[A, B](
-              f = castExpr(f),
-              kernelSalt = KernelDef.nextKernelSalt,
-              outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
-          }
-        )
-        reify(Some(functionKernelExpr.splice))
-      } catch {
-        case ex: Throwable =>
-          ex.printStackTrace()
-          c.warning(f.tree.pos, "Couldn't precompile this function (will rely on reified value).")
-          reify(None)
-      }
+      //       val result = functionToFunctionKernel/*[A, B]*/(
+      //         f = castExpr(f),
+      //         kernelSalt = KernelDef.nextKernelSalt,
+      //         outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
+      //     }
+      //   )
+      //   reify(Some(functionKernelExpr.splice))
+      // } catch {
+      //   case ex: Throwable =>
+      //     ex.printStackTrace()
+      //     c.warning(f.tree.pos, "Couldn't precompile this function (will rely on reified value).")
+      reify(None)
+    // }
 
     // TODO: perform static precompilation here.
-    c.universe.reify {
+    reify {
       implicit val tta = ta.splice
       implicit val ttb = tb.splice
       new CLReifiedFunction[A, B](

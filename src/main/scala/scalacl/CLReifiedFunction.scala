@@ -31,7 +31,7 @@
 package scalacl
 
 import scalacl.impl.Captures
-import scalacl.impl.CLFunction
+import scalacl.impl.CLFunctionLike
 import scalacl.impl.CLReifiedFunctionMacros
 import scalacl.impl.CLReifiedFunctionUtils
 import scalacl.impl.FunctionKernel
@@ -44,17 +44,16 @@ import scala.language.implicitConversions
 
 import scalaxy.reified._
 import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.runtime.universe.WeakTypeTag
 
-case class CLReifiedFunction[A: TypeTag, B: TypeTag](
-  value: ReifiedValue[A => B], preparedFunctionKernel: Option[FunctionKernel[A, B]])
-    extends (A => B) {
+case class CLReifiedFunction[A: WeakTypeTag, B: WeakTypeTag](
+  value: ReifiedValue[A => B], preparedFunctionKernel: Option[FunctionKernel /*[A, B]*/ ])
+    extends (A => B) with CLFunctionLike[A, B] {
 
-  def apply(a: A): B = value.value(a)
-  def apply()(implicit ev1: A =:= Unit) = value.value({}.asInstanceOf[A])
-
+  lazy val function = value.value
   lazy val functionKernel =
     preparedFunctionKernel.getOrElse(
-      CLReifiedFunctionUtils.functionKernel(this))
+      CLReifiedFunctionUtils.functionKernel[A, B](this))
 }
 
 object CLReifiedFunction {

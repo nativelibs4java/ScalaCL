@@ -39,25 +39,21 @@ import scala.reflect.macros.Context
 
 private[impl] object CLFunctionMacros {
 
-  private[impl] def convertFunction[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context)(f: c.Expr[A => B]): c.Expr[CLFunction[A, B]] = {
+  private[impl] def convertFunction[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context)(f: c.Expr[A => B]): c.Expr[FunctionKernel /*[A, B]*/ ] = {
     import c.universe._
     import definitions._
 
     val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
     WithResult(
-      new CodeGeneration with WithMacroContext with WithResult[c.Expr[CLFunction[A, B]]] {
+      new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel /*[A, B]*/ ]] {
         override val context = c
         import global._
 
-        val functionKernelExpr = functionToFunctionKernel[A, B](
+        val result = functionToFunctionKernel[A, B](
           f = castExpr(f),
           kernelSalt = KernelDef.nextKernelSalt,
-          outputSymbol = castSymbol(outputSymbol))
-
-        val result = reify(
-          new CLFunction[A, B](f.splice, functionKernelExpr.splice)
-        ).asInstanceOf[Result]
+          outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
       }
     )
 

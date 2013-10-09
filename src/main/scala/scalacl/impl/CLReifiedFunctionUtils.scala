@@ -33,6 +33,7 @@ package impl
 
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.runtime.universe.WeakTypeTag
 
 import scalaxy.components.WithRuntimeUniverse
 import scalaxy.reified.internal.Utils
@@ -41,10 +42,10 @@ import scalaxy.reified.internal.Utils.optimisingToolbox
 import scalaxy.reified.internal.Optimizer.{ optimize, getFreshNameGenerator }
 
 object CLReifiedFunctionUtils {
-  def functionKernel[A: TypeTag, B: TypeTag](f: CLReifiedFunction[A, B]): FunctionKernel[A, B] = {
+  def functionKernel[A: WeakTypeTag, B: WeakTypeTag](f: CLReifiedFunction[A, B]): FunctionKernel /*[A, B]*/ = {
     val toolbox = optimisingToolbox
 
-    type Result = ru.Expr[FunctionKernel[A, B]]
+    type Result = ru.Expr[FunctionKernel /*[A, B]*/ ]
     val generation = new CodeGeneration with WithRuntimeUniverse with WithResult[Result] {
 
       import global._
@@ -62,7 +63,7 @@ object CLReifiedFunctionUtils {
 
       val outputSymbol = NoSymbol.newTermSymbol(newTermName(fresh("out")))
 
-      val result = functionToFunctionKernel[A, B](
+      val result = functionToFunctionKernel /*[A, B]*/ (
         f = expr[A => B](castTree(optimizedAST)),
         kernelSalt = -1,
         outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
@@ -70,6 +71,6 @@ object CLReifiedFunctionUtils {
     val functionKernelExpr = generation.result
     // println(s"FUNCTION EXPR: $functionExpr")
     val compiled = CompilerUtils.compile(functionKernelExpr.tree, toolbox)
-    compiled().asInstanceOf[FunctionKernel[A, B]]
+    compiled().asInstanceOf[FunctionKernel /*[A, B]*/ ]
   }
 }

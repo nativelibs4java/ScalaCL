@@ -79,15 +79,21 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
             rangeStep = Some(newSymbol(byValDef.name)))
         )
 
-        val outputSymbol = newSymbol(fresh("out")) //Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
+        //val outputSymbol = newSymbol(fresh("out")) //Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
         val f = blockToUnitFunction(block)
-        val functionKernelExpr = functionToFunctionKernel[Unit, Unit](
-          f = f,
+        // val functionKernelExpr = functionToFunctionKernel[Unit, Unit](
+        //   f = f,
+        //   kernelSalt = KernelDef.nextKernelSalt,
+        //   outputSymbol = outputSymbol
+        // // body = body,
+        // // paramDescs = paramDescs
+        // )
+
+        val functionKernelExpr = generateFunctionKernel[Unit, Unit](
           kernelSalt = KernelDef.nextKernelSalt,
-          outputSymbol = outputSymbol
-        // body = body,
-        // paramDescs = paramDescs
+          body = body,
+          paramDescs = paramDescs
         )
         val function = reify(new CLFunction[Unit, Unit](f.splice, functionKernelExpr.splice))
 
@@ -97,7 +103,7 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
               fromValDef ::
               byValDef ::
               reify(
-                function.splice.functionKernel(
+                function.splice(
                   context.splice,
                   new KernelExecutionParameters(
                     ident[Range](rangeValDef).splice.size))

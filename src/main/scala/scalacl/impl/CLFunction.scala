@@ -38,10 +38,7 @@ import scalacl.CLArray
 import scalacl.Context
 
 case class CLFunction[U, V](
-  f: U => V,
-  functionKernel: FunctionKernel[U, V])
-    extends Function1[U, V] {
-
-  def apply(u: U) = f(u)
-  def apply()(implicit ev1: U =:= Unit) = f({}.asInstanceOf[U])
+  function: U => V,
+  functionKernel: FunctionKernel /*[U, V]*/ )
+    extends Function1[U, V] with CLFunctionLike[U, V] {
 }

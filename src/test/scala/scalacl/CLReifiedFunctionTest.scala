@@ -54,10 +54,10 @@ class CLReifiedFunctionTest {
 
       println(f)
       println(f.value)
-      println(f.function)
+      println(f.functionKernel)
       assertArrayEquals(
         Array(20.0, 40.0, 60.0),
-        a.map(f.function).toArray,
+        a.map(new CLFunction[Int, Double](f.value.value, f.functionKernel)).toArray,
         0)
 
     } finally {

@@ -67,9 +67,10 @@ object ScalaCLBuild extends Build {
       scalacOptions ++= Seq(
         "-language:experimental.macros",
         "-encoding", "UTF-8",
-        "-optimise", 
+        "-optimise",
         "-deprecation",
         "-feature",
+        "-Xlog-free-types",
         "-unchecked"
       ),
       

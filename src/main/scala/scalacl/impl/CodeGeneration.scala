@@ -39,7 +39,7 @@ trait CodeGeneration extends CodeConversion {
   import global._
   import definitions._
 
-  private[impl] def expr[T](tree: Tree): Expr[T] = {
+  private[impl] def expr[T: WeakTypeTag](tree: Tree): Expr[T] = {
     import scala.reflect.api.Mirror
     import scala.reflect.api.TreeCreator
     Expr[T](rootMirror, new TreeCreator {
@@ -68,7 +68,7 @@ trait CodeGeneration extends CodeConversion {
   }
 
   def functionToFunctionKernel[A: WeakTypeTag, B: WeakTypeTag](
-    f: Expr[A => B], kernelSalt: Long, outputSymbol: Symbol): Expr[FunctionKernel[A, B]] = {
+    f: Expr[A => B], kernelSalt: Long, outputSymbol: Symbol): Expr[FunctionKernel /*[A, B]*/ ] = {
 
     def isUnit(t: Type) =
       t <:< UnitTpe || t == NoType
@@ -107,11 +107,11 @@ trait CodeGeneration extends CodeConversion {
         implicitIndexDimension = Some(0))
     })
 
-    // println(s"""
-    //   inputParamDesc: $inputParamDesc
-    //   outputParamDesc: $outputParamDesc
-    //   bodyToConvert: $bodyToConvert
-    // """)
+    println(s"""
+      inputParamDesc: $inputParamDesc
+      outputParamDesc: $outputParamDesc
+      bodyToConvert: $bodyToConvert
+    """)
 
     generateFunctionKernel[A, B](
       kernelSalt = kernelSalt,
@@ -157,7 +157,7 @@ trait CodeGeneration extends CodeConversion {
   private[impl] def generateFunctionKernel[A: WeakTypeTag, B: WeakTypeTag](
     kernelSalt: Long,
     body: Tree,
-    paramDescs: Seq[ParamDesc]): Expr[FunctionKernel[A, B]] = {
+    paramDescs: Seq[ParamDesc]): Expr[FunctionKernel /*[A, B]*/ ] = {
 
     // println(s"""
     //   Generating CL function for:
@@ -194,7 +194,7 @@ trait CodeGeneration extends CodeConversion {
     //  capturedOutputs: $capturedOutputs, 
     //  capturedConstants: $capturedConstants""")
     reify(
-      new FunctionKernel[A, B](
+      new FunctionKernel /*[A, B]*/ (
         new KernelDef(
           sources = codeExpr.splice,
           salt = kernelSaltExpr.splice),

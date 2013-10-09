@@ -33,13 +33,66 @@ package scalacl.impl
 import scala.reflect.ClassTag
 import scala.collection.mutable.ArrayBuffer
 import com.nativelibs4java.opencl.CLEvent
-import scala.reflect.runtime.universe.TypeTag
 
 import scalacl.CLArray
 import scalacl.Context
 
-case class FunctionKernel( //[U: TypeTag, V: TypeTag](
-    kernelDef: KernelDef,
-    captures: Captures = Captures()) {
+trait CLFunctionLike[U, V] {
+  val function: U => V
+  val functionKernel: FunctionKernel
 
+  def apply(u: U) = function(u)
+  def apply()(implicit ev1: U =:= Unit) = function({}.asInstanceOf[U])
+
+  import functionKernel._
+
+  // Task
+  def apply(context: Context)(implicit ev1: U =:= Unit, ev2: V =:= Unit): CLEvent = {
+    apply(context, params = null, input = null, output = null)
+  }
+
+  // Kernel with no explicit input and output
+  def apply(context: Context, params: KernelExecutionParameters)(implicit ev1: U =:= Unit, ev2: V =:= Unit): CLEvent = {
+    apply(context, params = params, input = null, output = null)
+  }
+
+  private def append[T: ClassTag](a: Array[T], v: T): Array[T] = {
+    if (v == null) a
+    else if (a != null) a :+ v
+    else Array(v)
+  }
+
+  // Task or NDRange
+  def apply(
+    context: Context,
+    params: KernelExecutionParameters,
+    input: CLArray[U],
+    output: CLArray[V]): CLEvent =
+    {
+      //println(s"Executing kernel with params = $params")
+      ScheduledData.schedule(
+        append(captures.inputs, input),
+        append(captures.outputs, output),
+        eventsToWaitFor => {
+          val args = new ArrayBuffer[AnyRef]
+          val addArg = (b: ScheduledBuffer[_]) => { args += b.buffer }: Unit
+
+          if (input != null)
+            input.foreachBuffer(addArg)
+
+          if (output != null)
+            output.foreachBuffer(addArg)
+
+          if (captures.inputs != null)
+            captures.inputs.foreach(_.foreachBuffer(addArg))
+
+          if (captures.outputs != null)
+            captures.outputs.foreach(_.foreachBuffer(addArg))
+
+          if (captures.constants != null)
+            args ++= captures.constants
+
+          kernelDef.enqueue(context, params, args.toArray, eventsToWaitFor)
+        })
+    }
 }
