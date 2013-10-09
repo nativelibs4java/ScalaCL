@@ -68,7 +68,7 @@ object CLReifiedFunctionMacros {
       } catch {
         case ex: Throwable =>
           ex.printStackTrace()
-          c.warning(f.pos, "Couldn't precompile this function (will rely on reified value).")
+          c.warning(f.tree.pos, "Couldn't precompile this function (will rely on reified value).")
           reify(None)
       }
 
