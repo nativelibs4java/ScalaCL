@@ -118,6 +118,13 @@ trait CodeConversion extends OpenCLConverter with UniverseCasts {
         capturedOutputs ++
         capturedConstants
     // val flat = convert(code)
+
+    // println(s"""
+    //   explicitParamDescs: $explicitParamDescs
+    //   capturedInputs: $capturedInputs
+    //   capturedOutputs: $capturedOutputs
+    //   capturedConstants: $capturedConstants
+    // """)
     val flat = flattenAndConvert(code, paramDescs.map(d => (d.symbol, d.tpe)))
 
     val globalIDIndexes =
@@ -189,12 +196,14 @@ trait CodeConversion extends OpenCLConverter with UniverseCasts {
       //println(s"res = $res")
       res
     })
-
+    // if (params.toString.contains("noarg"))
+    //   throw new RuntimeException()
     val convertedCode =
       result.outerDefinitions.mkString("\n") +
         "kernel void f(" + params.mkString(", ") + ") {\n\t" +
         (result.statements ++ result.values.map(_ + ";")).mkString("\n\t") + "\n" +
         "}"
+    // println("convertedCode: " + convertedCode)
     CodeConversionResult(convertedCode, capturedInputs, capturedOutputs, capturedConstants)
   }
 

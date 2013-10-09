@@ -48,6 +48,8 @@ class KernelDef(protected val sources: String, protected val salt: Long) {
   def enqueue(context: Context, params: KernelExecutionParameters, args: Array[AnyRef], eventsToWaitFor: Array[CLEvent]): CLEvent = {
     var kernel = getKernel(context)
     kernel synchronized {
+      // println("Source: " + sources)
+      // println("Setting args: " + args.mkString(", "))
       kernel.setArgs(args: _*)
       if (params == null)
         kernel.enqueueTask(context.queue, eventsToWaitFor: _*)
