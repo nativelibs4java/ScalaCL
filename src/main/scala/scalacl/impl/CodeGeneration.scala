@@ -33,8 +33,9 @@ import scalacl.CLArray
 import scalacl.CLFilteredArray
 
 import scala.reflect.api.Universe
+import scalaxy.components.StreamTransformers
 
-trait CodeGeneration extends CodeConversion {
+trait CodeGeneration extends CodeConversion with StreamTransformers {
   val global: Universe
   import global._
   import definitions._
@@ -171,8 +172,10 @@ trait CodeGeneration extends CodeConversion {
     //     f = $f
     //     paramDescs = $paramDescs
     // """)
+    val transformedBody = newStreamTransformer(false) transform body
+
     val cr @ CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
-      body,
+      transformedBody,
       paramDescs
     )
 

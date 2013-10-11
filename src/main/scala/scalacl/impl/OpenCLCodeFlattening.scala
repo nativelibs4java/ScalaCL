@@ -207,7 +207,7 @@ trait OpenCLCodeFlattening
             (Seq(), value)
           case _ =>
             assert(getType(value) != NoType, value + ": " + value.getClass.getName) // + " = " + nodeToString(value) + ")")
-            val tempVar = newVariable("tmp", symbolOwner, value.pos, false, value)
+            val tempVar = newVariable("tmp", symbolOwner, value.pos, false, value, value.tpe)
             //println("Creating temp variable " + tempVar.symbol + " for " + value)
             hasNewStatements = true
             for (slice <- getTreeSlice(value))
@@ -355,7 +355,7 @@ trait OpenCLCodeFlattening
         case Apply(Select(target, updateName()), List(index, value)) if isTupleType(getType(value)) =>
           val targetTpe = normalize(target.tpe).asInstanceOf[TypeRef]
           setType(target, targetTpe)
-          val indexVal = newVariable("index", symbolOwner, tree.pos, false, index)
+          val indexVal = newVariable("index", symbolOwner, tree.pos, false, index, index.tpe)
 
           val flatTarget = flattenTuplesAndBlocks(target)
           val flatValue = flattenTuplesAndBlocks(value)
@@ -415,7 +415,7 @@ trait OpenCLCodeFlattening
           // val b = if (condition) d else 0
           val FlatCode(dc, sc, Seq(vc)) = flattenTuplesAndBlocks(condition)
           assert(getType(vc) != NoType, vc)
-          val conditionVar = newVariable("condition", symbolOwner, tree.pos, false, vc)
+          val conditionVar = newVariable("condition", symbolOwner, tree.pos, false, vc, vc.tpe)
 
           val fct @ FlatCode(Seq(), st, vt) = flattenTuplesAndBlocks(thenDo)
           val fco @ FlatCode(Seq(), so, vo) = flattenTuplesAndBlocks(otherwise)
