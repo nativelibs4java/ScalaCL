@@ -31,6 +31,7 @@
 package scalacl.impl
 import scalaxy.components.FlatCode
 import scalaxy.components.FlatCodes._
+import scalaxy.components.StreamTransformers
 
 import scalacl.CLArray
 import scalacl.CLFilteredArray
@@ -38,26 +39,18 @@ import scalacl.CLFilteredArray
 import scala.reflect.api.Universe
 import scala.util.matching.Regex
 
-trait CodeConversion extends OpenCLConverter with UniverseCasts {
-  val global: Universe
-  def fresh(s: String): String
+trait CodeConversion
+    extends OpenCLConverter
+    with StreamTransformers
+    with CodeConversionResults
+    with UniverseCasts {
 
+  val global: Universe
   import global._
   import definitions._
 
-  case class ParamDesc(
-      symbol: Symbol,
-      tpe: Type,
-      mode: ParamKind,
-      usage: UsageKind,
-      implicitIndexDimension: Option[Int] = None,
-      rangeOffset: Option[Symbol] = None,
-      rangeStep: Option[Symbol] = None) {
-    assert((mode == ParamKind.ImplicitArrayElement || mode == ParamKind.RangeIndex) == (implicitIndexDimension != None))
-    def isArray =
-      mode == ParamKind.ImplicitArrayElement || mode == ParamKind.Normal && tpe <:< typeOf[CLArray[_]]
-  }
-
+  def fresh(s: String): String
+  def cleanTypeCheck(tree: Tree): Tree
   /*
   ParamDesc(i, ParamKindRangeIndex, Some(0))
     -> get_global_id(0)
@@ -68,13 +61,45 @@ trait CodeConversion extends OpenCLConverter with UniverseCasts {
   ParamDesc(x, ParamKindRead, Some(0))
     -> x[get_global_id(0)]
   */
-  case class CodeConversionResult(
-    code: String,
-    capturedInputs: Seq[ParamDesc],
-    capturedOutputs: Seq[ParamDesc],
-    capturedConstants: Seq[ParamDesc])
+  def transformStreams(tree: Tree, paramDescs: Seq[ParamDesc]): (Tree, Seq[ParamDesc]) = {
+    val typableBlock =
+      Block(
+        for (param <- paramDescs.toList) yield {
+          ValDef(
+            if (param.output)
+              Modifiers(Flag.MUTABLE)
+            else
+              NoMods,
+            param.name,
+            TypeTree(param.tpe),
+            Literal(Constant(defaultValue(param.tpe)))
+          )
+        },
+        tree.duplicate)
 
-  def convertCode(code: Tree, explicitParamDescs: Seq[ParamDesc]): CodeConversionResult = {
+    println(s"""
+      Generating CL function for:
+        tree = $tree
+        paramDescs = $paramDescs
+        typableBlock = $typableBlock
+    """)
+
+    val Block(valdefs, transformedBody) =
+      newStreamTransformer(false).transform(cleanTypeCheck(typableBlock))
+
+    println(s"""
+        transformedBody = $transformedBody
+    """)
+
+    (
+      transformedBody,
+      for ((paramDesc, vd) <- paramDescs.zip(valdefs)) yield paramDesc.copy(symbol = vd.symbol)
+    )
+  }
+
+  def convertCode(tree: Tree, initialParamDescs: Seq[ParamDesc]): CodeConversionResult = {
+    val (code, explicitParamDescs) = transformStreams(tree, initialParamDescs)
+
     val externalSymbols =
       getExternalSymbols(
         code,
@@ -88,6 +113,7 @@ trait CodeConversion extends OpenCLConverter with UniverseCasts {
         ParamDesc(
           sym.asInstanceOf[Symbol],
           tpe.asInstanceOf[Type],
+          output = false,
           mode = ParamKind.Normal,
           usage = usage)
       }
@@ -102,11 +128,13 @@ trait CodeConversion extends OpenCLConverter with UniverseCasts {
             ParamDesc(
               symbol = d.rangeOffset.get,
               tpe = IntTpe,
+              output = false,
               mode = ParamKind.Normal,
               usage = UsageKind.Input),
             ParamDesc(
               symbol = d.rangeStep.get,
               tpe = IntTpe,
+              output = false,
               mode = ParamKind.Normal,
               usage = UsageKind.Input)
           )
@@ -137,10 +165,10 @@ trait CodeConversion extends OpenCLConverter with UniverseCasts {
       val r = ("\\b(" + Regex.quoteReplacement(paramDesc.symbol.name.toString) + ")\\b").r
       // TODO handle composite types, with replacements of all possible fibers (x._1, x._2._1, x._2._2)
       paramDesc match {
-        case ParamDesc(_, _, ParamKind.ImplicitArrayElement, _, Some(i), None, None) =>
+        case ParamDesc(_, _, _, ParamKind.ImplicitArrayElement, _, Some(i), None, None) =>
           (s: String) =>
             r.replaceAllIn(s, "$1" + Regex.quoteReplacement("[" + globalIDValNames(i) + "]"))
-        case ParamDesc(_, _, ParamKind.RangeIndex, _, Some(i), Some(from), Some(by)) =>
+        case ParamDesc(_, _, _, ParamKind.RangeIndex, _, Some(i), Some(from), Some(by)) =>
           (s: String) =>
             r.replaceAllIn(s, Regex.quoteReplacement("(" + from.name + " + " + globalIDValNames(i) + " * " + by.name + ")"))
         case _ =>
