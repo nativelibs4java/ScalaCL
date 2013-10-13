@@ -75,7 +75,7 @@ trait CodeConversion
             Literal(Constant(defaultValue(param.tpe)))
           )
         },
-        tree.duplicate)
+        tree)
 
     println(s"""
       Generating CL function for:
