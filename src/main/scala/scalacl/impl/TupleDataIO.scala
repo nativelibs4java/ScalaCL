@@ -43,6 +43,10 @@ private[impl] abstract class TupleDataIO[T: Manifest] extends DataIO[T] {
     CLEvent.waitFor(eventsToWaitFor.toArray: _*)
     (0 until length.toInt).par.map(i => get(i, pointers, 0)).toArray // TODO check
   }
+
+  // def ios: Array[DataIO[_]]
+  // def mkTuple(values: Array[Any]): T
+  // 
 }
 
 class Tuple2DataIO[T1: Manifest: DataIO, T2: Manifest: DataIO]

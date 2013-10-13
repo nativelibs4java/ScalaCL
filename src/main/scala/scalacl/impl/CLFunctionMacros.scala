@@ -45,7 +45,7 @@ private[impl] object CLFunctionMacros {
 
     val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
-    WithResult(
+    val func = WithResult(
       new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel /*[A, B]*/ ]] {
         override val context = c
         import global._
@@ -56,30 +56,47 @@ private[impl] object CLFunctionMacros {
           outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
       }
     )
-
+    try {
+      c.Expr[FunctionKernel](c.typeCheck(func.tree))
+    } catch {
+      case ex: Throwable =>
+        ex.printStackTrace()
+        println("ERROR WITH: " + func)
+        throw ex
+    }
   }
 
   private[impl] def convertTask(c: Context)(block: c.Expr[Unit]): c.Expr[CLFunction[Unit, Unit]] = {
     import c.universe._
     import definitions._
 
-    WithResult(
+    val func = WithResult(
       new CodeGeneration with WithMacroContext with WithResult[c.Expr[CLFunction[Unit, Unit]]] {
         override val context = c
 
         // Create a fake Unit => Unit function.
-        val typedBlock = c.typeCheck(block.tree)
+
+        //var typedBlock = newStreamTransformer(false) transform cleanTypeCheck(block.tree)
+        // val typedBlock = c.typeCheck(block.tree)
         val functionKernelExpr = generateFunctionKernel[Unit, Unit](
           kernelSalt = KernelDef.nextKernelSalt,
-          body = castTree(typedBlock),
+          body = castTree(block.tree),
           paramDescs = Seq()
         )
 
-        val f = blockToUnitFunction(castTree(typedBlock))
+        val f = blockToUnitFunction(castTree(block.tree))
         val result = reify(
           new CLFunction[Unit, Unit](f.splice, functionKernelExpr.splice)
         ).asInstanceOf[Result]
       }
     )
+    try {
+      c.Expr[CLFunction[Unit, Unit]](c.typeCheck(func.tree))
+    } catch {
+      case ex: Throwable =>
+        ex.printStackTrace()
+        println("ERROR WITH: " + func)
+        throw ex
+    }
   }
 }

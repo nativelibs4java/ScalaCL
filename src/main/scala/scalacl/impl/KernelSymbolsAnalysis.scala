@@ -39,6 +39,7 @@ import scala.reflect.NameTransformer
 
 trait KernelSymbolsAnalysis
     extends CommonScalaNames
+    with CodeConversionResults
     with MiscMatchers
     with SymbolKinds {
   val global: reflect.api.Universe

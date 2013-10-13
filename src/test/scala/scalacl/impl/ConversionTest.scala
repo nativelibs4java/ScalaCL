@@ -63,7 +63,20 @@ class ConversionTest
     val in: CLArray[Int] = null
     val out: CLArray[Int] = null
     val f = 10
-    val c = conv(reify { out(1) = in(2) * f })
+    val c = conv(reify { out(1) = in(2) * f }, List(
+      ParamDesc(
+        symbol = NoSymbol.newTermSymbol("out"),
+        output = true,
+        tpe = typeOf[CLArray[Int]],
+        mode = ParamKind.Normal,
+        usage = UsageKind.Output),
+      ParamDesc(
+        symbol = NoSymbol.newTermSymbol("in"),
+        output = false,
+        tpe = typeOf[CLArray[Int]],
+        mode = ParamKind.Normal,
+        usage = UsageKind.Input)))
+
     assertEquals(
       "kernel void f(global const int* in, global int* out, int f) {\n" +
         "\tout[1] = (in[2] * f);\n" +

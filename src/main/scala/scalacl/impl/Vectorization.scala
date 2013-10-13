@@ -72,6 +72,7 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
           ParamDesc(
             symbol = param.symbol,
             tpe = numTpe,
+            output = false,
             mode = ParamKind.RangeIndex,
             usage = UsageKind.Input,
             implicitIndexDimension = Some(0),

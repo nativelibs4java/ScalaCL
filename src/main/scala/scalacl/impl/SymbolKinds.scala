@@ -55,7 +55,7 @@ trait SymbolKinds extends Tuploids with CommonScalaNames {
   }
 
   def kindOf(symbol: Symbol, tpe: Type): SymbolKind = {
-    if (tpe <:< typeOf[CLArray[_]] || tpe <:< typeOf[CLFilteredArray[_]])
+    if (tpe != null && (tpe <:< typeOf[CLArray[_]] || tpe <:< typeOf[CLFilteredArray[_]]))
       SymbolKind.ArrayLike
     else if (isTuploidType(tpe))
       SymbolKind.Tuploid

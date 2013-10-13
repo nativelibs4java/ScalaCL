@@ -69,7 +69,7 @@ class VectorizationTest
     )
   }
 
-  @Ignore
+  // @Ignore
   @Test
   def notVectorizable2D {
     assertThat(

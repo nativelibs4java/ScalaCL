@@ -56,7 +56,8 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
     expr[Unit => Unit](
       Function(
         List(
-          ValDef(NoMods, newTermName(fresh("noarg")), TypeTree(UnitTpe), EmptyTree)
+          ValDef(
+            NoMods, newTermName(fresh("noarg")), TypeTree(UnitTpe), EmptyTree)
         ),
         block
       )
@@ -99,6 +100,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
           ParamDesc(
             symbol = castSymbol(param.symbol),
             tpe = castType(inputTpe),
+            output = false,
             mode = ParamKind.ImplicitArrayElement,
             usage = UsageKind.Input,
             implicitIndexDimension = Some(0)))
@@ -111,6 +113,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
           ParamDesc(
             symbol = castSymbol(outputSymbol),
             tpe = castType(outputTpe),
+            output = true,
             mode = ParamKind.ImplicitArrayElement,
             usage = UsageKind.Output,
             implicitIndexDimension = Some(0)))
@@ -167,17 +170,12 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
     body: Tree,
     paramDescs: Seq[ParamDesc]): Expr[FunctionKernel /*[A, B]*/ ] = {
 
-    // println(s"""
-    //   Generating CL function for:
-    //     f = $f
-    //     paramDescs = $paramDescs
-    // """)
-    val transformedBody = newStreamTransformer(false) transform body
-
     val cr @ CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
-      transformedBody,
+      body,
       paramDescs
     )
+
+    // resetAllAttrs(body)
 
     val codeExpr = expr[String](Literal(Constant(code)))
     val kernelSaltExpr = expr[Long](Literal(Constant(kernelSalt)))
