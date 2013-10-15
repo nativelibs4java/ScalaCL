@@ -31,17 +31,17 @@
 package scalacl
 package impl
 
+import scala.language.reflectiveCalls
+
 import scalaxy.components.CommonScalaNames
 import scalaxy.components.MiscMatchers
-
-import scala.collection.immutable.Stack
-import scala.reflect.NameTransformer
 
 trait KernelSymbolsAnalysis
     extends CommonScalaNames
     with CodeConversionResults
     with MiscMatchers
-    with SymbolKinds {
+    with SymbolKinds
+    with SymbolExtensions {
   val global: reflect.api.Universe
   import global._
   import definitions._
@@ -53,10 +53,10 @@ trait KernelSymbolsAnalysis
       symbolTypes: mutable.HashMap[Symbol, Type] = new mutable.HashMap[Symbol, Type],
       localSymbols: mutable.HashSet[Symbol] = new mutable.HashSet[Symbol]) {
     lazy val symbols: Set[Symbol] = symbolUsages.keySet ++ localSymbols
-    lazy val capturedSymbols: Seq[Symbol] = (symbols -- localSymbols).toSeq
+    lazy val capturedSymbols: List[Symbol] = (symbols -- localSymbols).toList
 
     def declareSymbolUsage(symbol: Symbol, tpe: Type, usage: UsageKind) {
-      if (symbol == NoSymbol || symbol.isModule || symbol.isType) {
+      if (symbol == NoSymbol || symbol.isModule || symbol.isType || symbol.isMethod && symbol.asMethod.isLabel) {
         // TODO error("Cannot declare usage of NoSymbol!")
       } else {
         val actualTpe = try { symbol.typeSignature } catch { case _: Throwable => tpe }
