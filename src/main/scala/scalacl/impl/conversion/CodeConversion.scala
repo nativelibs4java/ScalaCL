@@ -51,6 +51,9 @@ trait CodeConversion
 
   def fresh(s: String): String
   def cleanTypeCheck(tree: Tree): Tree
+  def resetLocalAttrs(tree: Tree): Tree
+  def resetAllAttrs(tree: Tree): Tree
+  // def typeCheck(tree: Tree): Tree
   /*
   ParamDesc(i, ParamKindRangeIndex, Some(0))
     -> get_global_id(0)
@@ -62,30 +65,41 @@ trait CodeConversion
     -> x[get_global_id(0)]
   */
   def transformStreams(tree: Tree, paramDescs: Seq[ParamDesc]): (Tree, Seq[ParamDesc]) = {
+    val Block(valDefs, EmptyTree) =
+      typeCheck(
+        Block(
+          for (param <- paramDescs.toList) yield {
+            ValDef(
+              if (param.output)
+                Modifiers(Flag.MUTABLE)
+              else
+                NoMods,
+              param.name,
+              TypeTree(param.tpe),
+              Literal(Constant(defaultValue(param.tpe)))
+            )
+          },
+          EmptyTree
+        ),
+        WildcardType
+      )
+
     val typableBlock =
-      Block(
-        for (param <- paramDescs.toList) yield {
-          ValDef(
-            if (param.output)
-              Modifiers(Flag.MUTABLE)
-            else
-              NoMods,
-            param.name,
-            TypeTree(param.tpe),
-            Literal(Constant(defaultValue(param.tpe)))
-          )
-        },
-        tree)
+      Block(valDefs, tree.substituteSymbols(paramDescs.map(_.symbol).toList, valDefs.map(_.symbol)))
 
-    println(s"""
-      Generating CL function for:
-        tree = $tree
-        paramDescs = $paramDescs
-        typableBlock = $typableBlock
-    """)
+    // println(s"""
+    //   Generating CL function for:
+    //     tree = $tree
+    //     paramDescs = $paramDescs
+    //     typableBlock = $typableBlock
+    // """)
 
-    val Block(valdefs, transformedBody) =
-      newStreamTransformer(false).transform(cleanTypeCheck(typableBlock))
+    // val toTransform = typeCheck(typableBlock, WildcardType)
+    val toTransform = typableBlock
+    val transformed = newStreamTransformer(false).transform(toTransform)
+
+    val Block(_, transformedBody) =
+      typeCheck(resetLocalAttrs(transformed), WildcardType)
 
     println(s"""
         transformedBody = $transformedBody
@@ -93,7 +107,7 @@ trait CodeConversion
 
     (
       transformedBody,
-      for ((paramDesc, vd) <- paramDescs.zip(valdefs)) yield paramDesc.copy(symbol = vd.symbol)
+      for ((paramDesc, valDef) <- paramDescs.zip(valDefs)) yield paramDesc.copy(symbol = valDef.symbol)
     )
   }
 
