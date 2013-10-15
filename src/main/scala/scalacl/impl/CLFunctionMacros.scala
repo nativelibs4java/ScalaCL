@@ -74,16 +74,13 @@ private[impl] object CLFunctionMacros {
       new CodeGeneration with WithMacroContext with WithResult[c.Expr[CLFunction[Unit, Unit]]] {
         override val context = c
 
-        // Create a fake Unit => Unit function.
-
-        //var typedBlock = newStreamTransformer(false) transform cleanTypeCheck(block.tree)
-        // val typedBlock = c.typeCheck(block.tree)
         val functionKernelExpr = generateFunctionKernel[Unit, Unit](
           kernelSalt = KernelDef.nextKernelSalt,
           body = castTree(block.tree),
           paramDescs = Seq()
         )
 
+        // Create a fake Unit => Unit function.
         val f = blockToUnitFunction(castTree(block.tree))
         val result = reify(
           new CLFunction[Unit, Unit](f.splice, functionKernelExpr.splice)

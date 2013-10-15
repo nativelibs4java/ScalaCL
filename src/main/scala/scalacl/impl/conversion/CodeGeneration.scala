@@ -147,24 +147,6 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
     case _ => typeOf[AnyRef]
   }
 
-  // private[impl] def generateCLFunction[A: WeakTypeTag, B: WeakTypeTag](
-  //   f: Expr[A => B],
-  //   kernelSalt: Long,
-  //   body: Tree,
-  //   paramDescs: Seq[ParamDesc]): Expr[CLFunction[A, B]] = {
-
-  //   try {
-  //     val functionKernelExpr = generateFunctionKernel[A, B](f, kernelSalt, body, paramDescs)
-
-  //     reified(new CLFunction[A, B](f.splice, functionKernelExpr.splice))
-  //   } catch {
-  //     case ex: Throwable =>
-  //       ex.printStackTrace()
-  //       sys.error("CLFunction generation failed for { " + f + " }: " + ex)
-  //       null
-  //   }
-  // }
-
   private[impl] def generateFunctionKernel[A: WeakTypeTag, B: WeakTypeTag](
     kernelSalt: Long,
     body: Tree,

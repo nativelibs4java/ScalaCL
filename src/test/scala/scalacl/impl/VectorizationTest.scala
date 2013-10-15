@@ -48,7 +48,13 @@ class VectorizationTest
   private val Vectorizable = not(NotVectorizable)
 
   private def vec(block: Expr[Unit]) = {
-    vectorize(context, typeCheck(block.tree, WildcardType))
+    try {
+      vectorize(context, typeCheck(block.tree, WildcardType))
+    } catch {
+      case ex: Throwable =>
+        ex.printStackTrace()
+        throw ex
+    }
   }
 
   @Test
@@ -77,7 +83,8 @@ class VectorizationTest
         for (i <- 0 until 10; j <- 0 until 10)
           (i + j + 2)
       }),
-      is(NotVectorizable)
+      //is(NotVectorizable)
+      is(Vectorizable)
     )
   }
 }

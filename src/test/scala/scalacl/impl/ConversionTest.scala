@@ -58,24 +58,30 @@ class ConversionTest
     assertEquals(usage, d.usage)
   }
 
+  def inputParam[T: TypeTag](name: String, mode: ParamKind = ParamKind.Normal) = {
+    ParamDesc(
+      symbol = NoSymbol.newTermSymbol(name),
+      output = true,
+      tpe = typeOf[T],
+      mode = mode,
+      usage = UsageKind.Input)
+  }
+
+  def outputParam[T: TypeTag](name: String, mode: ParamKind = ParamKind.Normal) = {
+    ParamDesc(
+      symbol = NoSymbol.newTermSymbol(name),
+      output = true,
+      tpe = typeOf[T],
+      mode = mode,
+      usage = UsageKind.Output)
+  }
+
   @Test
   def simpleCaptures {
     val in: CLArray[Int] = null
     val out: CLArray[Int] = null
     val f = 10
-    val c = conv(reify { out(1) = in(2) * f }, List(
-      ParamDesc(
-        symbol = NoSymbol.newTermSymbol("out"),
-        output = true,
-        tpe = typeOf[CLArray[Int]],
-        mode = ParamKind.Normal,
-        usage = UsageKind.Output),
-      ParamDesc(
-        symbol = NoSymbol.newTermSymbol("in"),
-        output = false,
-        tpe = typeOf[CLArray[Int]],
-        mode = ParamKind.Normal,
-        usage = UsageKind.Input)))
+    val c = conv(reify { out(1) = in(2) * f })
 
     assertEquals(
       "kernel void f(global const int* in, global int* out, int f) {\n" +
@@ -97,9 +103,7 @@ class ConversionTest
   def simpleTupleResult {
     val in: CLArray[Int] = null
     val out: CLArray[(Int, Float)] = null
-    val c = conv(reify {
-      out(0) = (in(0), in(2).toFloat)
-    })
+    val c = conv(reify { out(0) = (in(0), in(2).toFloat) })
     assertEquals(
       "kernel void f(global const int* in, global int* out$1, global float* out$2) {\n" +
         "\tconst long index0 = 0;\n" +
