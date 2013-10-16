@@ -56,6 +56,7 @@ private[impl] object CLFunctionMacros {
           outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
       }
     )
+    // func
     try {
       c.Expr[FunctionKernel](c.typeCheck(func.tree))
     } catch {

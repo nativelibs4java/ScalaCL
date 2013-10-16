@@ -109,20 +109,17 @@ trait OpenCLCodeFlattening
       new Transformer {
         // TODO rename the symbols themselves ??
         override def transform(tree: Tree): Tree = {
-          def setAttrs(newTree: Tree) =
-            // newTree
-            //withSymbol(tree.symbol, tree.tpe) {
+          def check(newTree: Tree) =
             typeCheck(newTree, tree.tpe)
-          //}
 
           renamings.get(tree.symbol).map(newName => {
             tree match {
               case ValDef(mods, name, tpt, rhs) =>
-                setAttrs(treeCopy.ValDef(tree, mods, newName, super.transform(tpt), super.transform(rhs)))
+                check(treeCopy.ValDef(tree, mods, newName, super.transform(tpt), super.transform(rhs)))
               case DefDef(mods, name, tparams, vparams, tpt, rhs) =>
-                setAttrs(treeCopy.DefDef(tree, mods, newName, tparams, vparams, super.transform(tpt), super.transform(rhs)))
+                check(treeCopy.DefDef(tree, mods, newName, tparams, vparams, super.transform(tpt), super.transform(rhs)))
               case Ident(name) =>
-                setAttrs(treeCopy.Ident(tree, newName))
+                check(treeCopy.Ident(tree, newName))
               case _ =>
                 super.transform(tree)
             }
@@ -307,7 +304,7 @@ trait OpenCLCodeFlattening
             case t => t
           }
           if (isTupleType(tpe)) {
-            val identGen = () => setType(Ident(name), tpe)
+            val identGen = () => Ident(name)
             val fiberPaths = flattenFiberPaths(tpe)
             val fiberValues = fiberVariableNames(name, tpe).map(x => Ident(x._1))
             FlatCode[Tree](Seq(), Seq(), fiberValues)
@@ -321,7 +318,7 @@ trait OpenCLCodeFlattening
           FlatCode[Tree](
             Seq(),
             Seq(),
-            Seq(withSymbol(s.symbol) { Ident(name) })
+            Seq(Ident(name))
           )
         case Select(target, name) =>
           //println("CONVERTING select " + tree)
@@ -354,7 +351,6 @@ trait OpenCLCodeFlattening
           }
         case Apply(Select(target, updateName()), List(index, value)) if isTupleType(getType(value)) =>
           val targetTpe = normalize(target.tpe).asInstanceOf[TypeRef]
-          setType(target, targetTpe)
           val indexVal = newVal("index", index, index.tpe)
 
           val flatTarget = flattenTuplesAndBlocks(target)
@@ -381,7 +377,7 @@ trait OpenCLCodeFlattening
             vals1.zip(tpes).map {
               case (target, tpe) =>
                 val args = argsConv.map(_.values)
-                setType(Apply(target, args.flatten), tpe)
+                Apply(target, args.flatten)
             }
           )
           //println(s"CONVERTED apply $tree\n\tresult = $result, \n\ttpes = $tpes, \n\targsConv = $argsConv, \n\tvals1 = $vals1, fc1 = $fc1")

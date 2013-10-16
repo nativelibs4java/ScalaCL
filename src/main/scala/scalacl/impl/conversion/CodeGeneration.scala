@@ -88,7 +88,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
         body
       } else {
         Assign(
-          setType(Ident(outputSymbol), outputTpe),
+          Ident(outputSymbol),
           body)
       }
 
