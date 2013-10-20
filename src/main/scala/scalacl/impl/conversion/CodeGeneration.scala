@@ -127,12 +127,12 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
     //       mode = ParamKind.Normal,
     //       usage = UsageKind.Input)
     // }
-    println(s"""
-    functionToFunctionKernel:
-      inputParamDesc: $inputParamDesc
-      outputParamDesc: $outputParamDesc
-      bodyToConvert: $bodyToConvert
-    """)
+    // println(s"""
+    // functionToFunctionKernel:
+    //   inputParamDesc: $inputParamDesc
+    //   outputParamDesc: $outputParamDesc
+    //   bodyToConvert: $bodyToConvert
+    // """)
 
     val kernel = generateFunctionKernel[A, B](
       kernelSalt = kernelSalt,
@@ -190,11 +190,11 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
       capturedConstants
         .map(d => castAnyToAnyRef(ident(d.symbol), d.tpe)).toList
     )
-    println(s"""
-     code: $code
-     capturedInputs: $capturedInputs, 
-     capturedOutputs: $capturedOutputs, 
-     capturedConstants: $capturedConstants""")
+    // println(s"""
+    //  code: $code
+    //  capturedInputs: $capturedInputs, 
+    //  capturedOutputs: $capturedOutputs, 
+    //  capturedConstants: $capturedConstants""")
     reify(
       new FunctionKernel /*[A, B]*/ (
         new KernelDef(

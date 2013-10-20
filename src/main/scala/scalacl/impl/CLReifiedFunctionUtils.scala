@@ -54,10 +54,10 @@ object CLReifiedFunctionUtils {
 
       import global._
 
-      println(s"""
-        ast: $ast
-        captures: $captures
-      """)
+      // println(s"""
+      //   ast: $ast
+      //   captures: $captures
+      // """)
       val ff = ru.Function(captures.map({
         case (name, cap) =>
           ru.ValDef(ru.NoMods, ru.newTermName(name), ru.TypeTree(cap.tpe.asInstanceOf[ru.Type]), ru.EmptyTree)
@@ -85,10 +85,10 @@ object CLReifiedFunctionUtils {
     val compiled = CompilerUtils.compile(generation.result, toolbox)
     val method = reflectMethod(compiled(), "apply")
     val args = captures.map(_._2.value).toArray
-    println(s"""
-      METHOD: $method
-      ARGS: $args
-    """)
+    // println(s"""
+    //   METHOD: $method
+    //   ARGS: $args
+    // """)
     method(args: _*).asInstanceOf[FunctionKernel /*[A, B]*/ ]
   }
 }

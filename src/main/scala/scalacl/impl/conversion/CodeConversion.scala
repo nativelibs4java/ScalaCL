@@ -159,13 +159,13 @@ trait CodeConversion
         capturedConstants
     // val flat = convert(code)
 
-    println(s"""
-    convertCode:
-      explicitParamDescs: $explicitParamDescs
-      capturedInputs: $capturedInputs
-      capturedOutputs: $capturedOutputs
-      capturedConstants: $capturedConstants
-    """)
+    // println(s"""
+    // convertCode:
+    //   explicitParamDescs: $explicitParamDescs
+    //   capturedInputs: $capturedInputs
+    //   capturedOutputs: $capturedOutputs
+    //   capturedConstants: $capturedConstants
+    // """)
     val flat = flattenAndConvert(code, paramDescs.map(d => (d.symbol, d.tpe)))
 
     val globalIDIndexes =

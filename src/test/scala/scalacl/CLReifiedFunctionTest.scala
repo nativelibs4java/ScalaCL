@@ -52,9 +52,9 @@ class CLReifiedFunctionTest {
         x * 2.0 * v
       }
 
-      println(f)
-      println(f.value)
-      println(f.functionKernel)
+      // println(f)
+      // println(f.value)
+      // println(f.functionKernel)
       assertArrayEquals(
         Array(20.0, 40.0, 60.0),
         a.map(f).toArray,
