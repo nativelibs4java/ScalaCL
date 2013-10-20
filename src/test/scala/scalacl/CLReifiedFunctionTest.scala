@@ -34,7 +34,7 @@ import impl._
 import org.junit._
 import Assert._
 
-class CLReifiedFunctionTest {
+class CLFunctionTest {
   @Test
   def simple {
     implicitly[DataIO[Double]]
@@ -48,7 +48,7 @@ class CLReifiedFunctionTest {
       // println(a.toSeq)
       // assertEquals(Seq(0, 100, 0), a.toSeq)
 
-      val f: CLReifiedFunction[Int, Double] = (x: Int) => {
+      val f: CLFunction[Int, Double] = (x: Int) => {
         x * 2.0 * v
       }
 

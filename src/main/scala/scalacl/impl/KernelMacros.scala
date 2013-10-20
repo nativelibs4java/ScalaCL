@@ -70,6 +70,8 @@ object KernelMacros {
   }
 
   def taskImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
+
+    // val f = blockToUnitFunction(block.tree)
     val ff = CLFunctionMacros.convertTask(c)(block)
     c.universe.reify {
       ff.splice(contextExpr.splice)

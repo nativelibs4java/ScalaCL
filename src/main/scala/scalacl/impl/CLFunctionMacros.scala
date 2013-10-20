@@ -28,43 +28,71 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scalacl.impl
-import scalacl.CLArray
-import scalacl.CLFilteredArray
+package scalacl
+package impl
 
+import scalaxy.reified._
+import scala.reflect.runtime.universe
+
+import scalacl.impl.CLArrayMacros.typeTagExpr
 import scalaxy.components.WithMacroContext
 
 import language.experimental.macros
 import scala.reflect.macros.Context
 
-private[impl] object CLFunctionMacros {
+object CLFunctionMacros {
+  def fun2clfun[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context)(f: c.Expr[(A => B)])(ta: c.Expr[universe.TypeTag[A]], tb: c.Expr[universe.TypeTag[B]]): c.Expr[CLFunction[A, B]] = {
 
-  private[impl] def convertFunction[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context)(f: c.Expr[A => B]): c.Expr[FunctionKernel /*[A, B]*/ ] = {
     import c.universe._
-    import definitions._
+    // TODO: choking appropriately upon unsupported captures.
 
-    val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
+    // Attempt to pre-convert the function.
+    // This may fail if the tree contains free types: in that case, the reified value
+    // tree will need to be converted at runtime.
 
-    val captureFunction = Function(Nil, f.tree)
+    val tf = f //c.Expr[(A => B)](c.typeCheck(f.tree))
+    val precompiledFunctionExpr: c.Expr[Option[FunctionKernel /*[A, B]*/ ]] =
+      // try {
+      //   val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
-    val Function(Nil, func) = WithResult(
-      new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel /*[A, B]*/ ]] {
-        override val context = c
-        import global._
+      //   val functionKernelExpr = WithResult(
+      //     new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel/*[A, B]*/]] {
+      //       override val context = c
+      //       import global._
 
-        val result = functionToFunctionKernel[A, B](
-          captureFunction = castTree(captureFunction),
-          kernelSalt = KernelDef.nextKernelSalt,
-          outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
-      }
-    )
-    c.Expr[FunctionKernel](func)
+      //       val result = functionToFunctionKernel/*[A, B]*/(
+      //         f = castExpr(f),
+      //         kernelSalt = KernelDef.nextKernelSalt,
+      //         outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
+      //     }
+      //   )
+      //   reify(Some(functionKernelExpr.splice))
+      // } catch {
+      //   case ex: Throwable =>
+      //     ex.printStackTrace()
+      //     c.warning(f.tree.pos, "Couldn't precompile this function (will rely on reified value).")
+      reify(None)
+    // }
+    val reifiedValueExpr = scalaxy.reified.internal.reifyImpl[(A => B)](c)(f)(typeTagExpr[(A => B)](c))
+
+    // TODO: perform static precompilation here.
+    val result = reify {
+      implicit val tta: universe.TypeTag[A] = ta.splice
+      implicit val ttb: universe.TypeTag[B] = tb.splice
+      new CLFunction[A, B](
+        reifiedValueExpr.splice, //tf.splice,
+        precompiledFunctionExpr.splice)
+    }
+    result
+    // println(result)
     // try {
-    //   c.Expr[FunctionKernel](c.typeCheck(func.tree))
+    //   c.Expr[CLFunction[A, B]](c.typeCheck(
+    //     result.tree, withMacrosDisabled = true
+    //   ))
     // } catch {
     //   case ex: Throwable =>
+    //     println("ERROR ON: " + result)
     //     ex.printStackTrace()
-    //     println("ERROR WITH: " + func)
     //     throw ex
     // }
   }
@@ -73,31 +101,18 @@ private[impl] object CLFunctionMacros {
     import c.universe._
     import definitions._
 
-    val func = WithResult(
-      new CodeGeneration with WithMacroContext with WithResult[c.Expr[CLFunction[Unit, Unit]]] {
-        override val context = c
-
-        val functionKernelExpr = generateFunctionKernel[Unit, Unit](
-          kernelSalt = KernelDef.nextKernelSalt,
-          body = castTree(block.tree),
-          paramDescs = Seq()
-        )
-
-        // Create a fake Unit => Unit function.
-        val f = blockToUnitFunction(castTree(block.tree))
-        val result = reify(
-          new CLFunction[Unit, Unit](f.splice, functionKernelExpr.splice)
-        ).asInstanceOf[Result]
-      }
+    val f = c.Expr[Unit => Unit](
+      Function(
+        List(
+          ValDef(
+            NoMods,
+            c.fresh("noarg"): TermName,
+            TypeTree(UnitTpe),
+            EmptyTree)
+        ),
+        block.tree
+      )
     )
-    func
-    // try {
-    //   c.Expr[CLFunction[Unit, Unit]](c.typeCheck(func.tree))
-    // } catch {
-    //   case ex: Throwable =>
-    //     ex.printStackTrace()
-    //     println("ERROR WITH: " + func)
-    //     throw ex
-    // }
+    fun2clfun[Unit, Unit](c)(f)(typeTagExpr[Unit](c), typeTagExpr[Unit](c))
   }
 }

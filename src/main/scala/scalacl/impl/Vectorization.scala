@@ -28,7 +28,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scalacl.impl
+package scalacl
+package impl
 
 import scala.reflect.api.Universe
 import scala.collection.immutable.NumericRange
@@ -106,7 +107,7 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
           body = body,
           paramDescs = paramDescs
         )
-        val function = reify(new CLFunction[Unit, Unit](f.splice, functionKernelExpr.splice))
+        val function = reify(new CLFunction[Unit, Unit](f.splice, Some(functionKernelExpr.splice)))
 
         expr[Unit](
           Block(

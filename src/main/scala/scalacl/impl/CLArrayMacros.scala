@@ -49,7 +49,7 @@ private[scalacl] object CLArrayMacros {
   }
 
   def foreachImpl[T: c.WeakTypeTag](c: Context)(f: c.Expr[T => Unit]): c.Expr[Unit] = {
-    val ff = CLReifiedFunctionMacros.fun2clfun[T, Unit](c)(f)(typeTagExpr[T](c), typeTagExpr[Unit](c))
+    val ff = CLFunctionMacros.fun2clfun[T, Unit](c)(f)(typeTagExpr[T](c), typeTagExpr[Unit](c))
     c.universe.reify({
       val self = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
       self.foreach(ff.splice)
@@ -57,7 +57,7 @@ private[scalacl] object CLArrayMacros {
   }
   def mapImpl[T: c.WeakTypeTag, U: c.WeakTypeTag](c: Context)(f: c.Expr[T => U])(io2: c.Expr[DataIO[U]], m2: c.Expr[ClassTag[U]], t2: c.Expr[universe.TypeTag[U]]): c.Expr[CLArray[U]] = {
     // try {
-    val ff = CLReifiedFunctionMacros.fun2clfun[T, U](c)(f)(typeTagExpr[T](c), typeTagExpr[U](c))
+    val ff = CLFunctionMacros.fun2clfun[T, U](c)(f)(typeTagExpr[T](c), typeTagExpr[U](c))
     // c.Expr[CLArray[U]](
     // c.typeCheck(
     c.universe.reify({
@@ -81,7 +81,7 @@ private[scalacl] object CLArrayMacros {
     // }
   }
   def filterImpl[T: c.WeakTypeTag](c: Context)(f: c.Expr[T => Boolean]): c.Expr[CLFilteredArray[T]] = {
-    val ff = CLReifiedFunctionMacros.fun2clfun[T, Boolean](c)(f)(typeTagExpr[T](c), typeTagExpr[Boolean](c))
+    val ff = CLFunctionMacros.fun2clfun[T, Boolean](c)(f)(typeTagExpr[T](c), typeTagExpr[Boolean](c))
     c.universe.reify {
       val self = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
       import self.t

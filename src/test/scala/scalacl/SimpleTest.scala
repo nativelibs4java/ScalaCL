@@ -39,7 +39,7 @@ class SimpleTest {
   def testHandWrittenKernels {
     implicit val context = Context.best
     val factor = 20.5f
-    val trans = new CLReifiedFunction[Int, Int](
+    val trans = new CLFunction[Int, Int](
       (v: Int) => (v * factor).toInt,
       preparedFunctionKernel = Some(
         new FunctionKernel(
@@ -55,7 +55,7 @@ class SimpleTest {
             salt = -1),
           Captures(constants = Array(factor.asInstanceOf[AnyRef])))))
 
-    val pred = new CLReifiedFunction[Int, Boolean](
+    val pred = new CLFunction[Int, Boolean](
       (v: Int) => v % 2 == 0,
       preparedFunctionKernel = Some(
         new FunctionKernel(

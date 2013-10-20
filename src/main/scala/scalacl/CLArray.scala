@@ -93,20 +93,20 @@ class CLArray[T](
   def foreach(f: T => Unit): Unit = macro CLArrayMacros.foreachImpl[T]
 
   // private[scalacl]
-  def foreach(f: CLReifiedFunction[T, Unit]) {
+  def foreach(f: CLFunction[T, Unit]) {
     execute(f, null)
   }
 
   def map[U](f: T => U)(implicit io2: DataIO[U], m2: ClassTag[U], t2: TypeTag[U]): CLArray[U] = macro CLArrayMacros.mapImpl[T, U]
 
   //private[scalacl] 
-  def map[U](f: CLReifiedFunction[T, U])(implicit io2: DataIO[U], m2: ClassTag[U], t2: TypeTag[U]): CLArray[U] = {
+  def map[U](f: CLFunction[T, U])(implicit io2: DataIO[U], m2: ClassTag[U], t2: TypeTag[U]): CLArray[U] = {
     val output = new CLArray[U](length)
     execute(f, output)
     output
   }
 
-  private def execute[U](f: CLReifiedFunction[T, U], output: CLArray[U]) {
+  private def execute[U](f: CLFunction[T, U], output: CLArray[U]) {
     val params = KernelExecutionParameters(Array(length))
     f.apply(context, params, this, output)
   }
@@ -114,7 +114,7 @@ class CLArray[T](
   def filter(f: T => Boolean): CLFilteredArray[T] = macro CLArrayMacros.filterImpl[T]
 
   // private[scalacl]
-  def filter(f: CLReifiedFunction[T, Boolean]): CLFilteredArray[T] = {
+  def filter(f: CLFunction[T, Boolean]): CLFilteredArray[T] = {
     val presenceMask = new CLArray[Boolean](length)
     execute(f, presenceMask)
     new CLFilteredArray[T](this.clone, presenceMask)

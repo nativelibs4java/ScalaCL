@@ -32,8 +32,8 @@ package scalacl
 
 import scalacl.impl.Captures
 import scalacl.impl.CLFunctionLike
-import scalacl.impl.CLReifiedFunctionMacros
-import scalacl.impl.CLReifiedFunctionUtils
+import scalacl.impl.CLFunctionMacros
+import scalacl.impl.CLFunctionUtils
 import scalacl.impl.FunctionKernel
 import scalacl.impl.KernelDef
 
@@ -46,16 +46,16 @@ import scalaxy.reified._
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.universe.WeakTypeTag
 
-case class CLReifiedFunction[A: WeakTypeTag, B: WeakTypeTag](
+case class CLFunction[A: WeakTypeTag, B: WeakTypeTag](
   value: ReifiedValue[A => B], preparedFunctionKernel: Option[FunctionKernel /*[A, B]*/ ])
     extends (A => B) with CLFunctionLike[A, B] {
 
   lazy val function = value.value
   lazy val functionKernel =
     preparedFunctionKernel.getOrElse(
-      CLReifiedFunctionUtils.functionKernel[A, B](this))
+      CLFunctionUtils.functionKernel[A, B](this))
 }
 
-object CLReifiedFunction {
-  implicit def fun2clfun[A: TypeTag, B: TypeTag](f: A => B): CLReifiedFunction[A, B] = macro CLReifiedFunctionMacros.fun2clfun[A, B]
+object CLFunction {
+  implicit def fun2clfun[A: TypeTag, B: TypeTag](f: A => B): CLFunction[A, B] = macro CLFunctionMacros.fun2clfun[A, B]
 }

@@ -42,8 +42,8 @@ import scalaxy.reified.internal.CompilerUtils
 import scalaxy.reified.internal.Utils.optimisingToolbox
 import scalaxy.reified.internal.Optimizer.{ optimize, getFreshNameGenerator }
 
-object CLReifiedFunctionUtils {
-  def functionKernel[A: WeakTypeTag, B: WeakTypeTag](f: CLReifiedFunction[A, B]): FunctionKernel /*[A, B]*/ = {
+object CLFunctionUtils {
+  def functionKernel[A: WeakTypeTag, B: WeakTypeTag](f: CLFunction[A, B]): FunctionKernel /*[A, B]*/ = {
     val toolbox = optimisingToolbox
 
     val (expr, captures) = f.value.expr()
