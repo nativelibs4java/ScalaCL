@@ -70,14 +70,14 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
   }
 
   def functionToFunctionKernel[A: WeakTypeTag, B: WeakTypeTag](
-    f: Expr[A => B], kernelSalt: Long, outputSymbol: Symbol): Expr[FunctionKernel /*[A, B]*/ ] = {
+    captureFunction: Tree, kernelSalt: Long, outputSymbol: Symbol): Tree = {
 
     def isUnit(t: Type) =
       t <:< UnitTpe || t == NoType
 
-    val (param, body) = typeCheck(f.tree, WildcardType) match {
-      case Function(List(param), body) => (param, body)
-      case Block(Nil, Function(List(param), body)) => (param, body)
+    val (captureParams, param, body) = typeCheck(captureFunction, WildcardType) match {
+      case Function(captureParams, Function(List(param), body)) => (captureParams, param, body)
+      case Function(captureParams, Block(Nil, Function(List(param), body))) => (captureParams, param, body)
     }
 
     val inputTpe = param.symbol.typeSignature
@@ -118,17 +118,29 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
             usage = UsageKind.Output,
             implicitIndexDimension = Some(0)))
 
-    // println(s"""
-    //   inputParamDesc: $inputParamDesc
-    //   outputParamDesc: $outputParamDesc
-    //   bodyToConvert: $bodyToConvert
-    // """)
+    // val captureParamDescs = captureParams.map {
+    //   case captureParam =>
+    //     ParamDesc(
+    //       symbol = captureParam.symbol,
+    //       tpe = if (captureParam.tpe == NoType) captureParam.tpt.tpe else captureParam.tpe,
+    //       output = false,
+    //       mode = ParamKind.Normal,
+    //       usage = UsageKind.Input)
+    // }
+    println(s"""
+    functionToFunctionKernel:
+      inputParamDesc: $inputParamDesc
+      outputParamDesc: $outputParamDesc
+      bodyToConvert: $bodyToConvert
+    """)
 
-    generateFunctionKernel[A, B](
+    val kernel = generateFunctionKernel[A, B](
       kernelSalt = kernelSalt,
       body = castTree(bodyToConvert),
-      paramDescs = inputParamDesc.toSeq ++ outputParamDesc.toSeq
+      paramDescs = inputParamDesc.toSeq ++ outputParamDesc.toSeq // ++ captureParamDescs
     )
+
+    Function(captureParams, kernel.tree)
   }
 
   def castAnyToAnyRef(value: Tree, valueTpe: Type): Tree =
@@ -178,11 +190,11 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
       capturedConstants
         .map(d => castAnyToAnyRef(ident(d.symbol), d.tpe)).toList
     )
-    // println(s"""
-    //  code: $code
-    //  capturedInputs: $capturedInputs, 
-    //  capturedOutputs: $capturedOutputs, 
-    //  capturedConstants: $capturedConstants""")
+    println(s"""
+     code: $code
+     capturedInputs: $capturedInputs, 
+     capturedOutputs: $capturedOutputs, 
+     capturedConstants: $capturedConstants""")
     reify(
       new FunctionKernel /*[A, B]*/ (
         new KernelDef(

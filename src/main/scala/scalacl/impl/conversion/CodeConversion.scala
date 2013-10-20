@@ -65,45 +65,42 @@ trait CodeConversion
     -> x[get_global_id(0)]
   */
   def transformStreams(tree: Tree, paramDescs: Seq[ParamDesc]): (Tree, Seq[ParamDesc]) = {
-    val Block(valDefs, EmptyTree) =
-      typeCheck(
-        Block(
-          for (param <- paramDescs.toList) yield {
-            ValDef(
-              if (param.output)
-                Modifiers(Flag.MUTABLE)
-              else
-                NoMods,
-              param.name,
-              TypeTree(param.tpe),
-              Literal(Constant(defaultValue(param.tpe)))
-            )
-          },
-          EmptyTree
-        ),
-        WildcardType
-      )
-
-    val typableBlock =
-      Block(valDefs, tree.substituteSymbols(paramDescs.map(_.symbol).toList, valDefs.map(_.symbol)))
-
     // println(s"""
     //   Generating CL function for:
     //     tree = $tree
     //     paramDescs = $paramDescs
-    //     typableBlock = $typableBlock
     // """)
 
-    // val toTransform = typeCheck(typableBlock, WildcardType)
-    val toTransform = typableBlock
+    // val toTransform = typeCheck(resetLocalAttrs(tree), WildcardType)
+    val toTransform = tree
     val transformed = newStreamTransformer(false).transform(toTransform)
 
-    val Block(_, transformedBody) =
-      typeCheck(resetLocalAttrs(transformed), WildcardType)
+    // println(s"""
+    //     transformed = $transformed
+    // """)
+    val toType = Block(
+      for (param <- paramDescs.toList) yield {
+        ValDef(
+          if (param.output)
+            Modifiers(Flag.MUTABLE)
+          else
+            NoMods,
+          param.name,
+          TypeTree(param.tpe),
+          Literal(Constant(defaultValue(param.tpe)))
+        )
+      },
+      transformed
+    )
+    // println(s"""
+    //     toType = $toType
+    // """)
 
-    println(s"""
-        transformedBody = $transformedBody
-    """)
+    val Block(valDefs, transformedBody) =
+      typeCheck(resetLocalAttrs(toType), WildcardType)
+    // println(s"""
+    //     transformedBody = $transformedBody
+    // """)
 
     (
       transformedBody,
@@ -112,7 +109,8 @@ trait CodeConversion
   }
 
   def convertCode(tree: Tree, initialParamDescs: Seq[ParamDesc]): CodeConversionResult = {
-    val (code, explicitParamDescs) = transformStreams(tree, initialParamDescs)
+    //val (code, explicitParamDescs) = transformStreams(tree, initialParamDescs)
+    val (code, explicitParamDescs) = (tree, initialParamDescs)
 
     val externalSymbols =
       getExternalSymbols(
@@ -161,12 +159,13 @@ trait CodeConversion
         capturedConstants
     // val flat = convert(code)
 
-    // println(s"""
-    //   explicitParamDescs: $explicitParamDescs
-    //   capturedInputs: $capturedInputs
-    //   capturedOutputs: $capturedOutputs
-    //   capturedConstants: $capturedConstants
-    // """)
+    println(s"""
+    convertCode:
+      explicitParamDescs: $explicitParamDescs
+      capturedInputs: $capturedInputs
+      capturedOutputs: $capturedOutputs
+      capturedConstants: $capturedConstants
+    """)
     val flat = flattenAndConvert(code, paramDescs.map(d => (d.symbol, d.tpe)))
 
     val globalIDIndexes =

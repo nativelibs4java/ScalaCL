@@ -45,26 +45,28 @@ private[impl] object CLFunctionMacros {
 
     val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
-    val func = WithResult(
+    val captureFunction = Function(Nil, f.tree)
+
+    val Function(Nil, func) = WithResult(
       new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel /*[A, B]*/ ]] {
         override val context = c
         import global._
 
         val result = functionToFunctionKernel[A, B](
-          f = castExpr(f),
+          captureFunction = castTree(captureFunction),
           kernelSalt = KernelDef.nextKernelSalt,
           outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
       }
     )
-    // func
-    try {
-      c.Expr[FunctionKernel](c.typeCheck(func.tree))
-    } catch {
-      case ex: Throwable =>
-        ex.printStackTrace()
-        println("ERROR WITH: " + func)
-        throw ex
-    }
+    c.Expr[FunctionKernel](func)
+    // try {
+    //   c.Expr[FunctionKernel](c.typeCheck(func.tree))
+    // } catch {
+    //   case ex: Throwable =>
+    //     ex.printStackTrace()
+    //     println("ERROR WITH: " + func)
+    //     throw ex
+    // }
   }
 
   private[impl] def convertTask(c: Context)(block: c.Expr[Unit]): c.Expr[CLFunction[Unit, Unit]] = {
@@ -88,13 +90,14 @@ private[impl] object CLFunctionMacros {
         ).asInstanceOf[Result]
       }
     )
-    try {
-      c.Expr[CLFunction[Unit, Unit]](c.typeCheck(func.tree))
-    } catch {
-      case ex: Throwable =>
-        ex.printStackTrace()
-        println("ERROR WITH: " + func)
-        throw ex
-    }
+    func
+    // try {
+    //   c.Expr[CLFunction[Unit, Unit]](c.typeCheck(func.tree))
+    // } catch {
+    //   case ex: Throwable =>
+    //     ex.printStackTrace()
+    //     println("ERROR WITH: " + func)
+    //     throw ex
+    // }
   }
 }

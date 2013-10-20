@@ -28,34 +28,64 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scalacl.impl
+package scalacl
+package impl
 import scalacl.CLArray
 import scalacl.CLFilteredArray
 
 import language.experimental.macros
 import scala.reflect.macros.Context
 import scala.reflect.ClassTag
+import scala.reflect.runtime.universe
+
+import scalaxy.reified.internal.Utils.traced
 
 private[scalacl] object CLArrayMacros {
-  def foreachImpl[T: c.WeakTypeTag](c: Context)(f: c.Expr[T => Unit]): c.Expr[Unit] = {
-    val ff = CLFunctionMacros.convertFunction[T, Unit](c)(f) // TODO pass static input + output collection type
-    c.universe.reify {
-      val input = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
-      input.foreach(new CLFunction[T, Unit](f.splice, ff.splice))
-    }
+  def typeTagExpr[T: c.WeakTypeTag](c: Context) = {
+    import c.universe._
+    c.Expr[universe.TypeTag[T]](
+      c.inferImplicitValue(
+        weakTypeTag[universe.TypeTag[T]].tpe))
   }
-  def mapImpl[T: c.WeakTypeTag, U: c.WeakTypeTag](c: Context)(f: c.Expr[T => U])(io2: c.Expr[DataIO[U]], m2: c.Expr[ClassTag[U]]): c.Expr[CLArray[U]] = {
-    val ff = CLFunctionMacros.convertFunction[T, U](c)(f) // TODO pass static input + output collection type
-    c.universe.reify {
-      val input = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
-      input.map(new CLFunction[T, U](f.splice, ff.splice))(io2.splice, m2.splice)
-    }
+
+  def foreachImpl[T: c.WeakTypeTag](c: Context)(f: c.Expr[T => Unit]): c.Expr[Unit] = {
+    val ff = CLReifiedFunctionMacros.fun2clfun[T, Unit](c)(f)(typeTagExpr[T](c), typeTagExpr[Unit](c))
+    c.universe.reify({
+      val self = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
+      self.foreach(ff.splice)
+    })
+  }
+  def mapImpl[T: c.WeakTypeTag, U: c.WeakTypeTag](c: Context)(f: c.Expr[T => U])(io2: c.Expr[DataIO[U]], m2: c.Expr[ClassTag[U]], t2: c.Expr[universe.TypeTag[U]]): c.Expr[CLArray[U]] = {
+    // try {
+    val ff = CLReifiedFunctionMacros.fun2clfun[T, U](c)(f)(typeTagExpr[T](c), typeTagExpr[U](c))
+    // c.Expr[CLArray[U]](
+    // c.typeCheck(
+    c.universe.reify({
+      val self = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
+      import self.t
+      self.map[U](ff.splice)(io2.splice, m2.splice, t2.splice)
+    }) //.tree
+    //     )
+    //   )
+    // } catch {
+    //   case ex: Throwable =>
+    //     ex.printStackTrace()
+    //     println(s"""
+    //       MAPPING:
+    //         f: $f
+    //         io2: $io2
+    //         m2: $m2
+    //         t2: $t2
+    //     """)
+    //     throw ex
+    // }
   }
   def filterImpl[T: c.WeakTypeTag](c: Context)(f: c.Expr[T => Boolean]): c.Expr[CLFilteredArray[T]] = {
-    val ff = CLFunctionMacros.convertFunction[T, Boolean](c)(f) // TODO pass static input + output collection type
+    val ff = CLReifiedFunctionMacros.fun2clfun[T, Boolean](c)(f)(typeTagExpr[T](c), typeTagExpr[Boolean](c))
     c.universe.reify {
-      val input = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
-      input.filter(new CLFunction[T, Boolean](f.splice, ff.splice))
+      val self = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
+      import self.t
+      self.filter(ff.splice)
     }
   }
 }

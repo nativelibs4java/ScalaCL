@@ -71,6 +71,7 @@ object ScalaCLBuild extends Build {
         "-deprecation",
         "-feature",
         "-Xlog-free-types",
+        // "-Ymacro-debug-lite",
         "-unchecked"
       ),
       

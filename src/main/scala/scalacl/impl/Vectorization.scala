@@ -78,7 +78,17 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
             implicitIndexDimension = Some(0),
             rangeOffset = Some(newSymbol(fromValDef.name)),
             rangeStep = Some(newSymbol(byValDef.name)))
-        )
+        ) /* ++ (for (sym <- Seq(rangeValDef.symbol, fromValDef, byValDef)) yield {
+          ParamDesc(
+            symbol = sym,
+            tpe = numTpe,
+            output = false,
+            mode = ParamKind.RangeIndex,
+            usage = UsageKind.Input,
+            implicitIndexDimension = Some(0),
+            rangeOffset = Some(newSymbol(fromValDef.name)),
+            rangeStep = Some(newSymbol(byValDef.name)))
+        })*/
 
         //val outputSymbol = newSymbol(fresh("out")) //Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 

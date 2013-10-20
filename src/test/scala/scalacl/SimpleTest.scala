@@ -39,34 +39,36 @@ class SimpleTest {
   def testHandWrittenKernels {
     implicit val context = Context.best
     val factor = 20.5f
-    val trans = new CLFunction[Int, Int](
-      v => (v * factor).toInt,
-      new FunctionKernel(
-        new KernelDef(
-          """
-          kernel void f(global const int* input, global int* output, float factor) {
-            int i = get_global_id(0);
-            if (i >= get_global_size(0))
-            return;
-            output[i] = (int)(input[i] * factor);
-          }
-          """,
-          salt = -1),
-        Captures(constants = Array(factor.asInstanceOf[AnyRef]))))
+    val trans = new CLReifiedFunction[Int, Int](
+      (v: Int) => (v * factor).toInt,
+      preparedFunctionKernel = Some(
+        new FunctionKernel(
+          new KernelDef(
+            """
+            kernel void f(global const int* input, global int* output, float factor) {
+              int i = get_global_id(0);
+              if (i >= get_global_size(0))
+              return;
+              output[i] = (int)(input[i] * factor);
+            }
+            """,
+            salt = -1),
+          Captures(constants = Array(factor.asInstanceOf[AnyRef])))))
 
-    val pred = new CLFunction[Int, Boolean](
-      v => v % 2 == 0,
-      new FunctionKernel(
-        new KernelDef(
-          """
-          kernel void f(global const int* input, global char* output) {
-            int i = get_global_id(0);
-            if (i >= get_global_size(0))
-            return;
-            output[i] = input[i] % 2 == 0;
-          }
-          """,
-          salt = -1)))
+    val pred = new CLReifiedFunction[Int, Boolean](
+      (v: Int) => v % 2 == 0,
+      preparedFunctionKernel = Some(
+        new FunctionKernel(
+          new KernelDef(
+            """
+            kernel void f(global const int* input, global char* output) {
+              int i = get_global_id(0);
+              if (i >= get_global_size(0))
+              return;
+              output[i] = input[i] % 2 == 0;
+            }
+            """,
+            salt = -1))))
 
     val values = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
     val a = CLArray[Int](values: _*)
@@ -104,9 +106,9 @@ class SimpleTest {
     val array = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
     val clArray: CLArray[Int] = array.cl
 
-    val clResult = clArray.map(x => x * 2 * f)
+    val clResult = clArray.map((x: Int) => x * 2 * f)
     val result = array.map(x => x * 2 * f)
-    assertEquals(result.toList, clResult.toList)
+    assertArrayEquals(result.toArray, clResult.toArray, 0.001f)
 
     clArray.release()
     clResult.release()
@@ -130,7 +132,7 @@ class SimpleTest {
         }
         rr
       } else {
-        a.map(x => f(x) + x)
+        a.map((x: Int) => f(x) + x)
       }
       //assertNotNull("result buffer doesn't have any write event", r.buffers(0).dataWrite)
       //assertEquals("source buffer doesn't have expected read event", 1, a.buffers(0).dataReads.size)

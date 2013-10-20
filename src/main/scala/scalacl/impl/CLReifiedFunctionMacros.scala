@@ -32,7 +32,7 @@ package scalacl
 package impl
 
 import scalaxy.reified._
-import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.runtime.universe
 
 import scalaxy.components.WithMacroContext
 
@@ -40,7 +40,7 @@ import language.experimental.macros
 import scala.reflect.macros.Context
 
 object CLReifiedFunctionMacros {
-  def fun2clfun[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context)(f: c.Expr[(A => B)])(ta: c.Expr[TypeTag[A]], tb: c.Expr[TypeTag[B]]): c.Expr[CLReifiedFunction[A, B]] = {
+  def fun2clfun[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context)(f: c.Expr[(A => B)])(ta: c.Expr[universe.TypeTag[A]], tb: c.Expr[universe.TypeTag[B]]): c.Expr[CLReifiedFunction[A, B]] = {
 
     import c.universe._
     // TODO: choking appropriately upon unsupported captures.
@@ -49,6 +49,7 @@ object CLReifiedFunctionMacros {
     // This may fail if the tree contains free types: in that case, the reified value
     // tree will need to be converted at runtime.
 
+    val tf = f //c.Expr[(A => B)](c.typeCheck(f.tree))
     val precompiledFunctionExpr: c.Expr[Option[FunctionKernel /*[A, B]*/ ]] =
       // try {
       //   val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
@@ -71,14 +72,27 @@ object CLReifiedFunctionMacros {
       //     c.warning(f.tree.pos, "Couldn't precompile this function (will rely on reified value).")
       reify(None)
     // }
+    val reifiedValueExpr = scalaxy.reified.internal.reifyImpl[(A => B)](c)(f)(CLArrayMacros.typeTagExpr[(A => B)](c))
 
     // TODO: perform static precompilation here.
-    reify {
-      implicit val tta = ta.splice
-      implicit val ttb = tb.splice
+    val result = reify {
+      implicit val tta: universe.TypeTag[A] = ta.splice
+      implicit val ttb: universe.TypeTag[B] = tb.splice
       new CLReifiedFunction[A, B](
-        f.splice,
+        reifiedValueExpr.splice, //tf.splice,
         precompiledFunctionExpr.splice)
     }
+    result
+    // println(result)
+    // try {
+    //   c.Expr[CLReifiedFunction[A, B]](c.typeCheck(
+    //     result.tree, withMacrosDisabled = true
+    //   ))
+    // } catch {
+    //   case ex: Throwable =>
+    //     println("ERROR ON: " + result)
+    //     ex.printStackTrace()
+    //     throw ex
+    // }
   }
 }
