@@ -10,7 +10,8 @@ Features of the new design:
 - ScalaCL Collections no longer fit in regular Scala Collections, to avoid silent data transfers / conversions when using unaccelerated methods (syntax stays the same, though)
 - No more CLRange: expecting compiler to do its job
 
-TODO:
+# TODO
+
 - Finish Scalaxy/Reified integration (started under CLFunc / CLFuncUtils)
 - Add more tests: DataIO, CodeConversion, scheduling, uniqueness / caching of kernels
 - Implement more DataIO[T], support case classes as tuples
@@ -23,51 +24,67 @@ TODO:
 - Plug some v2 runtime code back (filtered array compaction, reduceSymmetric, parallel sums...)
 - Benchmarks!
 
-Example that will eventually work:
+# Usage
 
-    import scalacl._
-    
-    case class Matrix(data: CLArray[Float], rows: Int, columns: Int)(implicit context: Context) {
-      def this(rows: Int, columns: Int) =
-        this(new CLArray[Float](rows * columns), rows, columns)
-      def this(n: Int) =
-        this(n, n)
-        
-      def putProduct(a: Matrix, b: Matrix): Unit = {
-        assert(a.columns == b.rows)
-        assert(a.rows == rows)
-        assert(b.columns == columns)
-        
-        kernel {
-          // This block will either be converted to an OpenCL kernel or cause compilation error
-		  for (i <- 0 until rows; j <- 0 until columns) {
-		    data(i * columns + j) = (0 until a.columns).map(k => {
-		      a.data(i * a.columns + k) * b.data(k * b.columns + j)
-		    }).sum
-		  }
-	    }
-      }
-      
-      def putSum(a: Matrix, b: Matrix): Unit = {
-        assert(a.columns == b.columns && a.columns == columns)
-        assert(a.rows == b.rows && a.rows == rows)
-        
-        kernel {
-          for (i <- 0 until rows; j <- 0 until columns) {
-          	val offset = i * columns + j
-		    data(offset) = a.data(offset) + b.data(offset)
-		  }
-	    }
-      }
-    }
-            
-    implicit val context = Context.best
+```scala
+scalaVersion := "2.10.2"
 
-    val n = 10
-    val a = new Matrix(n)
-    val b = new Matrix(n)
-    val out = new Matrix(n)
+libraryDependencies += "com.nativelibs4java" %% "scalacl" % "0.3-SNAPSHOT"
+
+// Scalaxy/Reified snapshots are published on the Sonatype repository.
+resolvers += Resolver.sonatypeRepo("snapshots")
+```
+
+
+# Examples
+
+The following will eventually work:
+
+```scala
+import scalacl._
+
+case class Matrix(data: CLArray[Float], rows: Int, columns: Int)(implicit context: Context) {
+  def this(rows: Int, columns: Int) =
+    this(new CLArray[Float](rows * columns), rows, columns)
+  def this(n: Int) =
+    this(n, n)
     
-    out.putProduct(a, b)
+  def putProduct(a: Matrix, b: Matrix): Unit = {
+    assert(a.columns == b.rows)
+    assert(a.rows == rows)
+    assert(b.columns == columns)
     
-    println(out.data)
+    kernel {
+      // This block will either be converted to an OpenCL kernel or cause compilation error
+  for (i <- 0 until rows; j <- 0 until columns) {
+    data(i * columns + j) = (0 until a.columns).map(k => {
+      a.data(i * a.columns + k) * b.data(k * b.columns + j)
+    }).sum
+  }
+  }
+  }
+  
+  def putSum(a: Matrix, b: Matrix): Unit = {
+    assert(a.columns == b.columns && a.columns == columns)
+    assert(a.rows == b.rows && a.rows == rows)
+    
+    kernel {
+      for (i <- 0 until rows; j <- 0 until columns) {
+      	val offset = i * columns + j
+    data(offset) = a.data(offset) + b.data(offset)
+  }
+  }
+  }
+}
+        
+implicit val context = Context.best
+
+val n = 10
+val a = new Matrix(n)
+val b = new Matrix(n)
+val out = new Matrix(n)
+
+out.putProduct(a, b)
+
+println(out.data)
+```
