@@ -52,6 +52,10 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
 
   private[impl] def ident[T](vd: ValDef) = expr[T](Ident(vd.name))
 
+  private[impl] def lit[T](v: T) = expr[T](Literal(Constant(v)))
+
+  private[impl] def newTermSymbol(name: TermName) = NoSymbol.newTermSymbol(name)
+
   def blockToUnitFunction(block: Tree) = {
     expr[Unit => Unit](
       Function(
@@ -182,6 +186,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
         .map(d => castAnyToAnyRef(ident(d.symbol), d.tpe)).toList
     )
     // println(s"""
+    // generateFunctionKernel:
     //  code: $code
     //  paramDescs: $paramDescs,
     //  capturedInputs: $capturedInputs, 

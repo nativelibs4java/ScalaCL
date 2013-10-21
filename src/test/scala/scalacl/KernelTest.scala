@@ -40,17 +40,22 @@ class KernelTest {
     implicit val context = Context.best
     try {
 
-      val n = 10
-      val a = new CLArray[Int](n)
+      val n = 25
+      val a = new Array[Int](n)
+      val ca = new CLArray[Int](n)
       val f = 10
 
       kernel {
-        for (i <- 0 until n) {
-          a(i) = i * f + 10
+        for (i <- 0 until n by 3) {
+          ca(i) = i * f + 10
         }
       }
-      println(a.toSeq)
-      assertEquals((0 until n).map(_ * f + 10).toSeq, a.toSeq)
+
+      for (i <- 0 until n by 3) {
+        a(i) = i * f + 10
+      }
+      // println(a.toSeq)
+      assertEquals(a.toSeq, ca.toSeq)
     } finally {
       context.release()
     }

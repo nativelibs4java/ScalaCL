@@ -51,23 +51,16 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
     }
   }
 
+  // private def wrapRange(from: Tree, to: Tree, by: Int, )
   private[impl] def vectorize(context: Expr[scalacl.Context], block: Tree): Option[Expr[Unit]] = {
     Option(block) collect {
       case Foreach(
-        range @ NumRange(rangeTpe, numTpe, from, to, PositiveIntConstantOrOne(by), isUntil, Nil),
+        range @ NumRange(rangeTpe, numTpe, from, to, PositiveIntConstantOrOne(by), isInclusive, Nil),
         Function(List(param), body)
         ) =>
-        // TODO: get rid of that stupid range and compute the range size by our own means.
-        val rangeValDef =
-          freshVal("range", rangeTpe, range)
-        val fromValDef =
-          freshVal("from", numTpe, Select(Ident(rangeValDef.name), N("start")))
-        //val toValDef = freshVal("to", IntTpe, to)
-
-        val byValDef = freshVal("by", numTpe, Literal(Constant(by)))
-
-        def newSymbol(name: TermName) =
-          NoSymbol.newTermSymbol(name)
+        val fromVal = freshVal("from", numTpe, from)
+        val toVal = freshVal("to", IntTpe, to)
+        val byVal = freshVal("by", numTpe, Literal(Constant(by)))
 
         val paramDescs = Seq(
           ParamDesc(
@@ -77,30 +70,10 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
             mode = ParamKind.RangeIndex,
             usage = UsageKind.Input,
             implicitIndexDimension = Some(0),
-            rangeOffset = Some(newSymbol(fromValDef.name)),
-            rangeStep = Some(newSymbol(byValDef.name)))
-        ) /* ++ (for (sym <- Seq(rangeValDef.symbol, fromValDef, byValDef)) yield {
-          ParamDesc(
-            symbol = sym,
-            tpe = numTpe,
-            output = false,
-            mode = ParamKind.RangeIndex,
-            usage = UsageKind.Input,
-            implicitIndexDimension = Some(0),
-            rangeOffset = Some(newSymbol(fromValDef.name)),
-            rangeStep = Some(newSymbol(byValDef.name)))
-        })*/
-
-        //val outputSymbol = newSymbol(fresh("out")) //Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
-
+            rangeOffset = Some(newTermSymbol(fromVal.name)),
+            rangeStep = Some(newTermSymbol(byVal.name)))
+        )
         val f = blockToUnitFunction(block)
-        // val functionKernelExpr = functionToFunctionKernel[Unit, Unit](
-        //   f = f,
-        //   kernelSalt = KernelDef.nextKernelSalt,
-        //   outputSymbol = outputSymbol
-        // // body = body,
-        // // paramDescs = paramDescs
-        // )
 
         val functionKernelExpr = generateFunctionKernel[Unit, Unit](
           kernelSalt = KernelDef.nextKernelSalt,
@@ -109,20 +82,33 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
         )
         val function = reify(new CLFunction[Unit, Unit](f.splice, Some(functionKernelExpr.splice)))
 
-        expr[Unit](
+        val result = expr[Unit](
           Block(
-            rangeValDef ::
-              fromValDef ::
-              byValDef ::
+            fromVal ::
+              toVal ::
+              byVal ::
               reify(
                 function.splice(
                   context.splice,
-                  new KernelExecutionParameters(
-                    ident[Range](rangeValDef).splice.size))
+                  new KernelExecutionParameters({
+                    val gap = ident[Long](toVal).splice - ident[Long](fromVal).splice
+                    gap / ident[Long](byVal).splice +
+                      (
+                        if (lit(isInclusive).splice ||
+                          (gap % ident[Long](byVal).splice != 0))
+                          1
+                        else
+                          0
+                      )
+                  })
+                )
               ).tree :: Nil,
             Literal(Constant({}))
           )
         )
+
+        println("VECTORIZATION: " + result)
+        result
     }
   }
 }
