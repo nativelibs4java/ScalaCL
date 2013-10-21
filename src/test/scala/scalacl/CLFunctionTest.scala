@@ -59,7 +59,10 @@ class CLFunctionTest {
         Array(20.0, 40.0, 60.0),
         a.map(f).toArray,
         0)
-
+    } catch {
+      case ex: Throwable =>
+        ex.printStackTrace()
+        throw ex
     } finally {
       context.release()
     }
