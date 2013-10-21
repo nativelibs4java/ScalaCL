@@ -50,7 +50,9 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
     })
   }
 
-  private[impl] def ident[T](vd: ValDef) = expr[T](Ident(vd.name))
+  private[impl] def ident[T](vd: ValDef): Expr[T] = expr[T](Ident(vd.name))
+
+  // private[impl] def ident[T](vd: ValueDef): Expr[T] = ident[T](vd.definition)
 
   private[impl] def lit[T](v: T) = expr[T](Literal(Constant(v)))
 

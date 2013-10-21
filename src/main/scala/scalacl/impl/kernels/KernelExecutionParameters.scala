@@ -35,6 +35,7 @@ case class KernelExecutionParameters(
     globalSizes: Array[Long],
     localSizes: Array[Long] = null,
     globalOffsets: Array[Long] = null) {
+  def this(size1: Long, size2: Long) = this(Array(size1, size2))
   def this(uniqueSize: Long) = this(Array(uniqueSize))
   override def toString = {
     def str(n: String, a: Array[Long]) = Option(a).map(aa => n + " = { " + aa.mkString(", ") + " }").toSeq
