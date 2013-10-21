@@ -38,8 +38,6 @@ import scala.reflect.macros.Context
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe
 
-import scalaxy.reified.internal.Utils.traced
-
 private[scalacl] object CLArrayMacros {
   def typeTagExpr[T: c.WeakTypeTag](c: Context) = {
     import c.universe._

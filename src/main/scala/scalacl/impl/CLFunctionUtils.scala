@@ -37,7 +37,7 @@ import scala.reflect.runtime.universe.WeakTypeTag
 
 import scalaxy.components.WithRuntimeUniverse
 import scalaxy.reified.internal.Utils
-import scalaxy.reified.internal.Utils.reflectMethod
+import scalaxy.reified.internal.Utils.getMethodMirror
 import scalaxy.reified.internal.CompilerUtils
 import scalaxy.reified.internal.Utils.optimisingToolbox
 import scalaxy.reified.internal.Optimizer.{ optimize, getFreshNameGenerator }
@@ -83,7 +83,7 @@ object CLFunctionUtils {
 
     // println(s"FUNCTION EXPR: $functionExpr")
     val compiled = CompilerUtils.compile(generation.result, toolbox)
-    val method = reflectMethod(compiled(), "apply")
+    val method = getMethodMirror(compiled(), "apply")
     val args = captures.map(_._2.value).toArray
     // println(s"""
     //   METHOD: $method
