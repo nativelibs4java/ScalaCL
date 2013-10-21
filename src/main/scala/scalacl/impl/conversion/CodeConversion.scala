@@ -53,6 +53,54 @@ trait CodeConversion
   def cleanTypeCheck(tree: Tree): Tree
   def resetLocalAttrs(tree: Tree): Tree
   def resetAllAttrs(tree: Tree): Tree
+
+  /**
+   * Hack to substitute symbols, taking care of stranded symbols.
+   * (symbols that sound like one of the matches and are not redefined locally)
+   */
+  private def substituteSymbols(tree: Tree, replacements: Map[String, (Symbol, Symbol)]): Tree = {
+    var currentReplacements = replacements
+    var strandedSymbols = Set[Symbol]()
+    new Traverser {
+      override def traverse(tree: Tree) {
+        val sym = tree.symbol
+        val oldReplacements = currentReplacements
+        var newReplacements = oldReplacements
+        if (sym != null && sym != NoSymbol) {
+          val name = sym.name.toString
+          tree match {
+            case d: ValOrDefDef =>
+              if (currentReplacements.get(name) != None) {
+                newReplacements -= name
+              }
+            case d: RefTree =>
+              for ((expected, replacement) <- currentReplacements.get(name)) {
+                if (sym != expected) {
+                  // println("Stranded: " + tree)
+                  strandedSymbols += sym
+                }
+              }
+            case _ =>
+          }
+        }
+        currentReplacements = newReplacements
+        super.traverse(tree)
+        currentReplacements = oldReplacements
+      }
+    } traverse tree
+
+    val (expectedList, replacementList) = (
+      replacements.map(_._2).toList ++
+      strandedSymbols.groupBy(_.name.toString).flatMap({
+        case (name, stranded) =>
+          val replacement = replacements(name)
+          stranded.map(s => s -> replacement._2)
+      })
+    ).unzip
+
+    tree.substituteSymbols(expectedList, replacementList)
+  }
+
   // def typeCheck(tree: Tree): Tree
   /*
   ParamDesc(i, ParamKindRangeIndex, Some(0))
@@ -64,6 +112,9 @@ trait CodeConversion
   ParamDesc(x, ParamKindRead, Some(0))
     -> x[get_global_id(0)]
   */
+  /**
+   * Transform stream operations, like col.map(...).filter(...).max, to equivalent while loops.
+   */
   def transformStreams(tree: Tree, paramDescs: Seq[ParamDesc]): (Tree, Seq[ParamDesc]) = {
     // println(s"""
     //   Generating CL function for:
@@ -78,39 +129,116 @@ trait CodeConversion
     // println(s"""
     //     transformed = $transformed
     // """)
-    val toType = Block(
-      for (param <- paramDescs.toList) yield {
-        ValDef(
-          if (param.output)
-            Modifiers(Flag.MUTABLE)
-          else
-            NoMods,
-          param.name,
-          TypeTree(param.tpe),
-          Literal(Constant(defaultValue(param.tpe)))
-        )
-      },
-      transformed
-    )
+    // val toType = Block(
+    //   for (param <- paramDescs.toList) yield {
+    //     ValDef(
+    //       if (param.output)
+    //         Modifiers(Flag.MUTABLE)
+    //       else
+    //         NoMods,
+    //       param.name,
+    //       TypeTree(param.tpe),
+    //       Literal(Constant(defaultValue(param.tpe)))
+    //     )
+    //   },
+    //   EmptyTree
+    //   transformed
+    // )
     // println(s"""
     //     toType = $toType
     // """)
 
-    val Block(valDefs, transformedBody) =
+    // new Traverser {
+    //   override def traverse(tree: Tree) {
+    //     val sym = tree.symbol
+    //     if (sym != null) {
+    //       try {
+    //         type XSymbol = {
+    //           def typeParams: List[Symbol]
+    //         }
+    //         sym.asInstanceOf[XSymbol].typeParams
+    //       } catch {
+    //         case ex: Throwable =>
+    //           ex.printStackTrace()
+    //           println("ON SYMBOL: " + sym + " IN TREE: " + tree)
+    //           throw ex
+    //       }
+    //     }
+    //     super.traverse(tree)
+    //   }
+    // } traverse toType
+    // val Block(valDefs, transformedBody) =
+    //   typeCheck(resetLocalAttrs(toType), WildcardType)
+
+    val Block(valDefs, EmptyTree) = typeCheck(
+      Block(
+        for (param <- paramDescs.toList) yield {
+          ValDef(
+            if (param.output)
+              Modifiers(Flag.MUTABLE)
+            else
+              NoMods,
+            param.name,
+            TypeTree(param.tpe),
+            Literal(Constant(defaultValue(param.tpe)))
+          )
+        },
+        EmptyTree
+      ),
+      WildcardType
+    )
+    // val valDefs = for ((paramDesc, valDef) <- paramDescs.zip(valDefs0)) yield valDef.substituteSymbols(List(valDef.symbol), List(paramDesc.symbol))
+
+    val toType = Block(valDefs.toList, transformed)
+
+    val Block(_, transformedBody) =
       typeCheck(resetLocalAttrs(toType), WildcardType)
+
+    // val transformedBody = transformed.substituteSymbols(
+    //   paramDescs.map(_.symbol).toList),
+    //   valDefs.map(_.symbol))
     // println(s"""
     //     transformedBody = $transformedBody
     // """)
+    // val initSyms = paramDescs.map(_.symbol).toSet
+    // val initSymNames = initSyms.map(_.name)
+    // val newSyms = valDefs.map(_.symbol).toSet
+    // val trav = new Traverser {
+    //   override def traverse(tree: Tree) {
+    //     if (tree.symbol != null) {
+    //       if (initSyms.contains(tree.symbol)) {
+    //         println("RETAINED OLD SYM: " + tree)
+    //       } else if (newSyms.contains(tree.symbol)) {
+    //         println("USES NEW SYM: " + tree)
+    //       } else if (initSymNames.contains(tree.symbol.name)) {
+    //         println("NAME CLASH: " + tree)
+    //       }
+    //     }
+    //     super.traverse(tree)
+    //   }
+    // }
+
+    // println("TO TRANSFORM:")
+    // trav traverse toTransform
+    // println("TRANSFORMED:")
+    // trav traverse transformed
+    // println("TYPED TRANSFORMED BODY:")
+    // trav traverse transformedBody
 
     (
-      transformedBody,
-      for ((paramDesc, valDef) <- paramDescs.zip(valDefs)) yield paramDesc.copy(symbol = valDef.symbol)
+      substituteSymbols(
+        transformedBody,
+        (for ((paramDesc, valDef) <- paramDescs.zip(valDefs)) yield paramDesc.name.toString -> ((valDef.symbol, paramDesc.symbol))).toMap),
+        paramDescs
+    // 
+    // paramDescs
+    // for ((paramDesc, valDef) <- paramDescs.zip(valDefs)) yield paramDesc.copy(symbol = valDef.symbol)
     )
   }
 
   def convertCode(tree: Tree, initialParamDescs: Seq[ParamDesc]): CodeConversionResult = {
-    //val (code, explicitParamDescs) = transformStreams(tree, initialParamDescs)
-    val (code, explicitParamDescs) = (tree, initialParamDescs)
+    val (code, explicitParamDescs) = transformStreams(tree, initialParamDescs)
+    // val (code, explicitParamDescs) = (tree, initialParamDescs)
 
     val externalSymbols =
       getExternalSymbols(

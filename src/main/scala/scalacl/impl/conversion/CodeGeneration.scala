@@ -88,7 +88,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
         body
       } else {
         Assign(
-          Ident(outputSymbol),
+          Ident(outputSymbol.name.asInstanceOf[TermName]),
           body)
       }
 
@@ -118,18 +118,9 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
             usage = UsageKind.Output,
             implicitIndexDimension = Some(0)))
 
-    // val captureParamDescs = captureParams.map {
-    //   case captureParam =>
-    //     ParamDesc(
-    //       symbol = captureParam.symbol,
-    //       tpe = if (captureParam.tpe == NoType) captureParam.tpt.tpe else captureParam.tpe,
-    //       output = false,
-    //       mode = ParamKind.Normal,
-    //       usage = UsageKind.Input)
-    // }
     // println(s"""
     // functionToFunctionKernel:
-    //   inputParamDesc: $inputParamDesc
+    //   inputParamDesc: $inputParamDesc (owners ${inputParamDesc.map(_.symbol.owner)})
     //   outputParamDesc: $outputParamDesc
     //   bodyToConvert: $bodyToConvert
     // """)
@@ -192,6 +183,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
     )
     // println(s"""
     //  code: $code
+    //  paramDescs: $paramDescs,
     //  capturedInputs: $capturedInputs, 
     //  capturedOutputs: $capturedOutputs, 
     //  capturedConstants: $capturedConstants""")

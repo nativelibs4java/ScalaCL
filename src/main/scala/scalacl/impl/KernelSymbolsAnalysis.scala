@@ -87,19 +87,26 @@ trait KernelSymbolsAnalysis
 
     val symbols = new KernelSymbols
 
+    val knownSymbolsByName = knownSymbols.groupBy(_.name)
+    def declare(sym: Symbol, tpe: Type, usage: UsageKind) {
+      if (!knownSymbols.contains(sym)) {
+        // for (conflicts <- knownSymbolsByName.get(sym.name)) {
+        //   assert(!conflicts.contains(sym))
+        //   println("CONFLICTS: symbol " + sym + " (owner: " + sym.owner + ") clashes with " + conflicts.map(s => s + " (owner: " + s.owner + ")").mkString(", "))
+        // }
+        symbols.declareSymbolUsage(sym, tpe, usage)
+      }
+    }
     new Traverser {
       override def traverse(tree: Tree) = tree match {
         case Ident(n) =>
-          if (!knownSymbols.contains(tree.symbol))
-            symbols.declareSymbolUsage(tree.symbol, tree.tpe, UsageKind.Input)
+          declare(tree.symbol, tree.tpe, UsageKind.Input)
         case Apply(Select(target, updateName()), List(index, value)) =>
-          if (!knownSymbols.contains(target.symbol))
-            symbols.declareSymbolUsage(target.symbol, target.tpe, UsageKind.Output)
+          declare(target.symbol, target.tpe, UsageKind.Output)
           super.traverse(index)
           super.traverse(value)
         case Apply(Select(target, applyName()), List(index)) =>
-          if (!knownSymbols.contains(target.symbol))
-            symbols.declareSymbolUsage(target.symbol, target.tpe, UsageKind.Input)
+          declare(target.symbol, target.tpe, UsageKind.Input)
           super.traverse(index)
         case ValDef(_, _, _, _) =>
           symbols.localSymbols += tree.symbol

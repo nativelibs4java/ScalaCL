@@ -408,7 +408,7 @@ trait OpenCLCodeFlattening
           // val a = if (condition) 1 else 2
           // val b = if (condition) d else 0
           val FlatCode(dc, sc, Seq(vc)) = flattenTuplesAndBlocks(condition)
-          assert(getType(vc) != NoType, vc)
+          assert(getType(vc) != NoType, s"No type on $vc")
           val conditionVar = newVal("condition", vc, vc.tpe)
 
           val fct @ FlatCode(Seq(), st, vt) = flattenTuplesAndBlocks(thenDo)
@@ -488,7 +488,7 @@ trait OpenCLCodeFlattening
               throw new RuntimeException("Unable to connect the matched pattern with its corresponding single case")
           }
         case EmptyTree => {
-          println("CodeFlattening  -  WARNING EmptyTree! Should this ever happen?")
+          // println("CodeFlattening  -  WARNING EmptyTree! Should this ever happen?")
           FlatCode[Tree](Seq(), Seq(), Seq())
         }
         case _ =>
