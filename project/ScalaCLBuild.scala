@@ -90,7 +90,7 @@ object ScalaCLBuild extends Build {
         project
       case (dependency, dependencyProjectRoot, gitURL) :: rest =>
         addLocalOrRemoteDependencies(
-          if (new File(dependencyProjectRoot).exists()) {
+          if (new File(dependencyProjectRoot).exists() && "1" != System.getenv("NO_LOCAL_DEPS")) {
             project.dependsOn(ProjectRef(file(dependencyProjectRoot), dependency.name))
           } else {
             println(dependencyProjectRoot + " does not exist. If you want to modify " + dependency.name + ", please clone it with:\n\tgit clone " + gitURL + " " + dependencyProjectRoot + "\n")
