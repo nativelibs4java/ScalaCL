@@ -2,6 +2,7 @@ import sbt._
 import Keys._
 import ls.Plugin._
 
+import sbtassembly.Plugin._ ; import AssemblyKeys._
 import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform.scalariformSettings
 import com.typesafe.sbt.SbtScalariform._
@@ -59,7 +60,7 @@ object ScalaCLBuild extends Build {
 	  sonatypeSettings ++
 	  infoSettings ++
 	  Seq(
-      resolvers += "Local Maven Repository" at "file://" + Path.userHome + "/.m2/repository",
+      //resolvers += "Local Maven Repository" at "file://" + Path.userHome + "/.m2/repository",
 
       fork := true,
 
@@ -67,16 +68,15 @@ object ScalaCLBuild extends Build {
       scalacOptions ++= Seq(
         "-language:experimental.macros",
         "-encoding", "UTF-8",
-        "-optimise",
+        // "-optimise",
         "-deprecation",
         "-feature",
-        "-Xlog-free-types",
+        // "-Xlog-free-types",
         // "-Ymacro-debug-lite",
         "-unchecked"
       ),
-      
-      libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-compiler" % _),
-      libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-reflect" % _),    
+
+      libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-reflect" % _),
       libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-compiler" % _),
       libraryDependencies ++= Seq(
         "junit" % "junit" % "4.10" % "test",
@@ -105,32 +105,97 @@ object ScalaCLBuild extends Build {
     }
   }
 
-  lazy val ScalaCL = 
-    addLocalOrRemoteDependencies(
+  lazy val shadeSettings =
+    assemblySettings ++
+    addArtifact(artifact in (Compile, assembly), assembly) ++
+    Seq(
+      publishArtifact in (Compile, packageBin) := false,
+      excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
+        // Exclude scala-library and al.
+        cp filter { j => {
+          val n = j.data.getName
+          n.startsWith("scala-") || n.equals("jfxrt.jar")
+        } }
+      },
+      pomPostProcess := { (node: scala.xml.Node) =>
+        // Since we publish the assembly (shaded) jar,
+        // remove lagging scalaxy dependencies from pom ourselves.
+        import scala.xml._; import scala.xml.transform._
+        try {
+          new RuleTransformer(new RewriteRule {
+            override def transform(n: Node): Seq[Node] ={
+              if ((n \ "artifactId" find { _.text.startsWith("scalaxy-") }) != None)
+                Array[Node]()
+              else
+                n
+            }
+          })(node)
+        } catch { case _: Throwable =>
+          node
+        }
+      }
+    )
+
+  lazy val ScalaCL =
       Project(
         id = "ScalaCL",
         base = file("."),
-        settings = standardSettings ++ Seq(
-          name := "scalacl",
-          scalacOptions ++= Seq(
-            "-language:experimental.macros"
-          ),
-          libraryDependencies ++= Seq(
-            "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT"
-          )
-        )
-      ),
-      List(
-        (
-          "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
-          "../Scalaxy",
-          "git://github.com/ochafik/Scalaxy.git"
-        ),
-        (
-          "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
-          "../Scalaxy",
-          "git://github.com/ochafik/Scalaxy.git"
-        )
-      )
-    )
+        settings = standardSettings ++
+          // shadeSettings ++
+          Seq(
+            name := "scalacl",
+            scalacOptions ++= Seq(
+              "-language:experimental.macros"
+            ),
+            // mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
+            //   {
+            //     case f if f.matches(""".*?\.(class|dll|so|dylib)""") => MergeStrategy.first
+            //     case x => old(x)
+            //   }
+            // },
+            libraryDependencies ++= Seq(
+              "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
+              "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
+              //"com.nativelibs4java" %% "scalaxy-reified-base" % "0.3-SNAPSHOT",
+              "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT"
+            ),
+            fork in Test := true,
+            //javaOptions in Test ++= Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
+            scalacOptions in Test ++= Seq(
+              "-optimise",
+              "-Yclosure-elim",
+              "-Yinline"
+            )
+          ))
+
+  // lazy val ScalaCL =
+  //   addLocalOrRemoteDependencies(
+  //     Project(
+  //       id = "ScalaCL",
+  //       base = file("."),
+  //       settings = standardSettings ++ Seq(
+  //         name := "scalacl",
+  //         scalacOptions ++= Seq(
+  //           "-language:experimental.macros"
+  //         ),
+  //         libraryDependencies ++= Seq(
+  //           "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
+  //           "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
+  //           "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT"
+  //         )
+  //       )
+  //     ),
+  //     List(
+  //       (
+  //         "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
+  //         "../Scalaxy",
+  //         "git://github.com/ochafik/Scalaxy.git"
+  //       ),
+  //       (
+  //         "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
+  //         "../Scalaxy",
+  //         "git://github.com/ochafik/Scalaxy.git"
+  //       )
+  //     )
+  //   )
 }
