@@ -39,12 +39,12 @@ import language.experimental.macros
 import scala.reflect.macros.Context
 
 object KernelMacros {
-  def kernelImpl(c: Context)(block: c.Expr[Unit])(context: c.Expr[scalacl.Context]): c.Expr[Unit] = {
+  def kernelImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
     val vectorizer = new Vectorization with MiscMatchers with WithMacroContext with WithResult[Option[reflect.api.Universe#Expr[Unit]]] {
       override val context = c
       val result =
         vectorize(
-          context.asInstanceOf[global.Expr[scalacl.Context]],
+          contextExpr.asInstanceOf[global.Expr[scalacl.Context]],
           c.typeCheck(block.tree).asInstanceOf[global.Tree]
         )
     }
@@ -57,11 +57,11 @@ object KernelMacros {
     }
   }
 
-  def taskImpl(c: Context)(block: c.Expr[Unit])(context: c.Expr[scalacl.Context]): c.Expr[Unit] = {
+  def taskImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
     val result = CLFunctionMacros.convertTask(c)(block)
     typeCheckOrTrace(c)("task = " + result) {
       c.universe.reify {
-        result.splice(context.splice)
+        result.splice(contextExpr.splice)
       }
     }
   }
