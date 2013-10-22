@@ -51,16 +51,16 @@ object CLFunctionMacros {
     // tree will need to be converted at runtime.
 
     val tf = f //c.Expr[(A => B)](c.typeCheck(f.tree))
-    val precompiledFunctionExpr: c.Expr[Option[FunctionKernel /*[A, B]*/ ]] =
+    val precompiledFunctionExpr: c.Expr[Option[FunctionKernel]] =
       // try {
       //   val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
 
       //   val functionKernelExpr = WithResult(
-      //     new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel/*[A, B]*/]] {
+      //     new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel]] {
       //       override val context = c
       //       import global._
 
-      //       val result = functionToFunctionKernel/*[A, B]*/(
+      //       val result = functionToFunctionKernel(
       //         f = castExpr(f),
       //         kernelSalt = KernelDef.nextKernelSalt,
       //         outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
@@ -85,17 +85,6 @@ object CLFunctionMacros {
           precompiledFunctionExpr.splice)
       }
     }
-    // println(result)
-    // try {
-    //   c.Expr[CLFunction[A, B]](c.typeCheck(
-    //     result.tree, withMacrosDisabled = true
-    //   ))
-    // } catch {
-    //   case ex: Throwable =>
-    //     println("ERROR ON: " + result)
-    //     ex.printStackTrace()
-    //     throw ex
-    // }
   }
 
   private[impl] def convertTask(c: Context)(block: c.Expr[Unit]): c.Expr[CLFunction[Unit, Unit]] = {

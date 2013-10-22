@@ -43,7 +43,7 @@ import scalaxy.reified.internal.Utils.optimisingToolbox
 import scalaxy.reified.internal.Optimizer.{ optimize, getFreshNameGenerator }
 
 object CLFunctionUtils {
-  def functionKernel[A: WeakTypeTag, B: WeakTypeTag](f: CLFunction[A, B]): FunctionKernel /*[A, B]*/ = {
+  def functionKernel[A: WeakTypeTag, B: WeakTypeTag](f: CLFunction[A, B]): FunctionKernel = {
     val toolbox = optimisingToolbox
 
     val (expr, captures) = f.value.expr()
@@ -64,24 +64,18 @@ object CLFunctionUtils {
       }).toList, ast.asInstanceOf[ru.Tree])
 
       val optimizedAST = optimize(ff, toolbox)
-      // val optimizedAST = toolbox.resetLocalAttrs(ast)
-      // val body = optimizedAST match {
-      //   case ru.Function(_, ru.Block(Nil, ru.Function(List(_), body))) => body
-      //   case ru.Function(_, ru.Function(List(_), body)) => body
-      // }
 
       val freshName = getFreshNameGenerator(ast)
       def fresh(s: String) = freshName(s).toString
 
       val outputSymbol = NoSymbol.newTermSymbol(newTermName(fresh("out")))
 
-      val result = functionToFunctionKernel /*[A, B]*/ (
+      val result = functionToFunctionKernel(
         captureFunction = castTree(optimizedAST),
         kernelSalt = -1,
         outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
     }
 
-    // println(s"FUNCTION EXPR: $functionExpr")
     val compiled = CompilerUtils.compile(generation.result, toolbox)
     val method = getMethodMirror(compiled(), "apply")
     val args = captures.map(_._2.value).toArray
@@ -89,6 +83,6 @@ object CLFunctionUtils {
     //   METHOD: $method
     //   ARGS: $args
     // """)
-    method(args: _*).asInstanceOf[FunctionKernel /*[A, B]*/ ]
+    method(args: _*).asInstanceOf[FunctionKernel]
   }
 }

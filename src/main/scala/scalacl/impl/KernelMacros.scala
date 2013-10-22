@@ -39,22 +39,17 @@ import language.experimental.macros
 import scala.reflect.macros.Context
 
 object KernelMacros {
-  def kernelImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
-    //c.typeCheck(block.tree) 
-
+  def kernelImpl(c: Context)(block: c.Expr[Unit])(context: c.Expr[scalacl.Context]): c.Expr[Unit] = {
     val vectorizer = new Vectorization with MiscMatchers with WithMacroContext with WithResult[Option[reflect.api.Universe#Expr[Unit]]] {
       override val context = c
-      //override val global = c.universe
-      //override def fresh(s: String) = c.fresh(s)
       val result =
         vectorize(
-          contextExpr.asInstanceOf[global.Expr[scalacl.Context]],
-          c.typeCheck(block.tree).asInstanceOf[global.Tree] /*,
-          c.enclosingMethod.symbol.asInstanceOf[global.Symbol]*/
+          context.asInstanceOf[global.Expr[scalacl.Context]],
+          c.typeCheck(block.tree).asInstanceOf[global.Tree]
         )
     }
     val result = vectorizer.result.asInstanceOf[Option[c.Expr[Unit]]]
-    typeCheckOrTrace(c)("result = " + result) {
+    typeCheckOrTrace(c)("kernel = " + result) {
       result.getOrElse({
         c.error(c.enclosingPosition, "Kernel vectorization failed (only top-level foreach loops on ranges with constant positive step are supported right now)")
         c.literalUnit
@@ -62,13 +57,11 @@ object KernelMacros {
     }
   }
 
-  def taskImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
-
-    // val f = blockToUnitFunction(block.tree)
+  def taskImpl(c: Context)(block: c.Expr[Unit])(context: c.Expr[scalacl.Context]): c.Expr[Unit] = {
     val result = CLFunctionMacros.convertTask(c)(block)
-    typeCheckOrTrace(c)("result = " + result) {
+    typeCheckOrTrace(c)("task = " + result) {
       c.universe.reify {
-        result.splice(contextExpr.splice)
+        result.splice(context.splice)
       }
     }
   }

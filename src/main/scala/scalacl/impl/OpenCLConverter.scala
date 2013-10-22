@@ -63,31 +63,13 @@ trait OpenCLConverter
     inputSymbols: Seq[(Symbol, Type)] = Seq(),
     owner: Symbol = NoSymbol,
     renameSymbols: Boolean = true): FlatCode[String] = {
-    //println(s"tree = $tree")
-    val flat = flatten(tree, inputSymbols, owner, renameSymbols)
-    //println(s"flat = $flat")
-    val res = flat.flatMap(convert _)
-    //println(s"res = $res")
-    res
+    flatten(tree, inputSymbols, owner, renameSymbols).flatMap(convert _)
   }
 
   def convert(body: Tree): FlatCode[String] = {
     def cast(expr: Tree, clType: String) =
       convert(expr).mapEachValue(v => Seq("((" + clType + ")" + v + ")"))
 
-    /*
-    def convertForeach(from: Tree, to: Tree, isUntil: Boolean, by: Tree, function: Tree) = {
-        val Function(List(vd @ ValDef(paramMods, paramName, tpt, rhs)), body) = function
-        val id = openclLabelIds.next
-        val iVar = "iVar$" + id
-        val nVal = "nVal$" + id
-
-        out("int ", iVar, ";\n")
-        out("const int ", nVal, " = ", to, ";\n")
-        out("for (", iVar, " = ", from, "; ", iVar, " ", if (isUntil) "<" else "<=", " ", nVal, "; ", iVar, " += ", by, ") {\n")
-        doConvertExpr(argNames + (vd.symbol -> iVar), body, false, conversion, b)._1
-        out("\n}")
-    }*/
     try {
       body match {
         case TupleCreation(tupleArgs) => //Apply(TypeApply(Select(TupleObject(), applyName()), tupleTypes), tupleArgs) if isTopLevel =>
@@ -138,8 +120,6 @@ trait OpenCLConverter
           merge(Seq(target, singleArg).map(convert): _*) { case Seq(t, a) => Seq(t + "[" + a + "]") }
         case Apply(Select(target, updateName()), List(index, value)) =>
           val convs = Seq(target, index, value).map(convert)
-          //println("convs = " + convs)
-          //println("target.tpe = " + target.tpe)
           merge(convs: _*) { case Seq(t, i, v) => Seq(t + "[" + i + "] = " + v) }
         case Assign(lhs, rhs) =>
           merge(Seq(lhs, rhs).map(convert): _*) { case Seq(l, r) => Seq(l + " = " + r + ";") }

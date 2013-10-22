@@ -52,8 +52,6 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
 
   private[impl] def ident[T](vd: ValDef): Expr[T] = expr[T](Ident(vd.name))
 
-  // private[impl] def ident[T](vd: ValueDef): Expr[T] = ident[T](vd.definition)
-
   private[impl] def lit[T](v: T) = expr[T](Literal(Constant(v)))
 
   private[impl] def newTermSymbol(name: TermName) = NoSymbol.newTermSymbol(name)
@@ -159,21 +157,18 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
   private[impl] def generateFunctionKernel[A: WeakTypeTag, B: WeakTypeTag](
     kernelSalt: Long,
     body: Tree,
-    paramDescs: Seq[ParamDesc]): Expr[FunctionKernel /*[A, B]*/ ] = {
+    paramDescs: Seq[ParamDesc]): Expr[FunctionKernel] = {
 
     val cr @ CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
       body,
       paramDescs
     )
 
-    // resetAllAttrs(body)
-
     val codeExpr = expr[String](Literal(Constant(code)))
     val kernelSaltExpr = expr[Long](Literal(Constant(kernelSalt)))
 
     def ident(s: global.Symbol) =
       Ident(s.asInstanceOf[Symbol].name)
-    // Ident(s.asInstanceOf[Symbol])
 
     val inputs = arrayApply[CLArray[_]](
       capturedInputs
@@ -195,7 +190,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
     //  capturedOutputs: $capturedOutputs, 
     //  capturedConstants: $capturedConstants""")
     reify(
-      new FunctionKernel /*[A, B]*/ (
+      new FunctionKernel(
         new KernelDef(
           sources = codeExpr.splice,
           salt = kernelSaltExpr.splice),

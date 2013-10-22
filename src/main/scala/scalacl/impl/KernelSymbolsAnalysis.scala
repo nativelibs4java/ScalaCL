@@ -88,15 +88,10 @@ trait KernelSymbolsAnalysis
     val symbols = new KernelSymbols
 
     val knownSymbolsByName = knownSymbols.groupBy(_.name)
-    def declare(sym: Symbol, tpe: Type, usage: UsageKind) {
-      if (!knownSymbols.contains(sym)) {
-        // for (conflicts <- knownSymbolsByName.get(sym.name)) {
-        //   assert(!conflicts.contains(sym))
-        //   println("CONFLICTS: symbol " + sym + " (owner: " + sym.owner + ") clashes with " + conflicts.map(s => s + " (owner: " + s.owner + ")").mkString(", "))
-        // }
+    def declare(sym: Symbol, tpe: Type, usage: UsageKind) =
+      if (!knownSymbols.contains(sym))
         symbols.declareSymbolUsage(sym, tpe, usage)
-      }
-    }
+
     new Traverser {
       override def traverse(tree: Tree) = tree match {
         case Ident(n) =>
