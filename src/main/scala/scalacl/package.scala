@@ -76,7 +76,7 @@ package object scalacl {
     def cl = toCLArray
   }
 
-  def kernel(block: Unit)(implicit contextExpr: Context): Unit = macro KernelMacros.kernelImpl
+  def kernel(block: Unit)(implicit context: Context): Unit = macro KernelMacros.kernelImpl
 
-  def task(block: Unit)(implicit contextExpr: Context): Unit = macro KernelMacros.taskImpl
+  def task(block: Unit)(implicit context: Context): Unit = macro KernelMacros.taskImpl
 }
