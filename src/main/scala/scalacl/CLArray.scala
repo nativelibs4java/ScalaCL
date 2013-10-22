@@ -64,6 +64,8 @@ class CLArray[T](
   def apply(index: Long): T = sys.error("not implemented")
   def update(index: Long, value: T): Unit = sys.error("not implemented")
 
+  val size = length
+
   override def clone: CLArray[T] =
     new CLArray[T](length, buffers.map(_.clone))
 
