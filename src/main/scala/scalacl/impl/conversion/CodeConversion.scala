@@ -309,10 +309,10 @@ trait CodeConversion
         case ParamDesc(_, _, _, ParamKind.ImplicitArrayElement, _, Some(i), None, None) =>
           (s: String) =>
             r.replaceAllIn(s, "$1" + Regex.quoteReplacement("[" + globalIDValNames(i) + "]"))
-        case ParamDesc(_, _, _, ParamKind.RangeIndex, _, Some(i), Some(from), Some(by)) =>
+            case ParamDesc(_, _, _, ParamKind.RangeIndex, _, Some(i), Some(from), Some(by)) =>
           (s: String) =>
             r.replaceAllIn(s, Regex.quoteReplacement("(" + from.name + " + " + globalIDValNames(i) + " * " + by.name + ")"))
-        case _ =>
+            case _ =>
           (s: String) => s
       }
     })

@@ -27,7 +27,7 @@ Features of the new design:
 # Usage
 
 ```scala
-scalaVersion := "2.10.2"
+scalaVersion := "2.10.3"
 
 libraryDependencies += "com.nativelibs4java" %% "scalacl" % "0.3-SNAPSHOT"
 
