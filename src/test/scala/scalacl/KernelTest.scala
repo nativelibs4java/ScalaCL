@@ -36,7 +36,7 @@ import Assert._
 
 class KernelTest {
   @Test
-  def simple {
+  def intRange1DKernel {
     implicit val context = Context.best
     try {
 
@@ -46,15 +46,34 @@ class KernelTest {
       val f = 10
 
       kernel {
-        for (i <- 0 until n by 3) {
+        for (i <- 0 until n by 3)
           ca(i) = i * f + 10
-        }
       }
-
-      for (i <- 0 until n by 3) {
+      for (i <- 0 until n by 3)
         a(i) = i * f + 10
+
+      assertEquals(a.toSeq, ca.toSeq)
+    } finally {
+      context.release()
+    }
+  }
+  @Test
+  def longRange1DKernel {
+    implicit val context = Context.best
+    try {
+
+      val n = 25L
+      val a = new Array[Long](n.toInt)
+      val ca = new CLArray[Long](n)
+      val f = 10
+
+      kernel {
+        for (i <- 0L until n by 3L)
+          ca(i) = i * f + 10
       }
-      // println(a.toSeq)
+      for (i <- 0L until n by 3L)
+        a(i.toInt) = i * f + 10
+
       assertEquals(a.toSeq, ca.toSeq)
     } finally {
       context.release()

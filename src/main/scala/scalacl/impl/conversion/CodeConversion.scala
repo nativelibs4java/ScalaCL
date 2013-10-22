@@ -267,13 +267,13 @@ trait CodeConversion
           Seq(
             ParamDesc(
               symbol = d.rangeOffset.get,
-              tpe = IntTpe,
+              tpe = d.tpe,
               output = false,
               mode = ParamKind.Normal,
               usage = UsageKind.Input),
             ParamDesc(
               symbol = d.rangeStep.get,
-              tpe = IntTpe,
+              tpe = d.tpe,
               output = false,
               mode = ParamKind.Normal,
               usage = UsageKind.Input)

@@ -46,7 +46,8 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
 
   object PositiveIntConstantOrOne {
     def unapply(treeOpt: Option[Tree]): Option[Int] = Option(treeOpt) collect {
-      case Some(Literal(Constant(n: Int))) => n
+      case Some(Literal(Constant(n: Int))) if n > 0 => n
+      case Some(Literal(Constant(n: Long))) if n > 0 => n.toInt
       case None => 1
     }
   }
