@@ -54,27 +54,22 @@ object KernelMacros {
         )
     }
     val result = vectorizer.result.asInstanceOf[Option[c.Expr[Unit]]]
-    // try {
-    //   c.Expr[Unit](c.typeCheck(
-    result.getOrElse({
-      c.error(c.enclosingPosition, "Kernel vectorization failed (only top-level foreach loops on ranges with constant positive step are supported right now)")
-      c.literalUnit
-    }) //.tree
-    //   ))
-    // } catch {
-    //   case ex: Throwable =>
-    //     println("ERROR FOR RESULT: " + result)
-    //     ex.printStackTrace()
-    //     throw ex
-    // }
+    typeCheckOrTrace(c)("result = " + result) {
+      result.getOrElse({
+        c.error(c.enclosingPosition, "Kernel vectorization failed (only top-level foreach loops on ranges with constant positive step are supported right now)")
+        c.literalUnit
+      })
+    }
   }
 
   def taskImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
 
     // val f = blockToUnitFunction(block.tree)
-    val ff = CLFunctionMacros.convertTask(c)(block)
-    c.universe.reify {
-      ff.splice(contextExpr.splice)
+    val result = CLFunctionMacros.convertTask(c)(block)
+    typeCheckOrTrace(c)("result = " + result) {
+      c.universe.reify {
+        result.splice(contextExpr.splice)
+      }
     }
   }
 }

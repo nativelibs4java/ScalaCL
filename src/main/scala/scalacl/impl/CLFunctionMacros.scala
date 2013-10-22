@@ -76,14 +76,15 @@ object CLFunctionMacros {
     val reifiedValueExpr = scalaxy.reified.internal.reifyImpl[(A => B)](c)(f)(typeTagExpr[(A => B)](c))
 
     // TODO: perform static precompilation here.
-    val result = reify {
-      implicit val tta: universe.TypeTag[A] = ta.splice
-      implicit val ttb: universe.TypeTag[B] = tb.splice
-      new CLFunction[A, B](
-        reifiedValueExpr.splice, //tf.splice,
-        precompiledFunctionExpr.splice)
+    typeCheckOrTrace(c)("reifiedValueExpr = " + reifiedValueExpr) {
+      reify {
+        implicit val tta: universe.TypeTag[A] = ta.splice
+        implicit val ttb: universe.TypeTag[B] = tb.splice
+        new CLFunction[A, B](
+          reifiedValueExpr.splice, //tf.splice,
+          precompiledFunctionExpr.splice)
+      }
     }
-    result
     // println(result)
     // try {
     //   c.Expr[CLFunction[A, B]](c.typeCheck(

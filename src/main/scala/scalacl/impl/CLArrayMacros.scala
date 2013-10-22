@@ -48,21 +48,25 @@ private[scalacl] object CLArrayMacros {
 
   def foreachImpl[T: c.WeakTypeTag](c: Context)(f: c.Expr[T => Unit]): c.Expr[Unit] = {
     val ff = CLFunctionMacros.fun2clfun[T, Unit](c)(f)(typeTagExpr[T](c), typeTagExpr[Unit](c))
-    c.universe.reify({
-      val self = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
-      self.foreach(ff.splice)
-    })
+    typeCheckOrTrace(c)("foreach ff = " + ff) {
+      c.universe.reify({
+        val self = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
+        self.foreach(ff.splice)
+      })
+    }
   }
   def mapImpl[T: c.WeakTypeTag, U: c.WeakTypeTag](c: Context)(f: c.Expr[T => U])(io2: c.Expr[DataIO[U]], m2: c.Expr[ClassTag[U]], t2: c.Expr[universe.TypeTag[U]]): c.Expr[CLArray[U]] = {
     // try {
     val ff = CLFunctionMacros.fun2clfun[T, U](c)(f)(typeTagExpr[T](c), typeTagExpr[U](c))
     // c.Expr[CLArray[U]](
     // c.typeCheck(
-    c.universe.reify({
-      val self = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
-      import self.t
-      self.map[U](ff.splice)(io2.splice, m2.splice, t2.splice)
-    }) //.tree
+    typeCheckOrTrace(c)("map ff = " + ff) {
+      c.universe.reify({
+        val self = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
+        import self.t
+        self.map[U](ff.splice)(io2.splice, m2.splice, t2.splice)
+      }) //.tree
+    }
     //     )
     //   )
     // } catch {
@@ -80,10 +84,12 @@ private[scalacl] object CLArrayMacros {
   }
   def filterImpl[T: c.WeakTypeTag](c: Context)(f: c.Expr[T => Boolean]): c.Expr[CLFilteredArray[T]] = {
     val ff = CLFunctionMacros.fun2clfun[T, Boolean](c)(f)(typeTagExpr[T](c), typeTagExpr[Boolean](c))
-    c.universe.reify {
-      val self = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
-      import self.t
-      self.filter(ff.splice)
+    typeCheckOrTrace(c)("filter ff = " + ff) {
+      c.universe.reify {
+        val self = c.prefix.asInstanceOf[c.Expr[CLArray[T]]].splice
+        import self.t
+        self.filter(ff.splice)
+      }
     }
   }
 }
