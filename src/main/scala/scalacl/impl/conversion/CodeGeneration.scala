@@ -70,7 +70,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
 
   def freshVal(nameBase: String, tpe: Type, rhs: Tree): ValDef = {
     val name = newTermName(fresh(nameBase))
-    ValDef(Modifiers(), name, TypeTree(tpe), rhs)
+    ValDef(NoMods, name, TypeTree(tpe), rhs)
   }
 
   def functionToFunctionKernel[A: WeakTypeTag, B: WeakTypeTag](

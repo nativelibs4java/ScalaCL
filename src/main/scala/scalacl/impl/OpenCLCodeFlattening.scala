@@ -140,7 +140,11 @@ trait OpenCLCodeFlattening
         tree
     val tupleAnalyzer = new TupleAnalyzer(actualTree)
     val flattener = new TuplesAndBlockFlattener(tupleAnalyzer)
-    flattener.flattenTuplesAndBlocksWithInputSymbols(actualTree, inputSymbols, owner)
+    val result = flattener.flattenTuplesAndBlocksWithInputSymbols(actualTree, inputSymbols, owner)
+    // println("INITIAL: " + tree)
+    // println("RENAMED: " + actualTree)
+    // println("RESULT: " + result)
+    result
   }
 
   class TuplesAndBlockFlattener(val tupleAnalyzer: TupleAnalyzer) {
@@ -433,7 +437,7 @@ trait OpenCLCodeFlattening
         case Typed(expr, tpt) =>
           flattenTuplesAndBlocks(expr).mapValues(_.map(Typed(_, tpt)))
         case ValDef(paramMods, paramName, tpt, rhs) =>
-          val isVal = !paramMods.hasFlag(MUTABLE)
+          // val isVal = !paramMods.hasFlag(MUTABLE)
           // val p = {
           //   val x = 10
           //   (x, x + 2)
@@ -458,7 +462,7 @@ trait OpenCLCodeFlattening
                 case ((fiberType, fiberPath), value) =>
                   val fiberName = fiberVariableName(paramName, fiberPath)
 
-                  ValDef(Modifiers(NoFlags), fiberName, TypeTree(fiberType), replace(value))
+                  ValDef(paramMods, fiberName, TypeTree(fiberType), replace(value))
               }),
             Seq()
           )
