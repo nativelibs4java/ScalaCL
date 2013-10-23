@@ -136,66 +136,66 @@ object ScalaCLBuild extends Build {
       }
     )
 
-  lazy val ScalaCL =
-      Project(
-        id = "ScalaCL",
-        base = file("."),
-        settings = standardSettings ++
-          // shadeSettings ++
-          Seq(
-            name := "scalacl",
-            scalacOptions ++= Seq(
-              "-language:experimental.macros"
-            ),
-            // mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
-            //   {
-            //     case f if f.matches(""".*?\.(class|dll|so|dylib)""") => MergeStrategy.first
-            //     case x => old(x)
-            //   }
-            // },
-            libraryDependencies ++= Seq(
-              "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
-              "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
-              //"com.nativelibs4java" %% "scalaxy-reified-base" % "0.3-SNAPSHOT",
-              "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT"
-            ),
-            fork in Test := true,
-            //javaOptions in Test ++= Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
-            scalacOptions in Test ++= Seq(
-              "-optimise",
-              "-Yclosure-elim",
-              "-Yinline"
-            )
-          ))
-
   // lazy val ScalaCL =
-  //   addLocalOrRemoteDependencies(
   //     Project(
   //       id = "ScalaCL",
   //       base = file("."),
-  //       settings = standardSettings ++ Seq(
-  //         name := "scalacl",
-  //         scalacOptions ++= Seq(
-  //           "-language:experimental.macros"
-  //         ),
-  //         libraryDependencies ++= Seq(
-  //           "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
-  //           "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
-  //           "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT"
-  //         )
-  //       )
-  //     ),
-  //     List(
-  //       (
-  //         "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
-  //         "../Scalaxy",
-  //         "git://github.com/ochafik/Scalaxy.git"
-  //       ),
-  //       (
-  //         "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
-  //         "../Scalaxy",
-  //         "git://github.com/ochafik/Scalaxy.git"
-  //       )
-  //     )
-  //   )
+  //       settings = standardSettings ++
+  //         // shadeSettings ++
+  //         Seq(
+  //           name := "scalacl",
+  //           scalacOptions ++= Seq(
+  //             "-language:experimental.macros"
+  //           ),
+  //           // mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
+  //           //   {
+  //           //     case f if f.matches(""".*?\.(class|dll|so|dylib)""") => MergeStrategy.first
+  //           //     case x => old(x)
+  //           //   }
+  //           // },
+  //           libraryDependencies ++= Seq(
+  //             "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
+  //             "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
+  //             //"com.nativelibs4java" %% "scalaxy-reified-base" % "0.3-SNAPSHOT",
+  //             "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT"
+  //           ),
+  //           fork in Test := true,
+  //           //javaOptions in Test ++= Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
+  //           scalacOptions in Test ++= Seq(
+  //             "-optimise",
+  //             "-Yclosure-elim",
+  //             "-Yinline"
+  //           )
+  //         ))
+
+  lazy val ScalaCL =
+    addLocalOrRemoteDependencies(
+      Project(
+        id = "ScalaCL",
+        base = file("."),
+        settings = standardSettings ++ Seq(
+          name := "scalacl",
+          scalacOptions ++= Seq(
+            "-language:experimental.macros"
+          ),
+          libraryDependencies ++= Seq(
+            "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
+            "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
+            "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT"
+          )
+        )
+      ),
+      List(
+        (
+          "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
+          "../Scalaxy",
+          "git://github.com/ochafik/Scalaxy.git"
+        ),
+        (
+          "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
+          "../Scalaxy",
+          "git://github.com/ochafik/Scalaxy.git"
+        )
+      )
+    )
 }
