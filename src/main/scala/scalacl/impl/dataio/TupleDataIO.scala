@@ -33,9 +33,15 @@ package impl
 
 import com.nativelibs4java.opencl.{ CLMem, CLEvent }
 import org.bridj.{ Pointer, PointerIO }
+
 import scala.collection.mutable.ArrayBuffer
 
-private[impl] abstract class TupleDataIO[T: Manifest] extends DataIO[T] {
+private[scalacl] class TupleDataIO[T <: Product: Manifest](
+  ioArgs: DataIO[_]*)(
+    newTuple: PartialFunction[Array[Any], T])
+    extends DataIO[T] {
+
+  private val ios = ioArgs.toArray
 
   override def toArray(length: Int, buffers: Array[ScheduledBuffer[_]]): Array[T] = {
     val eventsToWaitFor = new ArrayBuffer[CLEvent]
@@ -44,35 +50,31 @@ private[impl] abstract class TupleDataIO[T: Manifest] extends DataIO[T] {
     (0 until length.toInt).par.map(i => get(i, pointers, 0)).toArray // TODO check
   }
 
-  // def ios: Array[DataIO[_]]
-  // def mkTuple(values: Array[Any]): T
-  // 
-}
-
-class Tuple2DataIO[T1: Manifest: DataIO, T2: Manifest: DataIO]
-    extends TupleDataIO[(T1, T2)] {
-  val io1 = implicitly[DataIO[T1]]
-  val io2 = implicitly[DataIO[T2]]
-
-  override def typeString = "(" + io1.typeString + ", " + io2.typeString + ")"
-  override val bufferCount = io1.bufferCount + io2.bufferCount
+  override def typeString = ios.map(_.typeString).mkString("(", ", ", ")")
+  override val bufferCount = ios.map(_.bufferCount).sum
   private[scalacl] override def foreachScalar(f: ScalarDataIO[_] => Unit) {
-    io1.foreachScalar(f)
-    io2.foreachScalar(f)
+    ios.foreach(_.foreachScalar(f))
   }
   override def allocateBuffers(length: Long, out: ArrayBuffer[ScheduledBuffer[_]])(implicit context: Context) = {
-    io1.allocateBuffers(length, out)
-    io2.allocateBuffers(length, out)
+    ios.foreach(_.allocateBuffers(length, out))
   }
+  // protected def newTuple(values: Array[Any]): T
+
   override def get(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int) = {
-    val v1 = io1.get(index, buffers, bufferOffset)
-    val v2 = io2.get(index, buffers, bufferOffset + io1.bufferCount)
-    (v1, v2)
+    var offset = 0
+    newTuple(for (io <- ios) yield {
+      val v = io.get(index, buffers, offset)
+      offset += io.bufferCount
+      v
+    })
   }
 
-  override def set(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int, value: (T1, T2)) = {
-    val (v1, v2) = value
-    io1.set(index, buffers, bufferOffset, v1)
-    io2.set(index, buffers, bufferOffset + io1.bufferCount, v2)
+  override def set(index: Long, buffers: Array[Pointer[_]], bufferOffset: Int, value: T) = {
+    val values = value.productIterator.toIterable
+    var offset = 0
+    for ((io, v) <- ios.zip(values)) {
+      io.asInstanceOf[DataIO[Any]].set(index, buffers, offset, v)
+      offset += io.bufferCount
+    }
   }
 }

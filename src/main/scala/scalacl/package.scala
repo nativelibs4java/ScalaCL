@@ -36,7 +36,7 @@ import scala.language.implicitConversions
 import scalaxy.reified._
 import scala.reflect.runtime.universe.TypeTag
 
-package object scalacl {
+package object scalacl extends impl.TupleDataIOImplicits {
   import impl._
 
   // implicit lazy val byteDataIO = byteDataIO_
@@ -67,9 +67,6 @@ package object scalacl {
   implicit val floatDataIO = FloatDataIO
   implicit val doubleDataIO = DoubleDataIO
   implicit val booleanDataIO = BooleanDataIO
-  implicit def tuple2DataIO[T1: Manifest: DataIO, T2: Manifest: DataIO] = {
-    new Tuple2DataIO[T1, T2]
-  }
 
   implicit class ArrayConversions[A: Manifest: DataIO](array: Array[A])(implicit context: Context) {
     def toCLArray = CLArray[A](array: _*)
