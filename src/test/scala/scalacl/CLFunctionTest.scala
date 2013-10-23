@@ -37,7 +37,6 @@ import Assert._
 class CLFunctionTest {
   @Test
   def simple {
-    implicitly[DataIO[Double]]
     implicit val context = Context.best
     try {
       val a = CLArray[Int](1, 2, 3)
@@ -50,6 +49,7 @@ class CLFunctionTest {
 
       val f: CLFunction[Int, Double] = (x: Int) => {
         x * 2.0 * v
+
       }
 
       // println(f)

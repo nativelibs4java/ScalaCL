@@ -404,11 +404,15 @@ trait CodeConversion
     })
     // if (params.toString.contains("noarg"))
     //   throw new RuntimeException()
-    val convertedCode =
+    var convertedCode =
       result.outerDefinitions.mkString("\n") +
         "kernel void f(" + params.mkString(", ") + ") {\n\t" +
         (result.statements ++ result.values.map(_ + ";")).mkString("\n\t") + "\n" +
         "}"
+
+    if (convertedCode.matches("""(?s).*\bdouble\b.*"""))
+      convertedCode = "#pragma OPENCL EXTENSION cl_khr_fp64: enable\n" + convertedCode
+
     println("convertedCode:\n\t" + convertedCode.replaceAll("\n", "\n\t"))
     CodeConversionResult(convertedCode, capturedInputs, capturedOutputs, capturedConstants)
   }

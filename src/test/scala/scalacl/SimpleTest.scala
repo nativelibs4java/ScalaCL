@@ -123,7 +123,7 @@ class SimpleTest {
       val f = CLArray(10, 20, 30, 40)
       val a = CLArray(0, 1, 2, 3)
 
-      val r = if (false) {
+      val r = if (true) {
         val rr = new CLArray[Int](a.length)
         kernel {
           for (i <- 0 until a.length.toInt) {
