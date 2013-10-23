@@ -41,8 +41,10 @@ import collection.mutable.ArrayBuffer
 class KernelDef(protected val sources: String, protected val salt: Long) {
   def getKernel(context: Context): CLKernel = {
     context.kernels(this, _.release) {
-      val Array(k) = context.context.createProgram(sources).createKernels
-      k
+      tryOrTrace("OpenCL sources: " + sources) {
+        val Array(k) = context.context.createProgram(sources).createKernels
+        k
+      }
     }
   }
   def enqueue(context: Context, params: KernelExecutionParameters, args: Array[AnyRef], eventsToWaitFor: Array[CLEvent]): CLEvent = {

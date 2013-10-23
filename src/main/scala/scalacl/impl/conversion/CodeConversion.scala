@@ -38,6 +38,7 @@ import scalacl.CLFilteredArray
 
 import scala.reflect.api.Universe
 import scala.util.matching.Regex
+import scala.util.matching.Regex.quoteReplacement
 
 trait CodeConversion
     extends OpenCLConverter
@@ -76,7 +77,7 @@ trait CodeConversion
             case d: RefTree =>
               for ((expected, replacement) <- currentReplacements.get(name)) {
                 if (sym != expected) {
-                  // println("Stranded: " + tree)
+                  // println("Stranded: " + tree + " (sym = " + sym + ", replacement = " + replacement + ")")
                   strandedSymbols += sym
                 }
               }
@@ -98,7 +99,15 @@ trait CodeConversion
       })
     ).unzip
 
-    tree.substituteSymbols(expectedList, replacementList)
+    val res = tree.substituteSymbols(expectedList, replacementList)
+    // println(s"""
+    // substituteSymbols:
+    //   expectedList: $expectedList
+    //   replacementList: $replacementList
+    //   INIT: $tree
+    //   RES: $res
+    // """)
+    res
   }
 
   // def typeCheck(tree: Tree): Tree
@@ -123,8 +132,10 @@ trait CodeConversion
     // """)
 
     // val toTransform = typeCheck(resetLocalAttrs(tree), WildcardType)
+    // println("STREAMS; TO TRANSFORM: " + tree)
     val toTransform = tree
     val transformed = newStreamTransformer(false).transform(toTransform)
+    // println("STREAMS; TRANSFORMED: " + transformed)
 
     // println(s"""
     //     transformed = $transformed
@@ -192,7 +203,9 @@ trait CodeConversion
     val toType = Block(valDefs.toList, transformed)
 
     val Block(_, transformedBody) =
-      typeCheck(resetLocalAttrs(toType), WildcardType)
+      tryOrTrace("toType = " + toType) {
+        typeCheck(resetLocalAttrs(toType), WildcardType)
+      }
 
     // val transformedBody = transformed.substituteSymbols(
     //   paramDescs.map(_.symbol).toList),
@@ -228,7 +241,8 @@ trait CodeConversion
     (
       substituteSymbols(
         transformedBody,
-        (for ((paramDesc, valDef) <- paramDescs.zip(valDefs)) yield paramDesc.name.toString -> ((valDef.symbol, paramDesc.symbol))).toMap),
+        (for ((paramDesc, valDef) <- paramDescs.zip(valDefs))
+          yield paramDesc.name.toString -> ((valDef.symbol, paramDesc.symbol))).toMap),
         paramDescs
     // 
     // paramDescs
@@ -259,12 +273,15 @@ trait CodeConversion
       }
     }
 
+    val explicitRangeParams = explicitParamDescs.filter(_.mode == ParamKind.RangeIndex)
+
     val capturedInputs = capturedParams.filter(p => p.isArray && !p.usage.isOutput)
     val capturedOutputs = capturedParams.filter(p => p.isArray && p.usage.isOutput)
     val capturedConstants =
       capturedParams.filter(!_.isArray) ++
-        explicitParamDescs.filter(_.mode == ParamKind.RangeIndex).flatMap(d =>
+        explicitRangeParams.flatMap(d =>
           Seq(
+            //d,
             ParamDesc(
               symbol = d.rangeOffset.get,
               tpe = d.tpe,
@@ -302,29 +319,49 @@ trait CodeConversion
     val globalIDValNames: Map[Int, String] =
       globalIDIndexes.map(i => i -> fresh("_global_id_" + i + "_")).toMap
 
-    val replacements: Seq[String => String] = paramDescs.map(paramDesc => {
-      val r = ("\\b(" + Regex.quoteReplacement(paramDesc.symbol.name.toString) + ")\\b").r
+    def paramRx(paramDesc: ParamDesc) =
+      ("\\b(" + quoteReplacement(paramDesc.symbol.name.toString) + ")\\b").r
+
+    def replacementFunc(r: Regex, rep: String) = {
+      // println(s"REPLACEMENT FUNC: $r -> $rep)")
+      (s: String) =>
+        {
+          // println(s"REPLACING $r IN $s")
+          r.replaceAllIn(s, rep)
+        }
+    }
+    val replacements: Seq[String => String] = paramDescs.flatMap(paramDesc => {
+      val r = paramRx(paramDesc)
       // TODO handle composite types, with replacements of all possible fibers (x._1, x._2._1, x._2._2)
-      paramDesc match {
+      Option(paramDesc) collect {
         case ParamDesc(_, _, _, ParamKind.ImplicitArrayElement, _, Some(i), None, None) =>
-          (s: String) =>
-            r.replaceAllIn(s, "$1" + Regex.quoteReplacement("[" + globalIDValNames(i) + "]"))
-            case ParamDesc(_, _, _, ParamKind.RangeIndex, _, Some(i), Some(from), Some(by)) =>
-          (s: String) =>
-            r.replaceAllIn(s, Regex.quoteReplacement("(" + from.name + " + " + globalIDValNames(i) + " * " + by.name + ")"))
-            case _ =>
-          (s: String) => s
+          replacementFunc(r, "$1" + quoteReplacement("[" + globalIDValNames(i) + "]"))
+        case ParamDesc(_, _, _, ParamKind.RangeIndex, _, Some(i), Some(from), Some(by)) =>
+          replacementFunc(r, quoteReplacement("(" + from.name + " + " + globalIDValNames(i) + " * " + by.name + ")"))
       }
-    })
+    }) /* ++ explicitRangeParams.map(paramDesc => {
+      val r = paramRx(paramDesc)
+      val ParamDesc(_, _, _, ParamKind.RangeIndex, _, Some(i), _, _) = paramDesc
+      replacementFunc(r, quoteReplacement("(" + globalIDValNames(i) + ")"))
+    })*/
 
     val globalIDStatements = globalIDValNames.toSeq.map {
       case (i, n) =>
         s"size_t $n = get_global_id($i);"
     }
 
+    def replace(s: String) = {
+      var r = s
+      for (replacement <- replacements)
+        r = replacement(r)
+      r
+    }
+    // val result =
+    //   (FlatCode[String](statements = globalIDStatements) ++ flat).mapEachValue(s => Seq(
+    //     replacements.foldLeft(s)((v, f) => f(v))))
+
     val result =
-      (FlatCode[String](statements = globalIDStatements) ++ flat).mapEachValue(s => Seq(
-        replacements.foldLeft(s)((v, f) => f(v))))
+      (FlatCode[String](statements = globalIDStatements) ++ flat).map(replace _)
 
     val params: Seq[String] = paramDescs.filter(_.mode != ParamKind.RangeIndex).flatMap(paramDesc => {
       // TODO handle composite types, with fresh names for each fiber (x_1, x_2_1, x_2_2)
@@ -372,7 +409,7 @@ trait CodeConversion
         "kernel void f(" + params.mkString(", ") + ") {\n\t" +
         (result.statements ++ result.values.map(_ + ";")).mkString("\n\t") + "\n" +
         "}"
-    // println("convertedCode: " + convertedCode)
+    println("convertedCode:\n\t" + convertedCode.replaceAll("\n", "\n\t"))
     CodeConversionResult(convertedCode, capturedInputs, capturedOutputs, capturedConstants)
   }
 

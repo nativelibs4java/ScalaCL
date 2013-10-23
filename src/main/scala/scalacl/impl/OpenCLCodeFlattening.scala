@@ -59,7 +59,13 @@ trait OpenCLCodeFlattening
   // DefTree vs. RefTree
 
   def fiberVariableName(rootName: Name, path: List[Int]): TermName = {
-    (rootName :: path.map(_ + 1)).mkString("$")
+    val n = (rootName :: path.map(_ + 1)).mkString("$")
+    // if (n == "item$2$1") {
+    //   val ex = new RuntimeException()
+    //   ex.fillInStackTrace()
+    //   ex.printStackTrace()
+    // }
+    n
   }
 
   def fiberVariableNames(rootName: Name, rootTpe: Type): Seq[(Name, Type)] = {
@@ -105,7 +111,8 @@ trait OpenCLCodeFlattening
 
     if (renamings.isEmpty)
       tree
-    else
+    else {
+      // println("ABOUT TO RENAME: " + renamings)
       new Transformer {
         // TODO rename the symbols themselves ??
         override def transform(tree: Tree): Tree = {
@@ -126,6 +133,7 @@ trait OpenCLCodeFlattening
           }).getOrElse(super.transform(tree))
         }
       }.transform(tree)
+    }
   }
 
   def flatten(
@@ -140,8 +148,8 @@ trait OpenCLCodeFlattening
         tree
     val tupleAnalyzer = new TupleAnalyzer(actualTree)
     val flattener = new TuplesAndBlockFlattener(tupleAnalyzer)
-    val result = flattener.flattenTuplesAndBlocksWithInputSymbols(actualTree, inputSymbols, owner)
     // println("INITIAL: " + tree)
+    val result = flattener.flattenTuplesAndBlocksWithInputSymbols(actualTree, inputSymbols, owner)
     // println("RENAMED: " + actualTree)
     // println("RESULT: " + result)
     result
@@ -359,13 +367,15 @@ trait OpenCLCodeFlattening
 
           val flatTarget = flattenTuplesAndBlocks(target)
           val flatValue = flattenTuplesAndBlocks(value)
-          FlatCode[Tree](
+          val res = FlatCode[Tree](
             flatTarget.outerDefinitions ++ flatValue.outerDefinitions,
             flatTarget.statements ++ Seq(indexVal.definition) ++ flatValue.statements,
             for ((t, v) <- flatTarget.values.zip(flatValue.values)) yield {
               Apply(Select(t, updateName()), List(indexVal(), v))
             }
           )
+          // println("UPDATE TUP(" + getType(value) + ") tree = " + tree + ", res = " + res)
+          res
         case Apply(target, args) =>
           //println("CONVERTING apply " + tree)
           val fc1 @ FlatCode(defs1, stats1, vals1) =

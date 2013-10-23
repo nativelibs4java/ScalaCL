@@ -120,7 +120,7 @@ trait OpenCLConverter
           merge(Seq(target, singleArg).map(convert): _*) { case Seq(t, a) => Seq(t + "[" + a + "]") }
         case Apply(Select(target, updateName()), List(index, value)) =>
           val convs = Seq(target, index, value).map(convert)
-          merge(convs: _*) { case Seq(t, i, v) => Seq(t + "[" + i + "] = " + v) }
+          merge(convs: _*) { case Seq(t, i, v) => Seq(t + "[" + i + "] = " + v + ";") }
         case Assign(lhs, rhs) =>
           merge(Seq(lhs, rhs).map(convert): _*) { case Seq(l, r) => Seq(l + " = " + r + ";") }
         case Typed(expr, tpt) =>
@@ -152,6 +152,7 @@ trait OpenCLConverter
           )
         case vd @ ValDef(paramMods, paramName, tpt: TypeTree, rhs) =>
           val convValue = convert(rhs)
+          // println("VD: " + vd)
           FlatCode[String](
             convValue.outerDefinitions,
             convValue.statements ++
