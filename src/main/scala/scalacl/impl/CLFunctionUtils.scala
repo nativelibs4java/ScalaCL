@@ -37,17 +37,25 @@ import scala.reflect.runtime.universe.WeakTypeTag
 
 import scalaxy.components.WithRuntimeUniverse
 import scalaxy.reified.internal.Utils
-import scalaxy.reified.internal.Utils.getMethodMirror
+import scalaxy.reified.internal.Utils.{ getMethodMirror, getFreshNameGenerator }
 import scalaxy.reified.internal.CompilerUtils
 import scalaxy.reified.internal.Utils.optimisingToolbox
-import scalaxy.reified.internal.Optimizer.{ optimize, getFreshNameGenerator }
+
+import scalaxy.generic.trees.simplifyGenericTree
 
 object CLFunctionUtils {
   def functionKernel[A: WeakTypeTag, B: WeakTypeTag](f: CLFunction[A, B]): FunctionKernel = {
     val toolbox = optimisingToolbox
 
-    val (expr, captures) = f.value.expr()
-    val ast = expr.tree
+    var ast = f.value.flatExpr.tree
+    val captures = ast collect {
+      case t if t.symbol != null && t.symbol.isFreeTerm =>
+        t.symbol.asFreeTerm
+    }
+    ast = simplifyGenericTree(toolbox.typeCheck(ast, f.value.valueTag.tpe))
+    // println("SIMPLIFIED AST: " + ast)
+    ast = toolbox.resetLocalAttrs(ast)
+    //ast = toolbox.typeCheck(ast, f.value.valueTag.tpe)
 
     type Result = ru.Tree
     val generation = new CodeGeneration with WithRuntimeUniverse with WithResult[Result] {
@@ -59,11 +67,9 @@ object CLFunctionUtils {
       //   captures: $captures
       // """)
       val ff = ru.Function(captures.map({
-        case (name, cap) =>
-          ru.ValDef(ru.NoMods, ru.newTermName(name), ru.TypeTree(cap.tpe.asInstanceOf[ru.Type]), ru.EmptyTree)
+        case fsym =>
+          ru.ValDef(ru.NoMods, ru.newTermName(fsym.name.toString), ru.TypeTree(fsym.typeSignature.asInstanceOf[ru.Type]), ru.EmptyTree)
       }).toList, ast.asInstanceOf[ru.Tree])
-
-      val optimizedAST = optimize(ff, toolbox)
 
       val freshName = getFreshNameGenerator(ast)
       def fresh(s: String) = freshName(s).toString
@@ -71,14 +77,14 @@ object CLFunctionUtils {
       val outputSymbol = NoSymbol.newTermSymbol(newTermName(fresh("out")))
 
       val result = functionToFunctionKernel(
-        captureFunction = castTree(optimizedAST),
+        captureFunction = castTree(ff),
         kernelSalt = -1,
         outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
     }
 
     val compiled = CompilerUtils.compile(generation.result, toolbox)
     val method = getMethodMirror(compiled(), "apply")
-    val args = captures.map(_._2.value).toArray
+    val args = captures.map(_.value).toArray
     // println(s"""
     //   METHOD: $method
     //   ARGS: $args
