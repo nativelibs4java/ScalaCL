@@ -73,7 +73,7 @@ object CLFunctionMacros {
       //     c.warning(f.tree.pos, "Couldn't precompile this function (will rely on reified value).")
       reify(None)
     // }
-    val reifiedValueExpr = scalaxy.reified.internal.reifiedImpl[(A => B)](c)(f)(typeTagExpr[(A => B)](c))
+    val reifiedValueExpr = scalaxy.reified.internal.reifyImpl[(A => B)](c)(f)(typeTagExpr[(A => B)](c))
 
     // TODO: perform static precompilation here.
     typeCheckOrTrace(c)("reifiedValueExpr = " + reifiedValueExpr) {
