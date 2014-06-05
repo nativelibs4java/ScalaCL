@@ -30,14 +30,10 @@
  */
 package scalacl
 
-import scalacl.impl.Captures
 import scalacl.impl.CLFunctionLike
 import scalacl.impl.CLFunctionMacros
 import scalacl.impl.CLFunctionUtils
 import scalacl.impl.FunctionKernel
-import scalacl.impl.KernelDef
-
-import com.nativelibs4java.opencl.CLMem
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
@@ -46,9 +42,9 @@ import scalaxy.reified._
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.universe.WeakTypeTag
 
-case class CLFunction[A: WeakTypeTag, B: WeakTypeTag](
-  value: Reified[A => B], preparedFunctionKernel: Option[FunctionKernel])
-    extends (A => B) with CLFunctionLike[A, B] {
+case class CLFunction[A: WeakTypeTag, B: WeakTypeTag](value: ReifiedValue[A => B], preparedFunctionKernel: Option[FunctionKernel])
+    extends (A => B)
+    with CLFunctionLike[A, B] {
 
   lazy val function = value.value
   lazy val functionKernel =

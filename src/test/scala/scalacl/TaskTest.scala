@@ -36,7 +36,7 @@ import Assert._
 
 class TaskTest {
   @Test
-  def simple {
+  def simple() {
     implicit val context = Context.best
     try {
       val a = new CLArray[Int](3)

@@ -36,8 +36,8 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.universe.WeakTypeTag
 
 import scalaxy.components.WithRuntimeUniverse
-import scalaxy.reified.internal.Utils
-import scalaxy.reified.internal.Utils.{ getMethodMirror, getFreshNameGenerator }
+import scalaxy.reified.internal.Optimizer.getFreshNameGenerator
+import scalaxy.reified.internal.Utils.getMethodMirror
 import scalaxy.reified.internal.CompilerUtils
 import scalaxy.reified.internal.Utils.optimisingToolbox
 
@@ -47,7 +47,7 @@ object CLFunctionUtils {
   def functionKernel[A: WeakTypeTag, B: WeakTypeTag](f: CLFunction[A, B]): FunctionKernel = {
     val toolbox = optimisingToolbox
 
-    var ast = f.value.flatExpr.tree
+    var ast = f.value.taggedExpr.tree
     val captures = ast collect {
       case t if t.symbol != null && t.symbol.isFreeTerm =>
         t.symbol.asFreeTerm
@@ -68,8 +68,8 @@ object CLFunctionUtils {
       // """)
       val ff = ru.Function(captures.map({
         case fsym =>
-          ru.ValDef(ru.NoMods, ru.newTermName(fsym.name.toString), ru.TypeTree(fsym.typeSignature.asInstanceOf[ru.Type]), ru.EmptyTree)
-      }).toList, ast.asInstanceOf[ru.Tree])
+          ru.ValDef(ru.NoMods, ru.newTermName(fsym.name.toString), ru.TypeTree(fsym.typeSignature), ru.EmptyTree)
+      }).toList, ast)
 
       val freshName = getFreshNameGenerator(ast)
       def fresh(s: String) = freshName(s).toString
