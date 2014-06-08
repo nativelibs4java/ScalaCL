@@ -54,7 +54,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
 
   private[impl] def lit[T](v: T) = expr[T](Literal(Constant(v)))
 
-  private[impl] def newTermSymbol(name: TermName) = NoSymbol.newTermSymbol(name)
+  private[impl] def newTermSymbol(name: TermName) = internal.newTermSymbol(NoSymbol, name)
 
   def blockToUnitFunction(block: Tree) = {
     expr[Unit => Unit](

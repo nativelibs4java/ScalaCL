@@ -60,7 +60,7 @@ class ConversionTest
 
   def inputParam[T: TypeTag](name: String, mode: ParamKind = ParamKind.Normal) = {
     ParamDesc(
-      symbol = NoSymbol.newTermSymbol(name),
+      symbol = internal.newTermSymbol(NoSymbol, TermName(name)),
       output = true,
       tpe = typeOf[T],
       mode = mode,
@@ -69,7 +69,7 @@ class ConversionTest
 
   def outputParam[T: TypeTag](name: String, mode: ParamKind = ParamKind.Normal) = {
     ParamDesc(
-      symbol = NoSymbol.newTermSymbol(name),
+      symbol = internal.newTermSymbol(NoSymbol, TermName(name)),
       output = true,
       tpe = typeOf[T],
       mode = mode,

@@ -51,9 +51,9 @@ trait CodeConversion
   import definitions._
 
   def fresh(s: String): String
-  def cleanTypeCheck(tree: Tree): Tree
+  // def cleanTypeCheck(tree: Tree): Tree
   def resetLocalAttrs(tree: Tree): Tree
-  def resetAllAttrs(tree: Tree): Tree
+  // def resetAllAttrs(tree: Tree): Tree
 
   /**
    * Hack to substitute symbols, taking care of stranded symbols.
@@ -99,7 +99,7 @@ trait CodeConversion
       })
     ).unzip
 
-    val res = tree.substituteSymbols(expectedList, replacementList)
+    val res = internal.substituteSymbols(tree, expectedList, replacementList)
     // println(s"""
     // substituteSymbols:
     //   expectedList: $expectedList
@@ -387,7 +387,7 @@ trait CodeConversion
           val t = convertTpe({
             if (isCLArray) {
               val TypeRef(pre, sym, args) = typeOf[scalacl.CLArray[Int]]
-              TypeRef(pre, sym, List(fiberTpe))
+              internal.typeRef(pre, sym, List(fiberTpe))
             } else {
               fiberTpe
             }

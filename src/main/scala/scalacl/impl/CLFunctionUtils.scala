@@ -33,10 +33,11 @@ package impl
 
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.runtime.universe.{ internal => ri }
 import scala.reflect.runtime.universe.WeakTypeTag
 
 import scalaxy.components.WithRuntimeUniverse
-import scalaxy.reified.internal.Optimizer.getFreshNameGenerator
+import scalaxy.reified.internal.Utils.getFreshNameGenerator
 import scalaxy.reified.internal.Utils.getMethodMirror
 import scalaxy.reified.internal.CompilerUtils
 import scalaxy.reified.internal.Utils.optimisingToolbox
@@ -47,10 +48,10 @@ object CLFunctionUtils {
   def functionKernel[A: WeakTypeTag, B: WeakTypeTag](f: CLFunction[A, B]): FunctionKernel = {
     val toolbox = optimisingToolbox
 
-    var ast = f.value.taggedExpr.tree
+    var ast = f.value.expr.tree
     val captures = ast collect {
-      case t if t.symbol != null && t.symbol.isFreeTerm =>
-        t.symbol.asFreeTerm
+      case t if t.symbol != null && ri.isFreeTerm(t.symbol) =>
+        ri.asFreeTerm(t.symbol)
     }
     ast = simplifyGenericTree(toolbox.typeCheck(ast, f.value.valueTag.tpe))
     // println("SIMPLIFIED AST: " + ast)
@@ -74,7 +75,7 @@ object CLFunctionUtils {
       val freshName = getFreshNameGenerator(ast)
       def fresh(s: String) = freshName(s).toString
 
-      val outputSymbol = NoSymbol.newTermSymbol(newTermName(fresh("out")))
+      val outputSymbol = internal.newTermSymbol(NoSymbol, fresh("out"))
 
       val result = functionToFunctionKernel(
         captureFunction = castTree(ff),

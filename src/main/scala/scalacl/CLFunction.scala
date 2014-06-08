@@ -42,7 +42,7 @@ import scalaxy.reified._
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.universe.WeakTypeTag
 
-case class CLFunction[A: WeakTypeTag, B: WeakTypeTag](value: ReifiedValue[A => B], preparedFunctionKernel: Option[FunctionKernel])
+case class CLFunction[A: WeakTypeTag, B: WeakTypeTag](value: Reified[A => B], preparedFunctionKernel: Option[FunctionKernel])
     extends (A => B)
     with CLFunctionLike[A, B] {
 
