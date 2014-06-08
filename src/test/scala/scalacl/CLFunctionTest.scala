@@ -47,16 +47,15 @@ class CLFunctionTest {
       // println(a.toSeq)
       // assertEquals(Seq(0, 100, 0), a.toSeq)
 
-      val f: CLFunction[Int, Double] = (x: Int) => {
-        x * 2.0 * v
-
+      val f: CLFunction[Int, Float] = (x: Int) => {
+        x * 2.0f * v
       }
 
-      // println(f)
-      // println(f.value)
-      // println(f.functionKernel)
+      println(f)
+      println(f.value)
+      println(f.functionKernel)
       assertArrayEquals(
-        Array(20.0, 40.0, 60.0),
+        Array(20.0f, 40.0f, 60.0f),
         a.map(f).toArray,
         0)
     } catch {
