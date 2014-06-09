@@ -45,7 +45,7 @@ object KernelMacros {
       val result =
         vectorize(
           contextExpr.asInstanceOf[global.Expr[scalacl.Context]],
-          c.typeCheck(block.tree).asInstanceOf[global.Tree]
+          c.typecheck(block.tree).asInstanceOf[global.Tree]
         )
     }
     val result = vectorizer.result.asInstanceOf[Option[c.Expr[Unit]]]
