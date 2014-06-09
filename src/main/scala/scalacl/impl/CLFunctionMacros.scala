@@ -96,7 +96,7 @@ object CLFunctionMacros {
         List(
           ValDef(
             NoMods,
-            c.fresh("noarg"): TermName,
+            c.freshName(TermName("noarg")),
             TypeTree(UnitTpe),
             EmptyTree)
         ),

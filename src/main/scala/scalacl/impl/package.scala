@@ -6,7 +6,7 @@ package object impl {
   def typeCheckOrTrace[A](c: blackbox.Context)(msg: => String)(block: => c.Expr[A]): c.Expr[A] = {
     import c.universe._
     tryOrTrace(msg) {
-      c.Expr[A](c.typeCheck(block.tree))
+      c.Expr[A](c.typecheck(block.tree))
     }
   }
   def tryOrTrace[A](msg: => String)(block: => A): A = {

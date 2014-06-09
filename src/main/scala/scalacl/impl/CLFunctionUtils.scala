@@ -53,9 +53,9 @@ object CLFunctionUtils {
       case t if t.symbol != null && ri.isFreeTerm(t.symbol) =>
         ri.asFreeTerm(t.symbol)
     }
-    ast = simplifyGenericTree(toolbox.typeCheck(ast, f.value.valueTag.tpe))
+    ast = simplifyGenericTree(toolbox.typecheck(tree = ast, pt = f.value.valueTag.tpe))
     // println("SIMPLIFIED AST: " + ast)
-    ast = toolbox.resetLocalAttrs(ast)
+    ast = toolbox.untypecheck(ast)
     //ast = toolbox.typeCheck(ast, f.value.valueTag.tpe)
 
     type Result = ru.Tree
@@ -75,7 +75,7 @@ object CLFunctionUtils {
       val freshName = getFreshNameGenerator(ast)
       def fresh(s: String) = freshName(s).toString
 
-      val outputSymbol = internal.newTermSymbol(NoSymbol, fresh("out"))
+      val outputSymbol = internal.newTermSymbol(NoSymbol, TermName(fresh("out")))
 
       val result = functionToFunctionKernel(
         captureFunction = castTree(ff),
