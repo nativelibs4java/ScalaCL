@@ -36,37 +36,11 @@ import scala.language.implicitConversions
 import scalaxy.reified._
 import scala.reflect.runtime.universe.TypeTag
 
-package object scalacl extends impl.TupleDataIOImplicits {
-  import impl._
+import scalacl.impl.DataIO
+import scalacl.impl.ScalarDataIOs
+import scalacl.impl.KernelMacros
 
-  // implicit lazy val byteDataIO = byteDataIO_
-  // private def byteDataIO_(implicit m: Manifest[Byte]) = macro ScalarDataIOMacros.scalarDataIO[Byte]
-
-  // implicit lazy val shortDataIO = shortDataIO_
-  // private def shortDataIO_(implicit m: Manifest[Short]) = macro ScalarDataIOMacros.scalarDataIO[Short]
-
-  // implicit lazy val intDataIO = intDataIO_
-  // private def intDataIO_(implicit m: Manifest[Int]) = macro ScalarDataIOMacros.scalarDataIO[Int]
-
-  // implicit lazy val longDataIO = longDataIO_
-  // private def longDataIO_(implicit m: Manifest[Long]) = macro ScalarDataIOMacros.scalarDataIO[Long]
-
-  // implicit lazy val floatDataIO = floatDataIO_
-  // private def floatDataIO_(implicit m: Manifest[Float]) = macro ScalarDataIOMacros.scalarDataIO[Float]
-
-  // implicit lazy val doubleDataIO = doubleDataIO_
-  // private def doubleDataIO_(implicit m: Manifest[Double]) = macro ScalarDataIOMacros.scalarDataIO[Double]
-
-  // implicit lazy val booleanDataIO = booleanDataIO_
-  // private def booleanDataIO_(implicit m: Manifest[Boolean]) = macro ScalarDataIOMacros.scalarDataIO[Boolean]
-
-  implicit val byteDataIO = ByteDataIO
-  implicit val shortDataIO = ShortDataIO
-  implicit val intDataIO = IntDataIO
-  implicit val longDataIO = LongDataIO
-  implicit val floatDataIO = FloatDataIO
-  implicit val doubleDataIO = DoubleDataIO
-  implicit val booleanDataIO = BooleanDataIO
+package object scalacl extends impl.TupleDataIOImplicits with ScalarDataIOs {
 
   implicit class ArrayConversions[A: Manifest: DataIO](array: Array[A])(implicit context: Context) {
     def toCLArray = CLArray[A](array: _*)

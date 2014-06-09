@@ -35,7 +35,6 @@ import scala.language.postfixOps
 import scalaxy.components._
 import scalaxy.components.FlatCodes._
 
-import scala.collection.immutable.Stack
 import scala.collection.mutable.ArrayBuffer
 
 import scala.reflect.NameTransformer.{ encode, decode }
@@ -65,7 +64,7 @@ trait OpenCLCodeFlattening
     //   ex.fillInStackTrace()
     //   ex.printStackTrace()
     // }
-    n
+    TermName(n)
   }
 
   def fiberVariableNames(rootName: Name, rootTpe: Type): Seq[(Name, Type)] = {
@@ -338,7 +337,7 @@ trait OpenCLCodeFlattening
           FlatCode[Tree](
             defs,
             stats,
-            vals.map(v => Select(v, decode(name.toString): TermName))
+            vals.map(v => Select(v, TermName(decode(name.toString))))
           )
         case Apply(ident @ Ident(functionName), args) =>
           val f = args.map(flattenTuplesAndBlocks(_))

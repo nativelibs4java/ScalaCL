@@ -69,7 +69,7 @@ object CLFunctionUtils {
       // """)
       val ff = ru.Function(captures.map({
         case fsym =>
-          ru.ValDef(ru.NoMods, ru.newTermName(fsym.name.toString), ru.TypeTree(fsym.typeSignature), ru.EmptyTree)
+          ru.ValDef(ru.NoMods, ru.TermName(fsym.name.toString), ru.TypeTree(fsym.typeSignature), ru.EmptyTree)
       }).toList, ast)
 
       val freshName = getFreshNameGenerator(ast)

@@ -38,7 +38,7 @@ import scalacl.impl.CLArrayMacros.typeTagExpr
 import scalaxy.components.WithMacroContext
 
 import language.experimental.macros
-import scala.reflect.macros.Context
+import scala.reflect.macros.blackbox.Context
 
 object CLFunctionMacros {
   def fun2clfun[A: c.WeakTypeTag, B: c.WeakTypeTag](c: Context)(f: c.Expr[(A => B)])(ta: c.Expr[universe.TypeTag[A]], tb: c.Expr[universe.TypeTag[B]]): c.Expr[CLFunction[A, B]] = {
@@ -53,7 +53,7 @@ object CLFunctionMacros {
     val tf = f //c.Expr[(A => B)](c.typeCheck(f.tree))
     val precompiledFunctionExpr: c.Expr[Option[FunctionKernel]] =
       // try {
-      //   val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(newTermName(c.fresh("out")))
+      //   val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(TermName(c.fresh("out")))
 
       //   val functionKernelExpr = WithResult(
       //     new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel]] {

@@ -36,7 +36,6 @@ import scalaxy.components.FlatCode
 import scalaxy.components.FlatCodes._
 import scalaxy.components.MiscMatchers
 
-import scala.collection.immutable.Stack
 import scala.reflect.NameTransformer
 
 trait OpenCLConverter
@@ -48,11 +47,13 @@ trait OpenCLConverter
   import global._
   import definitions._
 
+  private[this] final val UNIT: Unit = ()
+
   def nodeToStringNoComment(tree: Tree): String = tree.toString // TODO
 
   var openclLabelIds = new Ids
 
-  var placeHolderRefs = new Stack[String]
+  // var placeHolderRefs: List[String] = Nil
 
   def valueCode(v: String) = FlatCode[String](Seq(), Seq(), Seq(v))
   def emptyCode = FlatCode[String](Seq(), Seq(), Seq())
@@ -75,7 +76,7 @@ trait OpenCLConverter
         case TupleCreation(tupleArgs) => //Apply(TypeApply(Select(TupleObject(), applyName()), tupleTypes), tupleArgs) if isTopLevel =>
           tupleArgs.map(convert).reduceLeft(_ ++ _)
         case Literal(Constant(value)) =>
-          if (value == ())
+          if (value == UNIT)
             emptyCode
           else
             valueCode(value.toString)
@@ -294,7 +295,7 @@ trait OpenCLConverter
     if (tpe == null) {
       sys.error("Null type cannot be converted to OpenCL !")
     } else {
-      val t = tpe.normalize
+      val t = tpe.dealias
       if (t == NoType || t <:< typeOf[Unit]) "void"
       else if (t <:< IntTpe) "int"
       else if (t <:< LongTpe) "long"

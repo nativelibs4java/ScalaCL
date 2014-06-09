@@ -36,7 +36,7 @@ import scalaxy.components.WithMacroContext
 
 import language.experimental.macros
 
-import scala.reflect.macros.Context
+import scala.reflect.macros.blackbox.Context
 
 object KernelMacros {
   def kernelImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {

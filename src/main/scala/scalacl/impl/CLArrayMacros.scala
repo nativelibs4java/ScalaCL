@@ -34,7 +34,7 @@ import scalacl.CLArray
 import scalacl.CLFilteredArray
 
 import language.experimental.macros
-import scala.reflect.macros.Context
+import scala.reflect.macros.blackbox.Context
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe
 

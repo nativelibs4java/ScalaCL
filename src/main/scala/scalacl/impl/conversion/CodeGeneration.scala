@@ -61,7 +61,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
       Function(
         List(
           ValDef(
-            NoMods, newTermName(fresh("noarg")), TypeTree(UnitTpe), EmptyTree)
+            NoMods, TermName(fresh("noarg")), TypeTree(UnitTpe), EmptyTree)
         ),
         block
       )
@@ -69,7 +69,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
   }
 
   def freshVal(nameBase: String, tpe: Type, rhs: Tree): ValDef = {
-    val name = newTermName(fresh(nameBase))
+    val name = TermName(fresh(nameBase))
     ValDef(NoMods, name, TypeTree(tpe), rhs)
   }
 
@@ -206,7 +206,7 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
     expr[Array[A]](
       Apply(
         TypeApply(
-          Select(Ident(ArrayModule), newTermName("apply")),
+          Select(Ident(ArrayModule), TermName("apply")),
           List(TypeTree(typeOf[A]))
         ),
         values
