@@ -239,7 +239,7 @@ trait OpenCLConverter
             Seq(t + "(" + a.mkString(", ") + ")")
           })
         case Block(statements, Literal(Constant(empty))) =>
-          assert(empty == (), "Valued blocks should have been flattened in a previous phase !")
+          assert(empty == UNIT, "Valued blocks should have been flattened in a previous phase !")
           statements.map(convert).map(_.noValues).reduceLeft(_ >> _)
         case _ =>
           //println(nodeToStringNoComment(body))

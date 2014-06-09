@@ -50,10 +50,10 @@ object CLFunctionMacros {
     // This may fail if the tree contains free types: in that case, the reified value
     // tree will need to be converted at runtime.
 
-    val tf = f //c.Expr[(A => B)](c.typeCheck(f.tree))
+    val tf = f //c.Expr[(A => B)](c.typecheck(f.tree))
     val precompiledFunctionExpr: c.Expr[Option[FunctionKernel]] =
       // try {
-      //   val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(TermName(c.fresh("out")))
+      //   val outputSymbol = Option(c.enclosingMethod).map(_.symbol).getOrElse(NoSymbol).newTermSymbol(TermName(c.freshName("out")))
 
       //   val functionKernelExpr = WithResult(
       //     new CodeGeneration with WithMacroContext with WithResult[c.Expr[FunctionKernel]] {
@@ -96,7 +96,7 @@ object CLFunctionMacros {
         List(
           ValDef(
             NoMods,
-            c.freshName(TermName("noarg")),
+            TermName(c.freshName("noarg")),
             TypeTree(UnitTpe),
             EmptyTree)
         ),
