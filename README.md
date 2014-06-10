@@ -23,6 +23,7 @@ Features of the new design:
   - Import Scalaxy streams, make them work with scala.reflection.api.Universe
 - Plug some v2 runtime code back (filtered array compaction, reduceSymmetric, parallel sums...)
 - Benchmarks!
+- Wanna help? Ping the [NativeLibs4Java mailing-list](https://groups.google.com/forum/#!forum/nativelibs4java)!
 
 # Usage
 
