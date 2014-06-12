@@ -53,7 +53,7 @@ class SymbolKindsTest
   }
 
   @Test
-  def testKinds {
+  def testKinds() {
     assertEquals(SymbolKind.Tuploid, kindOf(typeOf[Int]))
     assertEquals(SymbolKind.Tuploid, kindOf(typeOf[Float]))
     assertEquals(SymbolKind.Tuploid, kindOf(typeOf[(Int, Int)]))

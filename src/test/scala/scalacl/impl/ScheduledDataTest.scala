@@ -44,7 +44,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class ScheduledDataTest {
   @Test
-  def simpleOpWithoutEvent {
+  def simpleOpWithoutEvent() {
     val inEvt = new MockEvent(1)
     val outEvt = new MockEvent(2)
     val opEvt = new MockEvent(3)

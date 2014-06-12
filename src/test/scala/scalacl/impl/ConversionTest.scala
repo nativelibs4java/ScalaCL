@@ -77,7 +77,7 @@ class ConversionTest
   }
 
   @Test
-  def simpleCaptures {
+  def simpleCaptures() {
     val in: CLArray[Int] = null
     val out: CLArray[Int] = null
     val f = 10
@@ -100,7 +100,7 @@ class ConversionTest
   }
 
   @Test
-  def simpleTupleResult {
+  def simpleTupleResult() {
     val in: CLArray[Int] = null
     val out: CLArray[(Int, Float)] = null
     val c = conv(reify { out(0) = (in(0), in(2).toFloat) })
@@ -116,7 +116,7 @@ class ConversionTest
 
   @Ignore
   @Test
-  def simpleTuplesCaptures {
+  def simpleTuplesCaptures() {
     val in: CLArray[(Int, (Float, Short))] = null
     val out: CLArray[Float] = null
     val c = conv(reify {
@@ -133,7 +133,7 @@ class ConversionTest
 
   @Ignore
   @Test
-  def aliasedTuplesCaptures {
+  def aliasedTuplesCaptures() {
     val in: CLArray[(Int, (Float, Short))] = null
     val out: CLArray[Float] = null
     val c = conv(reify {

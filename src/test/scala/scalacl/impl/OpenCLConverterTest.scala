@@ -52,7 +52,7 @@ class OpenCLConverterTest
     FlatCode[String](statements = statements, values = values)
 
   @Test
-  def testSimpleTuple {
+  def testSimpleTuple() {
     assertEquals(
       code(
         Seq("const int x = 10;"),
@@ -66,7 +66,7 @@ class OpenCLConverterTest
   }
 
   @Test
-  def testSimpleMath {
+  def testSimpleMath() {
     import scala.math._
     assertEquals(
       code(

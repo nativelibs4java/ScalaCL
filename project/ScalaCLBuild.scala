@@ -124,7 +124,9 @@ object ScalaCLBuild extends Build {
         try {
           new RuleTransformer(new RewriteRule {
             override def transform(n: Node): Seq[Node] ={
-              if ((n \ "artifactId" find { _.text.startsWith("scalaxy-") }) != None)
+              if (n \ "artifactId" exists {
+                _.text.startsWith("scalaxy-")
+              })
                 Array[Node]()
               else
                 n

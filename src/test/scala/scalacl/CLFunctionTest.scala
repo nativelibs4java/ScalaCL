@@ -35,8 +35,9 @@ import org.junit._
 import Assert._
 
 class CLFunctionTest {
+  @Ignore
   @Test
-  def simple {
+  def simple() {
     implicit val context = Context.best
     try {
       val a = CLArray[Int](1, 2, 3)

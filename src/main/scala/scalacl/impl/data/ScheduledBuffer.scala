@@ -67,7 +67,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
   val length = buffer_.getElementCount
 
   if (clearBuffer) {
-    clear();
+    clear()
   }
 
   def buffer = buffer_
@@ -92,7 +92,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
 
   def release() = this synchronized {
     if (lazyCloneModel == null)
-      buffer.release
+      buffer.release()
   }
   override def clone: ScheduledBuffer[T] = this synchronized {
     if (lazyCloneModel != null) {
@@ -120,8 +120,8 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
   }
 
   override def startWrite(out: ArrayBuffer[CLEvent]) = this synchronized {
-    performClone
-    lazyClones.toArray.foreach(_.performClone)
+    performClone()
+    lazyClones.toArray.foreach(_.performClone())
     super.startWrite(out)
   }
 
@@ -160,6 +160,6 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
       Array(this),
       Array(),
       eventsToWaitFor => buffer.read(context.queue, p, false, eventsToWaitFor: _*))
-    event.waitFor
+    event.waitFor()
   }
 }

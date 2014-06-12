@@ -36,7 +36,7 @@ import Assert._
 
 class KernelTest {
   @Test
-  def intRange1DKernel {
+  def intRange1DKernel() {
     implicit val context = Context.best
     try {
 
@@ -58,7 +58,7 @@ class KernelTest {
     }
   }
   @Test
-  def longRange1DKernel {
+  def longRange1DKernel() {
     implicit val context = Context.best
     try {
 
@@ -81,11 +81,11 @@ class KernelTest {
   }
 
   @Test
-  def testEquality {
+  def testEquality() {
     val sources = "aa"
     same(new KernelDef(sources = sources, salt = 1), new KernelDef(sources = sources, salt = 1))
-    diff(new KernelDef(sources = sources, salt = 1), new KernelDef(sources = sources, salt = 2), false)
-    diff(new KernelDef(sources = sources, salt = 1), new KernelDef(sources = "a" + ('b' - 1), salt = 1), true)
+    diff(new KernelDef(sources = sources, salt = 1), new KernelDef(sources = sources, salt = 2), sameHC = false)
+    diff(new KernelDef(sources = sources, salt = 1), new KernelDef(sources = "a" + ('b' - 1), salt = 1), sameHC = true)
   }
 
   def same(a: AnyRef, b: AnyRef) = {

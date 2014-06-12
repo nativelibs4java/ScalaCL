@@ -134,7 +134,7 @@ trait CodeConversion
     // val toTransform = typeCheck(resetLocalAttrs(tree), WildcardType)
     // println("STREAMS; TO TRANSFORM: " + tree)
     val toTransform = tree
-    val transformed = newStreamTransformer(false).transform(toTransform)
+    val transformed = newStreamTransformer(optimizeOnlyIfKnownToBenefit = false).transform(toTransform)
     // println("STREAMS; TRANSFORMED: " + transformed)
 
     // println(s"""
@@ -361,7 +361,7 @@ trait CodeConversion
     //     replacements.foldLeft(s)((v, f) => f(v))))
 
     val result =
-      (FlatCode[String](statements = globalIDStatements) ++ flat).map(replace _)
+      (FlatCode[String](statements = globalIDStatements) ++ flat).map(replace)
 
     val params: Seq[String] = paramDescs.filter(_.mode != ParamKind.RangeIndex).flatMap(paramDesc => {
       // TODO handle composite types, with fresh names for each fiber (x_1, x_2_1, x_2_2)

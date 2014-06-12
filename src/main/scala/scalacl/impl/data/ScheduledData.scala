@@ -73,7 +73,7 @@ private[scalacl] object ScheduledData {
 }
 
 private[scalacl] trait ScheduledData {
-  def finish: Unit
+  def finish(): Unit
   def eventCompleted(event: CLEvent): Unit
   def startRead(out: ArrayBuffer[CLEvent]): Unit
   def startWrite(out: ArrayBuffer[CLEvent]): Unit

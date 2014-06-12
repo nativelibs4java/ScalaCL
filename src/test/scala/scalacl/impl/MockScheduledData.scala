@@ -11,7 +11,7 @@ class MockScheduledData extends ScheduledData {
     calls
   }
 
-  override def finish {
+  override def finish() {
     _calls += ('finish -> Nil)
   }
   override def eventCompleted(event: CLEvent) {

@@ -37,14 +37,14 @@ private[scalacl] trait DefaultScheduledData extends ScheduledData {
   private[impl] val scheduleLock = new ReentrantLock
 
   private def locked[V](block: => V): V = {
-    scheduleLock.lock
+    scheduleLock.lock()
     try {
       block
     } finally {
-      scheduleLock.unlock
+      scheduleLock.unlock()
     }
   }
-  override def finish = {
+  override def finish() = {
     val events = new ArrayBuffer[CLEvent]
     locked {
       if (dataWrite != null)
@@ -53,13 +53,13 @@ private[scalacl] trait DefaultScheduledData extends ScheduledData {
     }
     CLEvent.waitFor(events.toArray: _*)
     locked {
-      events.foreach(doEventCompleted(_))
+      events.foreach(doEventCompleted)
     }
   }
   private def doEventCompleted(event: CLEvent) {
     if (event.equals(dataWrite)) {
       dataWrite = null
-      dataReads.clear
+      dataReads.clear()
     } else {
       dataReads -= event
     }
@@ -70,7 +70,7 @@ private[scalacl] trait DefaultScheduledData extends ScheduledData {
     }
   }
   override def startRead(out: ArrayBuffer[CLEvent]) = {
-    scheduleLock.lock
+    scheduleLock.lock()
     if (dataWrite != null)
       out += dataWrite
   }
@@ -78,11 +78,11 @@ private[scalacl] trait DefaultScheduledData extends ScheduledData {
   override def endRead(event: CLEvent) {
     if (event != null)
       dataReads += event
-    scheduleLock.unlock
+    scheduleLock.unlock()
   }
 
   override def startWrite(out: ArrayBuffer[CLEvent]) = {
-    scheduleLock.lock
+    scheduleLock.lock()
     out ++= dataReads
     if (dataWrite != null)
       out += dataWrite
@@ -94,7 +94,7 @@ private[scalacl] trait DefaultScheduledData extends ScheduledData {
       dataReads.clear()
       dataWrite = event
     }
-    scheduleLock.unlock
+    scheduleLock.unlock()
   }
 
   private[impl] var dataWrite: CLEvent = _

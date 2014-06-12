@@ -45,7 +45,7 @@ class MatrixTest {
 
   @Ignore
   @Test
-  def testMatrix2 {
+  def testMatrix2() {
     implicit val context = Context.best
 
     val n = 10
@@ -72,7 +72,7 @@ class MatrixTest {
 
   @Ignore
   @Test
-  def testMatrix {
+  def testMatrix() {
     implicit val context = Context.best
 
     val n = 10

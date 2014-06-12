@@ -75,26 +75,26 @@ class DefaultScheduledDataTest {
   }
 
   @Test
-  def simpleReads {
+  def simpleReads() {
     read(e1, Nil, null)
     read(e2, List(e1), null)
   }
 
   @Test
-  def simpleWrites {
+  def simpleWrites() {
     write(e1, Nil, null)
     write(e2, Nil, e1)
   }
 
   @Test
-  def simpleReadWriteRead {
+  def simpleReadWriteRead() {
     read(e1, Nil, null)
     write(e2, List(e1), null)
     read(e3, Nil, e2)
   }
 
   @Test
-  def simpleWriteReadWrite {
+  def simpleWriteReadWrite() {
     write(e1, Nil, null)
     read(e2, Nil, e1)
     write(e3, List(e2), e1)

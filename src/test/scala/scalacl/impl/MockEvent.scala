@@ -4,7 +4,7 @@ package com.nativelibs4java.opencl
 class MockEvent(value: Long) extends CLEvent(null, value) {
   var cleared = false
   var completionCallback: CLEvent.EventCallback = null
-  override def clear {
+  override def clear() {
     assert(!cleared)
     cleared = true
   }
