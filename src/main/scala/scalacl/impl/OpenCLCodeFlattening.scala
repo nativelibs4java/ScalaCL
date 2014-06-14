@@ -97,16 +97,16 @@ trait OpenCLCodeFlattening
   }
   def renameDefinedSymbolsUniquely(tree: Tree) = {
     val (defTrees, refTrees) = getDefAndRefTrees(tree)
-    val definedSymbols = defTrees.collect { case d if d.name != null => d.symbol -> d.name } toMap
-    val usedIdentSymbols = refTrees.collect { case ident @ Ident(name) => ident.symbol -> name } toMap
+    val definedSymbols = defTrees.collect { case d if d.name != null => d.symbol -> d.name }.toMap
+    val usedIdentSymbols = refTrees.collect { case ident @ Ident(name) => ident.symbol -> name }.toMap
 
     val outerSymbols = usedIdentSymbols.keys.toSet.diff(definedSymbols.keys.toSet)
     val nameCollisions = (definedSymbols ++ usedIdentSymbols).groupBy(_._2).filter(_._2.size > 1)
-    val renamings = nameCollisions.flatMap(_._2) map {
+    val renamings = (nameCollisions.flatMap(_._2) map {
       case (sym, name) =>
         val newName: Name = N(fresh(name.toString))
         (sym, newName)
-    } toMap
+    }).toMap
 
     if (renamings.isEmpty)
       tree
@@ -277,7 +277,7 @@ trait OpenCLCodeFlattening
           }
         } catch {
           case ex: Throwable =>
-            ex.printStackTrace
+            ex.printStackTrace()
             Seq(tree)
         }
     }
@@ -408,7 +408,7 @@ trait OpenCLCodeFlattening
               Seq(
                 whileLoop(
                   flatConditionValue,
-                  Block(flatContent.statements.toList ++ flatContent.values, newUnit)
+                  Block(flatContent.statements.toList ++ flatContent.values, newUnit())
                 )
               ),
             Seq()
@@ -437,8 +437,8 @@ trait OpenCLCodeFlattening
                 Seq(
                   If(
                     conditionVar(),
-                    Block(st.toList ++ vt.toList, newUnit),
-                    Block(so.toList ++ vo.toList, newUnit)
+                    Block(st.toList ++ vt.toList, newUnit()),
+                    Block(so.toList ++ vo.toList, newUnit())
                   )
                 )
             }
@@ -500,13 +500,12 @@ trait OpenCLCodeFlattening
             case _ =>
               throw new RuntimeException("Unable to connect the matched pattern with its corresponding single case")
           }
-        case EmptyTree => {
+        case EmptyTree =>
           // println("CodeFlattening  -  WARNING EmptyTree! Should this ever happen?")
           FlatCode[Tree](Seq(), Seq(), Seq())
-        }
         case _ =>
           new RuntimeException().printStackTrace()
-          assert(false, "Case not handled in tuples and blocks flattening : " + tree + ": " + tree.getClass.getName)
+          assert(assertion = false, "Case not handled in tuples and blocks flattening : " + tree + ": " + tree.getClass.getName)
           FlatCode[Tree](Seq(), Seq(), Seq())
       }
       val ret = if (sideEffectFree)
@@ -519,7 +518,7 @@ trait OpenCLCodeFlattening
 
       if (false) {
         println()
-        println("tree = \n\t" + tree.toString.replaceAll("\n", "\n\t"))
+        println("tree = \n\t" + tree.toString().replaceAll("\n", "\n\t"))
         println("res = \n\t" + res.toString.replaceAll("\n", "\n\t"))
         println("ret = \n\t" + ret.toString.replaceAll("\n", "\n\t"))
       }

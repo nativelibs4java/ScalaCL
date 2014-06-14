@@ -84,7 +84,7 @@ class OpenCLCodeFlatteningTest
   }
 
   @Test
-  def simpleTupleValue {
+  def simpleTupleValue() {
     val x = 10
     assertEquals(
       code(values = List(
@@ -99,7 +99,7 @@ class OpenCLCodeFlatteningTest
   }
 
   @Test
-  def simpleTupleReference {
+  def simpleTupleReference() {
     val p = (10, 12)
     val Seq(p$1, p$2, pp$1, pp$2) = 1 to 4
     assertEquals(

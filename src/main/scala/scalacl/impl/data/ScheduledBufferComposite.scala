@@ -41,7 +41,7 @@ private[scalacl] trait ScheduledBufferComposite extends ScheduledData {
     foreachBuffer(_.finish)
 
   def release() =
-    foreachBuffer(_.release)
+    foreachBuffer(_.release())
 
   override def eventCompleted(event: CLEvent) {
     foreachBuffer(_.eventCompleted(event))

@@ -58,7 +58,7 @@ class VectorizationTest
   }
 
   @Test
-  def notVectorizable0D {
+  def notVectorizable0D() {
     assertThat(
       vec(reify { 1 + 2 }),
       is(NotVectorizable)
@@ -66,10 +66,10 @@ class VectorizationTest
   }
 
   @Test
-  def vectorizable1D {
+  def vectorizable1D() {
     assertThat(
       vec(reify {
-        for (i <- 0 until 10) (i + 2)
+        for (i <- 0 until 10) i + 2
       }),
       is(Vectorizable)
     )
@@ -77,11 +77,11 @@ class VectorizationTest
 
   // @Ignore
   @Test
-  def notVectorizable2D {
+  def notVectorizable2D() {
     assertThat(
       vec(reify {
         for (i <- 0 until 10; j <- 0 until 10)
-          (i + j + 2)
+          i + j + 2
       }),
       //is(NotVectorizable)
       is(Vectorizable)

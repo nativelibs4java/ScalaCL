@@ -35,8 +35,9 @@ import org.junit._
 import Assert._
 
 class SimpleTest {
+  @Ignore
   @Test
-  def testHandWrittenKernels {
+  def testHandWrittenKernels() {
     implicit val context = Context.best
     val factor = 20.5f
     val trans = new CLFunction[Int, Int](
@@ -99,7 +100,7 @@ class SimpleTest {
   }
 
   @Test
-  def testSimpleScalarCapture {
+  def testSimpleScalarCapture() {
     implicit val context = Context.best
     val f = 0.2f
 
@@ -116,7 +117,7 @@ class SimpleTest {
   }
 
   @Test
-  def testSimpleArrayCapture {
+  def testSimpleArrayCapture() {
     implicit val context = Context.best
 
     val clResult = {

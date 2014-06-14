@@ -38,7 +38,7 @@ import InlinedCollections._
 
 class InlinedCollectionsTest {
   @Test
-  def simple {
+  def simple() {
     println(inlineMapAsSwitch("map", Map(1 -> 10, 2 -> 20)))
   }
 }

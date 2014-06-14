@@ -49,7 +49,7 @@ trait OpenCLConverter
 
   private[this] final val UNIT: Unit = ()
 
-  def nodeToStringNoComment(tree: Tree): String = tree.toString // TODO
+  def nodeToStringNoComment(tree: Tree): String = tree.toString() // TODO
 
   var openclLabelIds = new Ids
 
@@ -64,7 +64,7 @@ trait OpenCLConverter
     inputSymbols: Seq[(Symbol, Type)] = Seq(),
     owner: Symbol = NoSymbol,
     renameSymbols: Boolean = true): FlatCode[String] = {
-    flatten(tree, inputSymbols, owner, renameSymbols).flatMap(convert _)
+    flatten(tree, inputSymbols, owner, renameSymbols).flatMap(convert)
   }
 
   def convert(body: Tree): FlatCode[String] = {
@@ -101,14 +101,14 @@ trait OpenCLConverter
               "if (" + vc + ") {\n" + t + "\n} else {\n" + o + "\n}\n"
 
           val (rs, rv) = (st, so) match {
-            case (Seq(), Seq()) if !vt.isEmpty && !vo.isEmpty =>
+            case (Seq(), Seq()) if vt.nonEmpty && vo.nonEmpty =>
               (
                 Seq(),
-                vt.zip(vo).map { case (t, o) => newIf(t, o, true) } // pure (cond ? then : otherwise) form, possibly with tuple values
+                vt.zip(vo).map { case (t, o) => newIf(t, o, isValue = true) } // pure (cond ? then : otherwise) form, possibly with tuple values
               )
             case _ =>
               (
-                Seq(newIf((st ++ vt).mkString("\n"), (so ++ vo).mkString("\n"), false)),
+                Seq(newIf((st ++ vt).mkString("\n"), (so ++ vo).mkString("\n"), isValue = false)),
                 Seq()
               )
           }
@@ -141,7 +141,7 @@ trait OpenCLConverter
           b ++= ") {\n"
           val convBody = convert(body)
           convBody.statements.foreach(b ++= _)
-          if (!convBody.values.isEmpty) {
+          if (convBody.values.nonEmpty) {
             val Seq(ret) = convBody.values
             b ++= "return " + ret + ";"
           }
@@ -258,10 +258,10 @@ trait OpenCLConverter
     if (hasDoubleParam)
       outers ++= Seq("#pragma OPENCL EXTENSION cl_khr_fp64: enable")
 
-    val normalizedArgs = args.map(_ match {
+    val normalizedArgs = args.map {
       case Select(a, toDoubleName()) => a
       case arg => arg
-    })
+    }
     val convArgs = normalizedArgs.map(convert)
 
     assert(convArgs.forall(_.statements.isEmpty), convArgs)
@@ -288,7 +288,7 @@ trait OpenCLConverter
     )
   }
   def constPref(mods: Modifiers) =
-    (if (mods.hasFlag(Flag.MUTABLE)) "" else "const ")
+    if (mods.hasFlag(Flag.MUTABLE)) "" else "const "
 
   def convertTpt(tpt: TypeTree): String = convertTpe(tpt.tpe)
   def convertTpe(tpe: Type): String = {
