@@ -31,21 +31,42 @@
 package scalacl
 package impl
 
-import scalaxy.components._
-
 class VectorizationTest
-    extends BaseTest
-    with Vectorization
-    with RuntimeUniverseTest {
-  
-  behavior of "ScalaCl vectorization"
-  
+    extends RuntimeUniverseTest
+    with BaseTest
+    with Vectorization {
   import global._
 
-  private val context = reify { null: Context }
-  private val vectorized: Option[Expr[Unit]] = mock[Some[Expr[Unit]]]
+  behavior of "ScalaCl vectorization"
 
-  private def afterVectorization(block: Expr[Unit]): Option[global.Expr[Unit]] = {
+  private val context = reify { null: Context }
+  private val vectorized = not be None
+
+  ignore should "not vectorized 0D expression" in {
+    vectorization(reify { 1 + 2 }) should not(vectorized)
+  }
+
+  ignore should "vectorized 1D expression" in {
+    vectorization(reify {
+      for (i <- 0 until 10) i + 1
+    }) should vectorized
+  }
+
+  ignore should "vectorized 2D expression" in {
+    vectorization(reify {
+      for (i <- 0 until 10; j <- 0 until 10)
+        i + j + 2
+    }) should vectorized
+  }
+
+  ignore should "vectorized 3D expression" in {
+    vectorization(reify {
+      for (i <- 0 until 10; j <- 0 until 10; k <- 0 until 10)
+        i + j + k + 3
+    }) should vectorized
+  }
+
+  private def vectorization(block: Expr[Unit]) = {
     try {
       vectorize(context, typeCheck(block.tree, WildcardType))
     } catch {
@@ -54,29 +75,4 @@ class VectorizationTest
         throw ex
     }
   }
-
-  it should "not vectorized 0D expression" in {
-    afterVectorization(reify { 1 + 2 }) should not be vectorized
-  }
-
-  it should "vectorized 1D expression" in {
-    afterVectorization(reify {
-      for (i <- 0 until 10) i + 1
-    }) should be (vectorized)
-  }
-
-  it should "vectorized 2D expression" in {
-    afterVectorization(reify {
-      for (i <- 0 until 10; j <- 0 until 10)
-        i + j + 2
-    }) should be (vectorized)
-  }
-
-  ignore should "vectorized 3D expression" in {
-    afterVectorization(reify {
-      for (i <- 0 until 10; j <- 0 until 10; k <- 0 until 10)
-        i + j + k + 3
-    }) should be (vectorized)
-  }
-
 }

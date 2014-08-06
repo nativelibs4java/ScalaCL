@@ -33,77 +33,32 @@ package impl
 
 import scalaxy.components._
 
-import org.junit._
-import Assert._
-import org.hamcrest.CoreMatchers._
-
 class OpenCLCodeFlatteningTest
-    extends OpenCLCodeFlattening
-    with WithRuntimeUniverse
-    with WithTestFresh {
+    extends BaseTest
+    with CodeFlatteningTest {
   import global._
 
-  /*
-  def conv(x: Expr[_]) = convert(typeCheck(x))
-  def code(statements: Seq[String], values: Seq[String]) =
-    FlatCode[String](statements = statements, values = values)
-  
-  def flattenWithInputSymbols(body: Tree, inputSymbols: Seq[Symbol]): FlatCode[String] = {
-    val renamed = renameDefinedSymbolsUniquely(body)
-    val tupleAnalyzer = new TupleAnalyzer(renamed)
-    val flattener = new TuplesAndBlockFlattener(tupleAnalyzer)
-    val Seq(uniqueParam) = inputSymbols
-    val flattened = flattener.flattenTuplesAndBlocksWithInputSymbol(renamed, uniqueParam.symbol, uniqueParam.name, currentOwner)(unit)
-    
-  }
-  */
-  def unwrap(tree: Tree): Tree = tree match {
-    case Block(List(sub), Literal(Constant(()))) => sub
-    case _ => tree
-  }
+  behavior of "OpenCLCodeFlattening"
 
-  def code(statements: Seq[Expr[_]] = Seq(), values: Seq[Expr[_]] = Seq()) =
-    FlatCode[Tree](
-      statements = statements.map(x => unwrap(typeCheck(x.tree, WildcardType))),
-      values = values.map(x => unwrap(typeCheck(x.tree, WildcardType)))
-    )
-
-  def inputSymbols(xs: Expr[_]*): Seq[(Symbol, Type)] = {
-    for (x <- xs.toSeq) yield {
-      val i @ Ident(n) = typeCheck(x.tree, WildcardType)
-      (i.symbol, i.tpe)
-    }
-  }
-
-  def flat(x: Expr[_], inputSymbols: Seq[(Symbol, Type)] = Seq(), owner: Symbol = NoSymbol): FlatCode[Tree] = {
-    flatten(typeCheck(x.tree, WildcardType), inputSymbols, owner)
-  }
-
-  def assertEquals(a: FlatCode[Tree], b: FlatCode[Tree]) {
-    Assert.assertEquals(a.transform(_.toList).toString, b.transform(_.toList).toString)
-  }
-
-  @Test
-  def simpleTupleValue() {
+  ignore should "flatten tuple of values" in {
     val x = 10
     assertEquals(
-      code(values = List(
+      flatCode(values = List(
         reify { x },
         reify { x + 1 }
       )),
-      flat(
+      flatExpression(
         reify { (x, x + 1) },
         inputSymbols(reify { x })
       )
     )
   }
 
-  @Test
-  def simpleTupleReference() {
+  ignore should "flatten tuple of references" in {
     val p = (10, 12)
     val Seq(p$1, p$2, pp$1, pp$2) = 1 to 4
     assertEquals(
-      code(
+      flatCode(
         statements = List(
           reify { val pp$1 = p$1 },
           reify { val pp$2 = p$2 }
@@ -113,10 +68,14 @@ class OpenCLCodeFlatteningTest
           reify { pp$2 }
         )
       ),
-      flat(
+      flatExpression(
         reify { val pp = p; pp },
         inputSymbols(reify { p })
       )
     )
+  }
+
+  private def assertEquals(a: FlatCode[Tree], b: FlatCode[Tree]) {
+    a.transform(_.toList).toString should equal(b.transform(_.toList).toString)
   }
 }

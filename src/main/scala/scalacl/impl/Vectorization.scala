@@ -77,6 +77,7 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
         )
     }
   }
+
   private[impl] def vectorize(context: Expr[scalacl.Context], block: Tree): Option[Expr[Unit]] = {
     Option(block) collect {
       case Foreach(

@@ -30,7 +30,8 @@
  */
 package scalacl
 
-class TaskTest extends BaseTest {
+class TaskTest
+    extends BaseTest {
   behavior of "ScalaCl task"
 
   ignore should "perform computation in task block" in context {
@@ -40,6 +41,6 @@ class TaskTest extends BaseTest {
       task {
         result(1) = 10 * f
       }
-      result should equal (Seq(0, 100, 0))
+      result should equal(Seq(0, 100, 0))
   }
 }
