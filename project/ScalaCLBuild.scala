@@ -71,7 +71,7 @@ object ScalaCLBuild extends Build {
         // "-optimise",
         "-deprecation",
         "-feature",
-        // "-Xlog-free-types",
+        // "-Xlog-free-types",q
         // "-Ymacro-debug-lite",
         "-unchecked"
       ),
@@ -81,6 +81,7 @@ object ScalaCLBuild extends Build {
       libraryDependencies ++= Seq(
         "junit" % "junit" % "4.10" % "test",
         "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test",
+        "org.scalamock" % "scalamock-scalatest-support_2.11" % "3.1.2",
         "com.novocode" % "junit-interface" % "0.8" % "test"
       )
     )

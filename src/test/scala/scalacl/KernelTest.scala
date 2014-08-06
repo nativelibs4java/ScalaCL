@@ -29,10 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package scalacl
-import impl._
 
-import org.junit._
-import Assert._
+import scalacl.impl.KernelDef
 
 class KernelTest extends BaseTest {
   behavior of "ScalaCl kernel"
@@ -66,6 +64,7 @@ class KernelTest extends BaseTest {
         for (i <- 0L until n by 3L)
           clResult(i) = i * f + 10
       }
+
       for (i <- 0L until n by 3L)
         result(i.toInt) = i * f + 10
 
