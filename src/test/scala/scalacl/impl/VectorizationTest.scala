@@ -36,8 +36,7 @@ import scalaxy.components._
 class VectorizationTest
     extends BaseTest
     with Vectorization
-    with WithRuntimeUniverse
-    with WithTestFresh {
+    with RuntimeUniverseTest {
   
   behavior of "ScalaCl vectorization"
   

@@ -31,16 +31,13 @@
 package scalacl
 package impl
 
-import scalaxy.components._
-
-import org.junit._
-import Assert._
-import org.hamcrest.CoreMatchers._
-
 class SymbolKindsTest
-    extends SymbolKinds
-    with WithRuntimeUniverse
-    with WithTestFresh {
+    extends BaseTest
+    with RuntimeUniverseTest
+    with SymbolKinds {
+
+  behavior of "Symbols kind resolving"
+
   import global._
 
   class EmptyClass()
@@ -52,23 +49,22 @@ class SymbolKindsTest
     var v = 0
   }
 
-  @Test
-  def testKinds() {
-    assertEquals(SymbolKind.Tuploid, kindOf(typeOf[Int]))
-    assertEquals(SymbolKind.Tuploid, kindOf(typeOf[Float]))
-    assertEquals(SymbolKind.Tuploid, kindOf(typeOf[(Int, Int)]))
+  it should "find properly kind some object" in {
+    SymbolKind.Tuploid should equal (kindOf(typeOf[Int]))
+    SymbolKind.Tuploid should equal (kindOf(typeOf[Float]))
+    SymbolKind.Tuploid should equal (kindOf(typeOf[(Int, Int)]))
 
-    assertEquals(SymbolKind.ArrayLike, kindOf(typeOf[CLArray[Int]]))
-    assertEquals(SymbolKind.ArrayLike, kindOf(typeOf[CLFilteredArray[Int]]))
+    SymbolKind.ArrayLike should equal (kindOf(typeOf[CLArray[Int]]))
+    SymbolKind.ArrayLike should equal (kindOf(typeOf[CLFilteredArray[Int]]))
 
-    assertEquals(SymbolKind.Tuploid, kindOf(typeOf[ImmutableClass]))
-    assertEquals(SymbolKind.Tuploid, kindOf(typeOf[ImmutableCaseClass]))
+    SymbolKind.Tuploid should equal (kindOf(typeOf[ImmutableClass]))
+    SymbolKind.Tuploid should equal (kindOf(typeOf[ImmutableCaseClass]))
 
-    assertEquals(SymbolKind.Other, kindOf(typeOf[MutableClass]))
-    assertEquals(SymbolKind.Other, kindOf(typeOf[MutableCaseClass]))
+    SymbolKind.Other should equal (kindOf(typeOf[MutableClass]))
+    SymbolKind.Other should equal (kindOf(typeOf[MutableCaseClass]))
 
-    assertEquals(SymbolKind.Other, kindOf(typeOf[EmptyClass]))
-    assertEquals(SymbolKind.Other, kindOf(typeOf[EmptyCaseClass]))
+    SymbolKind.Other should equal (kindOf(typeOf[EmptyClass]))
+    SymbolKind.Other should equal (kindOf(typeOf[EmptyCaseClass]))
   }
 
 }
