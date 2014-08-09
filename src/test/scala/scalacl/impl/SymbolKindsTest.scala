@@ -33,12 +33,11 @@ package impl
 
 class SymbolKindsTest
     extends BaseTest
-    with RuntimeUniverseTest
-    with SymbolKinds {
+    with SymbolKinds
+    with RuntimeUniverseTest {
+  import global._
 
   behavior of "Symbols kind resolving"
-
-  import global._
 
   class EmptyClass()
   case class EmptyCaseClass()

@@ -32,9 +32,8 @@ package scalacl
 package impl
 
 class VectorizationTest
-    extends RuntimeUniverseTest
-    with BaseTest
-    with Vectorization {
+    extends BaseTest
+    with CodeVectorizationTest {
   import global._
 
   behavior of "ScalaCl vectorization"

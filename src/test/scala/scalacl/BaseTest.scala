@@ -2,8 +2,11 @@ package scalacl
 
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{ FlatSpecLike, Matchers }
-import scalacl.impl.{ OpenCLCodeFlattening, CodeConversion }
-import scalaxy.components.{ FlatCode, WithRuntimeUniverse }
+
+import scala.reflect.runtime.{ currentMirror => cm, universe => ru }
+import scala.tools.reflect.ToolBox
+import scalacl.impl.{ Vectorization, CodeConversion, OpenCLCodeFlattening }
+import scalaxy.components.FlatCode
 
 trait BaseTest extends FlatSpecLike with Matchers with MockFactory {
   def context[T](f: Context => T): T = {
@@ -14,7 +17,12 @@ trait BaseTest extends FlatSpecLike with Matchers with MockFactory {
   }
 }
 
-trait RuntimeUniverseTest extends WithRuntimeUniverse {
+trait RuntimeUniverseTest {
+  lazy val global = ru
+  import global._
+
+  def verbose = false
+
   private var nextId = 0L
 
   def fresh(s: String) = synchronized {
@@ -22,22 +30,64 @@ trait RuntimeUniverseTest extends WithRuntimeUniverse {
     nextId += 1
     s + v
   }
+
+  def warning(pos: Position, msg: String) =
+    println(msg + " (" + pos + ")")
+
+  def withSymbol[T <: Tree](sym: Symbol, tpe: Type = NoType)(tree: T): T = tree
+
+  def typed[T <: Tree](tree: T): T = {
+    // if (tree.tpe == null && tree.tpe == NoType)
+    //   toolbox.typeCheck(tree.asInstanceOf[toolbox.u.Tree]).asInstanceOf[T]
+    // else
+    tree
+  }
+
+  def inferImplicitValue(pt: Type): Tree =
+    toolbox.inferImplicitValue(pt.asInstanceOf[toolbox.u.Type]).asInstanceOf[global.Tree]
+
+  lazy val toolbox = cm.mkToolBox()
+
+  def typeCheck(x: Expr[_]): Tree =
+    typeCheck(x.tree)
+
+  def typeCheck(tree: Tree, pt: Type = WildcardType): Tree = {
+    val ttree = tree.asInstanceOf[toolbox.u.Tree]
+    if (ttree.tpe != null && ttree.tpe != NoType)
+      tree
+    else {
+      try {
+        toolbox.typecheck(
+          ttree,
+          pt = pt.asInstanceOf[toolbox.u.Type])
+      } catch {
+        case ex: Throwable =>
+          throw new RuntimeException(s"Failed to typeCheck($tree, $pt): $ex", ex)
+      }
+    }.asInstanceOf[Tree]
+  }
+
+  def resetLocalAttrs(tree: Tree): Tree = {
+    toolbox.untypecheck(tree.asInstanceOf[toolbox.u.Tree]).asInstanceOf[Tree]
+  }
+
 }
 
 trait CodeConversionTest extends CodeConversion with RuntimeUniverseTest {
   val global: reflect.api.Universe
+
   import global._
 
   def convertExpression(block: Expr[Unit], explicitParamDescs: Seq[ParamDesc] = Seq()) = {
     convertCode(typeCheck(block.tree, WildcardType), explicitParamDescs)
   }
 
+  def flatStatement(statements: Seq[String], values: Seq[String]): FlatCode[String] =
+    FlatCode[String](statements = statements, values = values)
+
   def flatAndConvertExpression(x: Expr[_]): FlatCode[String] = {
     flattenAndConvert(typeCheck(x))
   }
-
-  def flatCode(statements: Seq[String], values: Seq[String]): FlatCode[String] =
-    FlatCode[String](statements = statements, values = values)
 }
 
 trait CodeFlatteningTest extends OpenCLCodeFlattening with RuntimeUniverseTest {
@@ -67,3 +117,5 @@ trait CodeFlatteningTest extends OpenCLCodeFlattening with RuntimeUniverseTest {
     flatten(typeCheck(x.tree, WildcardType), inputSymbols, owner)
   }
 }
+
+trait CodeVectorizationTest extends Vectorization with RuntimeUniverseTest

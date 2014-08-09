@@ -36,8 +36,11 @@ import collection.mutable.ArrayBuffer
 import com.nativelibs4java.opencl.CLEvent
 import com.nativelibs4java.opencl.MockEvent
 
+import scalaxy.components.WithRuntimeUniverse
+
 class DefaultScheduledDataTest
-    extends BaseTest {
+    extends BaseTest
+    with WithRuntimeUniverse {
 
   behavior of "DefaultScheduledData"
 

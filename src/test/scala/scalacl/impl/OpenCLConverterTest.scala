@@ -33,13 +33,12 @@ package impl
 
 class OpenCLConverterTest
     extends BaseTest
-    with OpenCLConverter
     with CodeConversionTest {
 
   behavior of "OpenClConverter"
 
   ignore should "convert touple" in {
-    val flattenCode = flatCode(
+    val flattenCode = flatStatement(
       Seq("const int x = 10;"),
       Seq("x", "(x * 2)")
     )
@@ -56,7 +55,7 @@ class OpenCLConverterTest
   ignore should "convert simple function: cos" in {
     import scala.math._
 
-    val flattenCode = flatCode(
+    val flattenCode = flatStatement(
       Seq(),
       Seq("cos((float)10.0)")
     )

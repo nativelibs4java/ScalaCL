@@ -32,9 +32,11 @@ package scalacl
 import impl._
 
 import InlinedCollections._
+import scalaxy.components.WithRuntimeUniverse
 
 class InlinedCollectionsTest
-    extends BaseTest {
+    extends BaseTest
+    with WithRuntimeUniverse {
 
   behavior of "InlinedCollections"
 
