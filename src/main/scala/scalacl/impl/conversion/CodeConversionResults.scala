@@ -29,8 +29,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package scalacl.impl
-import scalaxy.components.FlatCode
-import scalaxy.components.FlatCodes._
+// import scalacl.impl.FlatCode
+import scalacl.impl.FlatCodes._
 
 import scalacl.CLArray
 import scalacl.CLFilteredArray
@@ -40,7 +40,7 @@ import scala.util.matching.Regex
 
 trait CodeConversionResults {
   val global: Universe
-  def fresh(s: String): String
+  // def fresh(s: String): String
 
   import global._
   import definitions._

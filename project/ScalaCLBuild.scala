@@ -19,6 +19,7 @@ object ScalaCLBuild extends Build {
   lazy val sonatypeSettings = Seq(
     publishMavenStyle := true,
     resolvers += Resolver.sonatypeRepo("snapshots"),
+    resolvers += "Local Maven Repository" at "file://" + Path.userHome + "/.m2/repository",
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
       if (v.trim.endsWith("-SNAPSHOT"))
@@ -29,7 +30,7 @@ object ScalaCLBuild extends Build {
 
   lazy val infoSettings = Seq(
     organization := "com.nativelibs4java",
-    version := "0.3-SNAPSHOT",
+    version := "0.4-SNAPSHOT",
     licenses := Seq("BSD-3-Clause" -> url("http://www.opensource.org/licenses/BSD-3-Clause")),
     homepage := Some(url("https://github.com/ochafik/ScalaCL")),
     pomIncludeRepository := { _ => false },
@@ -156,9 +157,9 @@ object ScalaCLBuild extends Build {
   //           //   }
   //           // },
   //           libraryDependencies ++= Seq(
-  //             "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
-  //             "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
-  //             //"com.nativelibs4java" %% "scalaxy-reified-base" % "0.3-SNAPSHOT",
+  //             "com.nativelibs4java" %% "scalaxy-components" % "0.4-SNAPSHOT",
+  //             "com.nativelibs4java" %% "scalaxy-reified" % "0.4-SNAPSHOT",
+  //             //"com.nativelibs4java" %% "scalaxy-reified-base" % "0.4-SNAPSHOT",
   //             "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT"
   //           ),
   //           fork in Test := true,
@@ -181,20 +182,23 @@ object ScalaCLBuild extends Build {
             "-language:experimental.macros"
           ),
           libraryDependencies ++= Seq(
-            "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
-            "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
             "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT"
           )
         )
       ),
       List(
+        // (
+        //   "com.nativelibs4java" %% "scalaxy-components" % "0.4-SNAPSHOT",
+        //   "../Scalaxy",
+        //   "git://github.com/ochafik/Scalaxy.git"
+        // ),
         (
-          "com.nativelibs4java" %% "scalaxy-components" % "0.3-SNAPSHOT",
+          "com.nativelibs4java" %% "scalaxy-streams" % "0.4-SNAPSHOT",
           "../Scalaxy",
           "git://github.com/ochafik/Scalaxy.git"
         ),
         (
-          "com.nativelibs4java" %% "scalaxy-reified" % "0.3-SNAPSHOT",
+          "com.nativelibs4java" %% "scalaxy-reified" % "0.4-SNAPSHOT",
           "../Scalaxy",
           "git://github.com/ochafik/Scalaxy.git"
         )

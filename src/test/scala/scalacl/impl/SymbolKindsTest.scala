@@ -31,7 +31,8 @@
 package scalacl
 package impl
 
-import scalaxy.components._
+import scalaxy.streams.WithRuntimeUniverse
+import scalaxy.streams.testing.WithTestFresh
 
 import org.junit._
 import Assert._

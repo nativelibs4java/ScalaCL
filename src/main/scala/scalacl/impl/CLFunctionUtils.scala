@@ -36,7 +36,7 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.universe.{ internal => ri }
 import scala.reflect.runtime.universe.WeakTypeTag
 
-import scalaxy.components.WithRuntimeUniverse
+import scalaxy.streams.WithRuntimeUniverse
 import scalaxy.reified.internal.Utils.getFreshNameGenerator
 import scalaxy.reified.internal.Utils.getMethodMirror
 import scalaxy.reified.internal.CompilerUtils
@@ -45,6 +45,7 @@ import scalaxy.reified.internal.Utils.optimisingToolbox
 import scalaxy.generic.trees.simplifyGenericTree
 
 object CLFunctionUtils {
+  // var 
   def functionKernel[A: WeakTypeTag, B: WeakTypeTag](f: CLFunction[A, B]): FunctionKernel = {
     val toolbox = optimisingToolbox
 
@@ -60,6 +61,7 @@ object CLFunctionUtils {
 
     type Result = ru.Tree
     val generation = new CodeGeneration with WithRuntimeUniverse with WithResult[Result] {
+      //with scalaxy.components.WithRuntimeUniverse {
 
       import global._
 
@@ -80,7 +82,9 @@ object CLFunctionUtils {
       val result = functionToFunctionKernel(
         captureFunction = castTree(ff),
         kernelSalt = -1,
-        outputSymbol = castSymbol(outputSymbol)).asInstanceOf[Result]
+        outputSymbol = castSymbol(outputSymbol),
+        fresh = fresh,
+        typecheck = t => castTree(toolbox.typecheck(castTree(t)))).asInstanceOf[Result]
     }
 
     val compiled = CompilerUtils.compile(generation.result, toolbox)

@@ -31,8 +31,9 @@
 package scalacl.impl
 
 import scala.reflect
-import scalaxy.components.MiscMatchers
-import scalaxy.components.WithMacroContext
+import scalaxy.streams.Streams
+import scalaxy.streams.WithMacroContext
+// import scalaxy.components.WithMacroContext
 
 import language.experimental.macros
 
@@ -40,12 +41,16 @@ import scala.reflect.macros.blackbox.Context
 
 object KernelMacros {
   def kernelImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
-    val vectorizer = new Vectorization with MiscMatchers with WithMacroContext with WithResult[Option[reflect.api.Universe#Expr[Unit]]] {
+    val vectorizer = new Vectorization with Streams with WithMacroContext with WithResult[Option[reflect.api.Universe#Expr[Unit]]] {
       override val context = c
+      import context.universe._
       val result =
         vectorize(
           contextExpr.asInstanceOf[global.Expr[scalacl.Context]],
-          c.typecheck(block.tree).asInstanceOf[global.Tree]
+          c.typecheck(block.tree).asInstanceOf[global.Tree],
+          c.freshName,
+          t => c.typecheck(t.asInstanceOf[c.Tree]).asInstanceOf[global.Tree]
+        // t => castTree[Tree](c.typecheck(castTree(t)))
         )
     }
     val result = vectorizer.result.asInstanceOf[Option[c.Expr[Unit]]]

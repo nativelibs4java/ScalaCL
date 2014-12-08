@@ -31,7 +31,10 @@
 package scalacl
 package impl
 
-import scalaxy.components._
+import scalaxy.streams.WithRuntimeUniverse
+import scalaxy.streams.SideEffectsDetection
+import scalaxy.streams.StreamTransforms
+import scalaxy.streams.testing.WithTestFresh
 
 import org.junit._
 import Assert._
@@ -40,12 +43,14 @@ import org.hamcrest.CoreMatchers._
 class OpenCLConverterTest
     extends OpenCLConverter
     with WithRuntimeUniverse
-    with WithTestFresh {
+    with WithTestFresh
+    with StreamTransforms
+    with SideEffectsDetection {
   import global._
 
   def conv(x: Expr[_]): FlatCode[String] = {
-    //convert(typeCheck(x))
-    flattenAndConvert(typeCheck(x))
+    //convert(typecheck(x))
+    flattenAndConvert(typecheck(x.tree))
   }
 
   def code(statements: Seq[String], values: Seq[String]): FlatCode[String] =

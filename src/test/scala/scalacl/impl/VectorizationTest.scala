@@ -31,7 +31,8 @@
 package scalacl
 package impl
 
-import scalaxy.components._
+import scalaxy.streams.WithRuntimeUniverse
+import scalaxy.streams.testing.WithTestFresh
 
 import org.junit._
 import Assert._
@@ -49,7 +50,7 @@ class VectorizationTest
 
   private def vec(block: Expr[Unit]) = {
     try {
-      vectorize(context, typeCheck(block.tree, WildcardType))
+      vectorize(context, typecheck(block.tree), fresh, typecheck(_))
     } catch {
       case ex: Throwable =>
         ex.printStackTrace()

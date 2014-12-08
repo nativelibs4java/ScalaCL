@@ -33,13 +33,13 @@ package impl
 
 import scala.language.reflectiveCalls
 
-import scalaxy.components.CommonScalaNames
-import scalaxy.components.MiscMatchers
+// import scalaxy.components.CommonScalaNames
+// import scalaxy.components.MiscMatchers
 
 trait KernelSymbolsAnalysis
     extends CommonScalaNames
     with CodeConversionResults
-    with MiscMatchers
+    // with MiscMatchers
     with SymbolKinds
     with SymbolExtensions {
   val global: reflect.api.Universe

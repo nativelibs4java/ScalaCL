@@ -32,8 +32,11 @@ package scalacl.impl
 
 import scala.language.postfixOps
 
-import scalaxy.components._
-import scalaxy.components.FlatCodes._
+import scalaxy.streams.TupleAnalysis
+import scalaxy.streams.WhileLoops
+import scalaxy.streams.WithLocalContext
+
+import scalacl.impl.FlatCodes._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -41,9 +44,12 @@ import scala.reflect.NameTransformer.{ encode, decode }
 import scala.reflect.api.Universe
 
 trait OpenCLCodeFlattening
-    extends MiscMatchers
-    with TreeBuilders
-    with TupleAnalysis {
+    // extends TreeBuilders
+    // with MiscMatchers
+    extends TupleAnalysis
+    with CommonScalaNames
+    with WhileLoops
+    with WithLocalContext {
   import global._
   import global.definitions._
   import Flag._
@@ -116,7 +122,7 @@ trait OpenCLCodeFlattening
         // TODO rename the symbols themselves ??
         override def transform(tree: Tree): Tree = {
           def check(newTree: Tree) =
-            typeCheck(newTree, tree.tpe)
+            typecheck(newTree, pt = tree.tpe)
 
           renamings.get(tree.symbol).map(newName => {
             tree match {
@@ -215,6 +221,7 @@ trait OpenCLCodeFlattening
             (Seq(), value)
           case _ =>
             assert(getType(value) != NoType, value + ": " + value.getClass.getName) // + " = " + nodeToString(value) + ")")
+            // val tempVar = q"var tmp: ${value.tpe} = $value" // TODO fresh
             val tempVar = newVal("tmp", value, value.tpe)
             //println("Creating temp variable " + tempVar.symbol + " for " + value)
             hasNewStatements = true
@@ -288,7 +295,8 @@ trait OpenCLCodeFlattening
       val res: FlatCode[Tree] = tree match {
         case Block(statements, value) =>
           // Flatten blocks up
-          statements.map(flattenTuplesAndBlocks(_).noValues).reduceLeft(_ ++ _) >> flattenTuplesAndBlocks(value)
+          statements.map(flattenTuplesAndBlocks(_).noValues).foldLeft(FlatCode[Tree]())(_ ++ _) >> flattenTuplesAndBlocks(value)
+
         case TupleCreation(components) =>
           val sub = components.map(flattenTuplesAndBlocks(_))
           FlatCode[Tree](
@@ -346,12 +354,12 @@ trait OpenCLCodeFlattening
             f.flatMap(_.outerDefinitions),
             f.flatMap(_.statements),
             Seq(
-              typeCheck(
+              typecheck(
                 Apply(
                   Ident(ident.symbol),
                   f.flatMap(_.values)
                 ),
-                tree.tpe
+                pt = tree.tpe
               )
             )
           )
@@ -362,6 +370,7 @@ trait OpenCLCodeFlattening
           }
         case Apply(Select(target, updateName()), List(index, value)) if isTupleType(getType(value)) =>
           val targetTpe = normalize(target.tpe).asInstanceOf[TypeRef]
+          // val indexVal = q"val index: ${index.tpe} = $index" // TODO fresh
           val indexVal = newVal("index", index, index.tpe)
 
           val flatTarget = flattenTuplesAndBlocks(target)
@@ -406,9 +415,9 @@ trait OpenCLCodeFlattening
             flatCondition.outerDefinitions ++ flatContent.outerDefinitions,
             flatCondition.statements ++
               Seq(
-                whileLoop(
+                WhileLoop(
                   flatConditionValue,
-                  Block(flatContent.statements.toList ++ flatContent.values, newUnit())
+                  flatContent.statements.toList ++ flatContent.values
                 )
               ),
             Seq()
@@ -437,8 +446,8 @@ trait OpenCLCodeFlattening
                 Seq(
                   If(
                     conditionVar(),
-                    Block(st.toList ++ vt.toList, newUnit()),
-                    Block(so.toList ++ vo.toList, newUnit())
+                    Block(st.toList ++ vt.toList, q"()"),
+                    Block(so.toList ++ vo.toList, q"()")
                   )
                 )
             }

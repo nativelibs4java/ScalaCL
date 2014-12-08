@@ -37,9 +37,12 @@ import scala.collection.immutable.NumericRange
 import scalacl.CLArray
 import scalacl.CLFilteredArray
 
-import scalaxy.components.MiscMatchers
+//import scalaxy.components.MiscMatchers
+import scalaxy.streams.Streams
 
-trait Vectorization extends CodeGeneration with MiscMatchers {
+trait Vectorization
+    extends CodeGeneration // with MiscMatchers
+    with Streams {
   val global: Universe
   import global._
   import definitions._
@@ -77,84 +80,96 @@ trait Vectorization extends CodeGeneration with MiscMatchers {
         )
     }
   }
-  private[impl] def vectorize(context: Expr[scalacl.Context], block: Tree): Option[Expr[Unit]] = {
-    Option(block) collect {
-      case Foreach(
-        NumRange(rangeTpe, numTpe, from, to, PositiveIntConstantOrOne(by), isInclusive, Nil),
-        Function(List(param), body)
-        ) =>
-        val fromVal = freshVal("from", numTpe, from)
-        val toVal = freshVal("to", numTpe, to)
-        val byVal = freshVal("by", numTpe, Literal(Constant(by)))
+  private[impl] def vectorize(
+    context: Expr[scalacl.Context],
+    block: Tree,
+    fresh: String => String,
+    typecheck: Tree => Tree): Option[Expr[Unit]] =
+    {
+      Option(block) collect {
+        case SomeStream(
+          Stream(_,
+            InlineRangeStreamSource(start, end, by, isInclusive, numTpe),
+            List(ForeachOp(Function(List(param), body))), _, _)) =>
+          // case Foreach(
+          //   NumRange(rangeTpe, numTpe, start, end, PositiveIntConstantOrOne(by), isInclusive, Nil),
+          //   Function(List(param), body)
+          //   ) =>
+          val startVal = freshVal("start", numTpe, start)
+          val endVal = freshVal("end", numTpe, end)
+          val byVal = freshVal("by", numTpe, Literal(Constant(by)))
 
-        val functionKernelExpr = generateFunctionKernel[Unit, Unit](
-          kernelSalt = KernelDef.nextKernelSalt,
-          body = body,
-          paramDescs = Seq(
-            rangeParamDesc(numTpe, param, fromVal, byVal, 0))
-        )
-        val f = blockToUnitFunction(block)
-        val function = reify(new CLFunction[Unit, Unit](f.splice, Some(functionKernelExpr.splice)))
-
-        expr[Unit](
-          Block(
-            fromVal ::
-              toVal ::
-              byVal ::
-              reify(
-                function.splice(
-                  context.splice,
-                  new KernelExecutionParameters(rangeSize(fromVal, toVal, byVal, isInclusive).splice)
-                )
-              ).tree :: Nil,
-            Literal(Constant({}))
+          val functionKernelExpr = generateFunctionKernel[Unit, Unit](
+            kernelSalt = KernelDef.nextKernelSalt,
+            body = body,
+            paramDescs = Seq(
+              rangeParamDesc(numTpe, param, startVal, byVal, 0)),
+            fresh = fresh,
+            typecheck = typecheck(_)
           )
-        )
-      // case Foreach(
-      //   NumRange(rangeTpe1, numTpe1, from1, to1, PositiveIntConstantOrOne(by1), isInclusive1, Nil),
-      //   Function(List(param1),
-      //     Foreach(
-      //       NumRange(rangeTpe2, numTpe2, from2, to2, PositiveIntConstantOrOne(by2), isInclusive2, Nil),
-      //       Function(List(param2), body)))) =>
+          val f = blockToUnitFunction(block)
+          val function = reify(new CLFunction[Unit, Unit](f.splice, Some(functionKernelExpr.splice)))
 
-      //   val fromVal1 = freshVal("from1", numTpe2, from1)
-      //   val toVal1 = freshVal("to1", numTpe1, to1)
-      //   val byVal1 = freshVal("by1", numTpe1, Literal(Constant(by1)))
+          expr[Unit](
+            Block(
+              startVal ::
+                endVal ::
+                byVal ::
+                reify(
+                  function.splice(
+                    context.splice,
+                    new KernelExecutionParameters(rangeSize(startVal, endVal, byVal, isInclusive).splice)
+                  )
+                ).tree :: Nil,
+              q"()"
+            // Literal(Constant({}))
+            )
+          )
+        // case Foreach(
+        //   NumRange(rangeTpe1, numTpe1, from1, to1, PositiveIntConstantOrOne(by1), isInclusive1, Nil),
+        //   Function(List(param1),
+        //     Foreach(
+        //       NumRange(rangeTpe2, numTpe2, from2, to2, PositiveIntConstantOrOne(by2), isInclusive2, Nil),
+        //       Function(List(param2), body)))) =>
 
-      //   val fromVal2 = freshVal("from2", numTpe2, from2)
-      //   val toVal2 = freshVal("to2", numTpe2, to2)
-      //   val byVal2 = freshVal("by2", numTpe2, Literal(Constant(by2)))
+        //   val fromVal1 = freshVal("from1", numTpe2, from1)
+        //   val toVal1 = freshVal("to1", numTpe1, to1)
+        //   val byVal1 = freshVal("by1", numTpe1, Literal(Constant(by1)))
 
-      //   val functionKernelExpr = generateFunctionKernel[Unit, Unit](
-      //     kernelSalt = KernelDef.nextKernelSalt,
-      //     body = body,
-      //     paramDescs = Seq(
-      //       rangeParamDesc(numTpe1, param1, fromVal1, byVal1, 0),
-      //       rangeParamDesc(numTpe2, param2, fromVal2, byVal2, 1))
-      //   )
-      //   val f = blockToUnitFunction(block)
-      //   val function = reify(new CLFunction[Unit, Unit](f.splice, Some(functionKernelExpr.splice)))
+        //   val fromVal2 = freshVal("from2", numTpe2, from2)
+        //   val toVal2 = freshVal("to2", numTpe2, to2)
+        //   val byVal2 = freshVal("by2", numTpe2, Literal(Constant(by2)))
 
-      //   expr[Unit](
-      //     Block(
-      //       fromVal1 ::
-      //         toVal1 ::
-      //         byVal1 ::
-      //         fromVal2 ::
-      //         toVal2 ::
-      //         byVal2 ::
-      //         reify(
-      //           function.splice(
-      //             context.splice,
-      //             new KernelExecutionParameters(
-      //               rangeSize(fromVal1, toVal1, byVal1, isInclusive1).splice,
-      //               rangeSize(fromVal2, toVal2, byVal2, isInclusive2).splice
-      //             )
-      //           )
-      //         ).tree :: Nil,
-      //       Literal(Constant({}))
-      //     )
-      //   )
+        //   val functionKernelExpr = generateFunctionKernel[Unit, Unit](
+        //     kernelSalt = KernelDef.nextKernelSalt,
+        //     body = body,
+        //     paramDescs = Seq(
+        //       rangeParamDesc(numTpe1, param1, fromVal1, byVal1, 0),
+        //       rangeParamDesc(numTpe2, param2, fromVal2, byVal2, 1))
+        //   )
+        //   val f = blockToUnitFunction(block)
+        //   val function = reify(new CLFunction[Unit, Unit](f.splice, Some(functionKernelExpr.splice)))
+
+        //   expr[Unit](
+        //     Block(
+        //       fromVal1 ::
+        //         toVal1 ::
+        //         byVal1 ::
+        //         fromVal2 ::
+        //         toVal2 ::
+        //         byVal2 ::
+        //         reify(
+        //           function.splice(
+        //             context.splice,
+        //             new KernelExecutionParameters(
+        //               rangeSize(fromVal1, toVal1, byVal1, isInclusive1).splice,
+        //               rangeSize(fromVal2, toVal2, byVal2, isInclusive2).splice
+        //             )
+        //           )
+        //         ).tree :: Nil,
+        //       Literal(Constant({}))
+        //     )
+        //   )
+      }
     }
-  }
 }

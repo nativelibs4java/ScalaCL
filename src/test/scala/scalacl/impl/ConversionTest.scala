@@ -31,7 +31,8 @@
 package scalacl
 package impl
 
-import scalaxy.components._
+import scalaxy.streams.WithRuntimeUniverse
+import scalaxy.streams.testing.WithTestFresh
 
 import org.junit._
 import Assert._
@@ -48,7 +49,7 @@ class ConversionTest
   private val Vectorizable = not(NotVectorizable)
 
   private def conv(block: Expr[Unit], explicitParamDescs: Seq[ParamDesc] = Seq()) = {
-    convertCode(typeCheck(block.tree, WildcardType), explicitParamDescs)
+    convertCode(typecheck(block.tree), explicitParamDescs, fresh, typecheck(_))
   }
 
   def assertParamDesc(d: ParamDesc, name: String, tpe: Type, usage: UsageKind, kind: ParamKind) = {

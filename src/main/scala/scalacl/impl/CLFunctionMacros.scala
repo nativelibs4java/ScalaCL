@@ -35,7 +35,7 @@ import scalaxy.reified._
 import scala.reflect.runtime.universe
 
 import scalacl.impl.CLArrayMacros.typeTagExpr
-import scalaxy.components.WithMacroContext
+import scalaxy.streams.WithMacroContext
 
 import language.experimental.macros
 import scala.reflect.macros.blackbox.Context

@@ -31,17 +31,17 @@
 package scalacl
 package impl
 
-import scalaxy.components.CommonScalaNames
-import scalaxy.components.FlatCode
-import scalaxy.components.FlatCodes._
-import scalaxy.components.MiscMatchers
+// import scalaxy.components.CommonScalaNames
+// import scalacl.impl.FlatCode
+import scalacl.impl.FlatCodes._
+import scalaxy.streams.Streams
 
 import scala.reflect.NameTransformer
 
 trait OpenCLConverter
     extends OpenCLCodeFlattening
-    with CommonScalaNames
-    with MiscMatchers
+    // with CommonScalaNames
+    with Streams
     with KernelSymbolsAnalysis {
   val global: reflect.api.Universe
   import global._
@@ -50,6 +50,15 @@ trait OpenCLConverter
   private[this] final val UNIT: Unit = ()
 
   def nodeToStringNoComment(tree: Tree): String = tree.toString() // TODO
+
+  class Ids(start: Long = 1) {
+    private var nx = start
+    def next = this.synchronized {
+      val v = nx
+      nx += 1
+      v
+    }
+  }
 
   var openclLabelIds = new Ids
 
@@ -239,7 +248,9 @@ trait OpenCLConverter
             Seq(t + "(" + a.mkString(", ") + ")")
           })
         case Block(statements, Literal(Constant(empty))) =>
-          assert(empty == UNIT, "Valued blocks should have been flattened in a previous phase !")
+          // assert(value == Literal(Constant(UNIT)),
+          assert(empty == UNIT,
+            s"Valued blocks should have been flattened in a previous phase!\n$empty : ${empty.getClass}")
           statements.map(convert).map(_.noValues).reduceLeft(_ >> _)
         case _ =>
           //println(nodeToStringNoComment(body))

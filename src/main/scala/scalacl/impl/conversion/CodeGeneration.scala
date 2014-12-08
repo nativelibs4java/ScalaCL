@@ -33,9 +33,10 @@ import scalacl.CLArray
 import scalacl.CLFilteredArray
 
 import scala.reflect.api.Universe
-import scalaxy.components.StreamTransformers
+//import scalaxy.components.StreamTransformers
+import scalaxy.streams.StreamTransforms
 
-trait CodeGeneration extends CodeConversion with StreamTransformers {
+trait CodeGeneration extends CodeConversion with StreamTransforms {
   val global: Universe
   import global._
   import definitions._
@@ -74,12 +75,16 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
   }
 
   def functionToFunctionKernel[A: WeakTypeTag, B: WeakTypeTag](
-    captureFunction: Tree, kernelSalt: Long, outputSymbol: Symbol): Tree = {
+    captureFunction: Tree,
+    kernelSalt: Long,
+    outputSymbol: Symbol,
+    fresh: String => String,
+    typecheck: Tree => Tree): Tree = {
 
     def isUnit(t: Type) =
       t <:< UnitTpe || t == NoType
 
-    val (captureParams, param, body) = typeCheck(captureFunction, WildcardType) match {
+    val (captureParams, param, body) = typecheck(captureFunction) match {
       case Function(captureParams, Function(List(param), body)) => (captureParams, param, body)
       case Function(captureParams, Block(Nil, Function(List(param), body))) => (captureParams, param, body)
     }
@@ -132,7 +137,9 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
     val kernel = generateFunctionKernel[A, B](
       kernelSalt = kernelSalt,
       body = castTree(bodyToConvert),
-      paramDescs = inputParamDesc.toSeq ++ outputParamDesc.toSeq // ++ captureParamDescs
+      paramDescs = inputParamDesc.toSeq ++ outputParamDesc.toSeq, // ++ captureParamDescs
+      fresh = fresh,
+      typecheck = typecheck
     )
 
     Function(captureParams, kernel.tree)
@@ -157,49 +164,53 @@ trait CodeGeneration extends CodeConversion with StreamTransformers {
   private[impl] def generateFunctionKernel[A: WeakTypeTag, B: WeakTypeTag](
     kernelSalt: Long,
     body: Tree,
-    paramDescs: Seq[ParamDesc]): Expr[FunctionKernel] = {
+    paramDescs: Seq[ParamDesc],
+    fresh: String => String,
+    typecheck: Tree => Tree): Expr[FunctionKernel] =
+    {
+      val cr @ CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
+        body,
+        paramDescs,
+        fresh,
+        typecheck
+      )
 
-    val cr @ CodeConversionResult(code, capturedInputs, capturedOutputs, capturedConstants) = convertCode(
-      body,
-      paramDescs
-    )
+      val codeExpr = expr[String](Literal(Constant(code)))
+      val kernelSaltExpr = expr[Long](Literal(Constant(kernelSalt)))
 
-    val codeExpr = expr[String](Literal(Constant(code)))
-    val kernelSaltExpr = expr[Long](Literal(Constant(kernelSalt)))
+      def ident(s: global.Symbol) =
+        Ident(s.asInstanceOf[Symbol].name)
 
-    def ident(s: global.Symbol) =
-      Ident(s.asInstanceOf[Symbol].name)
-
-    val inputs = arrayApply[CLArray[_]](
-      capturedInputs
-        .map(d => ident(d.symbol)).toList
-    )
-    val outputs = arrayApply[CLArray[_]](
-      capturedOutputs
-        .map(d => ident(d.symbol)).toList
-    )
-    val constants = arrayApply[AnyRef](
-      capturedConstants
-        .map(d => castAnyToAnyRef(ident(d.symbol), d.tpe)).toList
-    )
-    // println(s"""
-    // generateFunctionKernel:
-    //  code: $code
-    //  paramDescs: $paramDescs,
-    //  capturedInputs: $capturedInputs, 
-    //  capturedOutputs: $capturedOutputs, 
-    //  capturedConstants: $capturedConstants""")
-    reify(
-      new FunctionKernel(
-        new KernelDef(
-          sources = codeExpr.splice,
-          salt = kernelSaltExpr.splice),
-        Captures(
-          inputs = inputs.splice,
-          outputs = outputs.splice,
-          constants = constants.splice))
-    )
-  }
+      val inputs = arrayApply[CLArray[_]](
+        capturedInputs
+          .map(d => ident(d.symbol)).toList
+      )
+      val outputs = arrayApply[CLArray[_]](
+        capturedOutputs
+          .map(d => ident(d.symbol)).toList
+      )
+      val constants = arrayApply[AnyRef](
+        capturedConstants
+          .map(d => castAnyToAnyRef(ident(d.symbol), d.tpe)).toList
+      )
+      // println(s"""
+      // generateFunctionKernel:
+      //  code: $code
+      //  paramDescs: $paramDescs,
+      //  capturedInputs: $capturedInputs, 
+      //  capturedOutputs: $capturedOutputs, 
+      //  capturedConstants: $capturedConstants""")
+      reify(
+        new FunctionKernel(
+          new KernelDef(
+            sources = codeExpr.splice,
+            salt = kernelSaltExpr.splice),
+          Captures(
+            inputs = inputs.splice,
+            outputs = outputs.splice,
+            constants = constants.splice))
+      )
+    }
 
   private def arrayApply[A: TypeTag](values: List[Tree]): Expr[Array[A]] = {
     import definitions._
