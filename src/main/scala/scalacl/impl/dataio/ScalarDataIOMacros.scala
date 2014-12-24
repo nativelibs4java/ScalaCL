@@ -31,8 +31,6 @@
 // package scalacl
 // package impl
 
-
-
 // object ScalarDataIOs {
 //   def scalarDataIO[A: c.WeakTypeTag](c: Context)(m: c.Expr[Manifest[A]]): c.Expr[ScalarDataIO[A]] = {
 //     import c.universe._

@@ -33,7 +33,6 @@ package impl
 
 import scala.language.reflectiveCalls
 
-
 trait KernelSymbolsAnalysis
     extends CommonScalaNames
     with CodeConversionResults

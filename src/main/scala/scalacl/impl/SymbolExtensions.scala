@@ -33,7 +33,6 @@ package impl
 
 import scala.language.implicitConversions
 
-
 trait SymbolExtensions {
   val global: reflect.api.Universe
   import global._
