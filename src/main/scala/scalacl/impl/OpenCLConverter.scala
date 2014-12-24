@@ -141,16 +141,21 @@ trait OpenCLConverter
             sc ++ rs,
             rv
           )
+
         case Apply(Select(target, N("apply")), List(singleArg)) =>
           merge(Seq(target, singleArg).map(convert): _*) { case Seq(t, a) => Seq(t + "[" + a + "]") }
+
         case Apply(Select(target, N("update")), List(index, value)) =>
           val convs = Seq(target, index, value).map(convert)
           merge(convs: _*) { case Seq(t, i, v) => Seq(t + "[" + i + "] = " + v + ";") }
+
         case Assign(lhs, rhs) =>
           merge(Seq(lhs, rhs).map(convert): _*) { case Seq(l, r) => Seq(l + " = " + r + ";") }
+
         case Typed(expr, tpt) =>
           val t = convertTpe(tpt.tpe)
           convert(expr).mapValues(_.map(v => "((" + t + ")" + v + ")"))
+
         case DefDef(mods, name, tparams, vparamss, tpt, body) =>
           val b = new StringBuilder
           b ++= convertTpe(body.tpe) + " " + name + "("
@@ -175,6 +180,7 @@ trait OpenCLConverter
             Seq(),
             Seq()
           )
+
         case vd @ ValDef(paramMods, paramName, tpt: TypeTree, rhs) =>
           val convValue = convert(rhs)
           // println("VD: " + vd)
@@ -194,6 +200,7 @@ trait OpenCLConverter
           )
         //case Typed(expr, tpe) =>
         //  out(expr)
+
         case Match(ma @ Ident(matchName), List(CaseDef(pat, guard, body))) =>
           //for ()
           //x0$1 match {
@@ -206,8 +213,9 @@ trait OpenCLConverter
           cast(expr, typeName)
 
         // TODO
-        //case ScalaMathFunction(functionType, funName, args) =>
-        //  convertMathFunction(functionType, funName, args)
+        case ScalaMathFunction(functionType, funName, args) =>
+          convertMathFunction(functionType, funName, args)
+
         case Apply(s @ Select(left, name), args) =>
           val List(right) = args
           NameTransformer.decode(name.toString) match {
@@ -217,8 +225,7 @@ trait OpenCLConverter
                 //case e =>
                 //  throw new RuntimeException("ugh : " + e + ", op = " + op + ", body = " + body + ", left = " + left + ", right = " + right)
               }
-            case n if left.symbol == ScalaMathPackage => //isPackageReference(left, "scala.math") =>
-              convertMathFunction(s.tpe, name, args)
+
             //merge(Seq(right).map(convert):_*) { case Seq(v) => Seq(n + "(" + v + ")") }
             case n =>
               throw new RuntimeException(
@@ -230,6 +237,7 @@ trait OpenCLConverter
                   s"\ttree: ${body.getClass.getName}")
               valueCode("/* Error: failed to convert " + body + " */")
           }
+
         case s @ Select(expr, fun) =>
           convert(expr).mapEachValue(v => {
             val fn = fun.toString
@@ -240,6 +248,7 @@ trait OpenCLConverter
               Seq("/* Error: failed to convert " + body + " */")
             }
           })
+
         case WhileLoop(condition, content) =>
           val FlatCode(dcont, scont, vcont) = content.map(convert).reduceLeft(_ >> _)
           val FlatCode(dcond, scond, Seq(vcond)) = convert(condition)
@@ -253,16 +262,19 @@ trait OpenCLConverter
               ),
             Seq()
           )
+
         case Apply(target, args) =>
           merge((target :: args).map(convert): _*)(seq => {
             val t :: a = seq.toList
             Seq(t + "(" + a.mkString(", ") + ")")
           })
+
         case Block(statements, Literal(Constant(empty))) =>
           // assert(value == Literal(Constant(UNIT)),
           assert(empty == UNIT,
             s"Valued blocks should have been flattened in a previous phase!\n$empty : ${empty.getClass}")
           statements.map(convert).map(_.noValues).reduceLeft(_ >> _)
+
         case _ =>
           //println(nodeToStringNoComment(body))
           throw new RuntimeException("Failed to convert " + body.getClass.getName + ": \n" + body + " : \n" + nodeToStringNoComment(body))

@@ -92,8 +92,12 @@ trait OpenCLCodeFlattening
       override def traverse(tree: Tree): Unit = {
         if (tree.symbol != null && tree.symbol != NoSymbol)
           tree match {
-            case dt: DefTree => defTrees += dt
-            case rt: RefTree => refTrees += rt
+            case dt: DefTree =>
+              defTrees += dt
+
+            case rt: RefTree =>
+              refTrees += rt
+
             case _ =>
           }
         super.traverse(tree)
@@ -103,11 +107,23 @@ trait OpenCLCodeFlattening
   }
   def renameDefinedSymbolsUniquely(tree: Tree) = {
     val (defTrees, refTrees) = getDefAndRefTrees(tree)
-    val definedSymbols = defTrees.collect { case d if d.name != null => d.symbol -> d.name }.toMap
-    val usedIdentSymbols = refTrees.collect { case ident @ Ident(name) => ident.symbol -> name }.toMap
 
-    val outerSymbols = usedIdentSymbols.keys.toSet.diff(definedSymbols.keys.toSet)
-    val nameCollisions = (definedSymbols ++ usedIdentSymbols).groupBy(_._2).filter(_._2.size > 1)
+    val definedSymbols = defTrees.collect {
+      case d if d.name != null =>
+        d.symbol -> d.name
+    }.toMap
+
+    val usedIdentSymbols = refTrees.collect {
+      case ident @ Ident(name) =>
+        ident.symbol -> name
+    }.toMap
+
+    val outerSymbols =
+      usedIdentSymbols.keys.toSet.diff(definedSymbols.keys.toSet)
+
+    val nameCollisions =
+      (definedSymbols ++ usedIdentSymbols).groupBy(_._2).filter(_._2.size > 1)
+
     val renamings = (nameCollisions.flatMap(_._2) map {
       case (sym, name) => //if !internal.isFreeTerm(sym) =>
         val newName: Name = N(fresh(name.toString))
@@ -136,10 +152,13 @@ trait OpenCLCodeFlattening
             tree match {
               case ValDef(mods, name, tpt, rhs) =>
                 check(treeCopy.ValDef(tree, mods, newName, super.transform(tpt), super.transform(rhs)))
+
               case DefDef(mods, name, tparams, vparams, tpt, rhs) =>
                 check(treeCopy.DefDef(tree, mods, newName, tparams, vparams, super.transform(tpt), super.transform(rhs)))
+
               case Ident(name) =>
                 check(treeCopy.Ident(tree, newName))
+
               case _ =>
                 super.transform(tree)
             }
@@ -183,6 +202,7 @@ trait OpenCLCodeFlattening
     def unapply(tree: Tree): Option[(Tree, String)] = tree match {
       case Select(expr, n) =>
         namesToTypes.get(n.toString).map(expr -> _)
+
       case _ =>
         None
     }
@@ -195,6 +215,7 @@ trait OpenCLCodeFlattening
       components.size match {
         case 2 | 4 | 8 | 16 =>
           components.distinct.size == 1
+
         case _ =>
           false
       }
@@ -213,6 +234,7 @@ trait OpenCLCodeFlattening
             // special case for non-double math :
             // exp(20: Float).toFloat
             (Seq(), value)
+
           case ScalaMathFunction(_, _, _) => //Apply(f @ Select(left, name), args) if left.toString == "scala.math.package" =>
             // TODO this is not fair : ScalaMathFunction should have worked here !!!
             (Seq(), value)
@@ -225,11 +247,14 @@ trait OpenCLCodeFlattening
               false
         } =>
           (Seq(), value)*/
+
           case Ident(_) | Select(_, _) | ValDef(_, _, _, _) | Literal(_) | NumberConversion(_, _) | Typed(_, _) | Apply(_, List(_)) =>
             // already side-effect-free (?)
             (Seq(), value)
+
           case _ if isUnitOrNoType(getType(value)) =>
             (Seq(), value)
+
           case _ =>
             assert(getType(value) != NoType, value + ": " + value.getClass.getName) // + " = " + nodeToString(value) + ")")
             // val tempVar = q"var tmp: ${value.tpe} = $value" // TODO fresh
@@ -277,6 +302,7 @@ trait OpenCLCodeFlattening
     def replaceValues(tree: Tree): Seq[Tree] = tree match {
       case ValDef(_, _, _, _) =>
         Seq(tree)
+
       case _ =>
         try {
           getTreeSlice(tree, recursive = true) match {
@@ -290,6 +316,7 @@ trait OpenCLCodeFlattening
                   //   id: ${identGen()}
                   // """)
                   Seq(identGen())
+
                 case None =>
                   val subs = for (i <- 0 until slice.sliceLength) yield {
                     Ident(fiberVariableName(slice.baseSymbol.name, List(i))
@@ -304,6 +331,7 @@ trait OpenCLCodeFlattening
                   // """)
                   subs
               }
+
             case _ =>
               Seq(tree)
           }
@@ -329,22 +357,27 @@ trait OpenCLCodeFlattening
             sub.flatMap(_.statements),
             sub.flatMap(_.values)
           )
+
         case TupleComponent(target, i) => //if getTreeSlice(target).collect(sliceReplacements) != None =>
           getTreeSlice(target, recursive = true) match {
             case Some(slice) =>
               sliceReplacements.get(slice) match {
                 case Some(rep) =>
                   FlatCode[Tree](Seq(), Seq(), Seq(rep()))
+
                 case None =>
                   FlatCode[Tree](Seq(), Seq(), Seq(tree))
               }
+
             case _ =>
               FlatCode[Tree](Seq(), Seq(), Seq(tree))
           }
+
         case Ident(name: TermName) =>
           val tpe = normalize(tree.tpe) match {
             case typeRef @ TypeRef(_, _, List(elementType)) if typeRef <:< typeOf[scalacl.CLArray[_]] =>
               elementType
+
             case t => t
           }
           if (isTupleType(tpe)) {
@@ -355,15 +388,18 @@ trait OpenCLCodeFlattening
           } else {
             FlatCode[Tree](Seq(), Seq(), Seq(tree))
           }
+
         case Literal(_) =>
           // TODO?
           FlatCode[Tree](Seq(), Seq(), Seq(tree))
+
         case s @ Select(This(targetClass), name) =>
           FlatCode[Tree](
             Seq(),
             Seq(),
             Seq(Ident(name))
           )
+
         case Select(target, name) =>
           //println("CONVERTING select " + tree)
           val FlatCode(defs, stats, vals) = flattenTuplesAndBlocks(target, sideEffectFree = getType(target) != NoType)
@@ -372,11 +408,13 @@ trait OpenCLCodeFlattening
             stats,
             vals.map(v => Select(v, TermName(decode(name.toString))))
           )
+
         case Assign(lhs, rhs) =>
           merge(Seq(lhs, rhs).map(flattenTuplesAndBlocks(_)): _*) {
             case Seq(l, r) =>
               Seq(Assign(l, r))
           }
+
         case Apply(Select(target, N("update")), List(index, value)) if isTupleType(getType(value)) =>
           val targetTpe = normalize(target.tpe).asInstanceOf[TypeRef]
           // val indexVal = q"val index: ${index.tpe} = $index" // TODO fresh
@@ -393,6 +431,7 @@ trait OpenCLCodeFlattening
           )
           // println("UPDATE TUP(" + getType(value) + ") tree = " + tree + ", res = " + res)
           res
+
         case Apply(ident @ Ident(functionName), args) =>
           val f = args.map(flattenTuplesAndBlocks(_))
           // TODO assign vals to new vars before the calls, to ensure a correct evaluation order !
@@ -410,6 +449,7 @@ trait OpenCLCodeFlattening
               )
             )
           )
+
         case Apply(target, args) =>
           //println("CONVERTING apply " + tree)
           val fc1 @ FlatCode(defs1, stats1, vals1) =
@@ -430,8 +470,10 @@ trait OpenCLCodeFlattening
           )
           // println(s"CONVERTED apply $tree\n\tresult = $result, \n\ttpes = $tpes, \n\targs = $args, \n\targsConv = $argsConv, \n\tvals1 = $vals1, fc1 = $fc1")
           result
+
         case f @ DefDef(_, _, _, _, _, _) =>
           FlatCode[Tree](Seq(f), Seq(), Seq())
+
         case WhileLoop(condition, content) =>
           // TODO clean this up !!!
           val flatCondition = flattenTuplesAndBlocks(condition)
@@ -448,6 +490,7 @@ trait OpenCLCodeFlattening
               ),
             Seq()
           )
+
         case If(condition, thenDo, otherwise) =>
           // val (a, b) = if ({ val d = 0 ; d != 0 }) (1, d) else (2, 0)
           // ->
@@ -468,6 +511,7 @@ trait OpenCLCodeFlattening
             (st, so) match {
               case (Seq(), Seq()) =>
                 vt.zip(vo).map { case (t, o) => If(conditionVar(), t, o) } // pure (cond ? then : otherwise) form, possibly with tuple values
+
               case _ =>
                 Seq(
                   If(
@@ -478,8 +522,10 @@ trait OpenCLCodeFlattening
                 )
             }
           )
+
         case Typed(expr, tpt) =>
           flattenTuplesAndBlocks(expr).mapValues(_.map(Typed(_, tpt)))
+
         case ValDef(paramMods, paramName, tpt, rhs) =>
           // val isVal = !paramMods.hasFlag(MUTABLE)
           // val p = {
@@ -513,9 +559,14 @@ trait OpenCLCodeFlattening
 
         case Match(selector, List(CaseDef(pat, guard, body))) =>
           def extract(tree: Tree): Tree = tree match {
-            case Typed(expr, tpt) => extract(expr)
-            case Annotated(annot, arg) => extract(arg)
-            case _ => tree
+            case Typed(expr, tpt) =>
+              extract(expr)
+
+            case Annotated(annot, arg) =>
+              extract(arg)
+
+            case _ =>
+              tree
           }
           getTreeSlice(selector, recursive = true).orElse(getTreeSlice(extract(selector), recursive = true)) match {
             case Some(slice) =>
@@ -530,14 +581,16 @@ trait OpenCLCodeFlattening
                 if (subSlice.sliceLength == 1)
                   sliceReplacements ++= Seq(boundSlice -> subSlice.toTreeGen(tupleAnalyzer))
               }
-
               flattenTuplesAndBlocks(body)
+
             case _ =>
               throw new RuntimeException("Unable to connect the matched pattern with its corresponding single case")
           }
+
         case EmptyTree =>
           // println("CodeFlattening  -  WARNING EmptyTree! Should this ever happen?")
           FlatCode[Tree](Seq(), Seq(), Seq())
+
         case _ =>
           // new RuntimeException().printStackTrace()
           assert(assertion = false, "Case not handled in tuples and blocks flattening : " + tree + ": " + tree.getClass.getName)
