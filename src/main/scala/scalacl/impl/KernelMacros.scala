@@ -41,6 +41,7 @@ import scala.reflect.macros.blackbox.Context
 
 object KernelMacros {
   def kernelImpl(c: Context)(block: c.Expr[Unit])(contextExpr: c.Expr[scalacl.Context]): c.Expr[Unit] = {
+    import c.universe._
     val vectorizer = new Vectorization with Streams with WithMacroContext with WithResult[Option[reflect.api.Universe#Expr[Unit]]] {
       override val context = c
       import context.universe._
@@ -58,7 +59,7 @@ object KernelMacros {
     typeCheckOrTrace(c)("kernel = " + result) {
       result.getOrElse({
         c.error(c.enclosingPosition, "Kernel vectorization failed (only top-level foreach loops on ranges with constant positive step are supported right now)")
-        c.literalUnit
+        c.Expr[Unit](q"()")
       })
     }
   }

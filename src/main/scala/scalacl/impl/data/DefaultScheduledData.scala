@@ -36,6 +36,9 @@ import collection.mutable.ArrayBuffer
 private[scalacl] trait DefaultScheduledData extends ScheduledData {
   private[impl] val scheduleLock = new ReentrantLock
 
+  private[impl] var dataWrite: CLEvent = _
+  private[impl] val dataReads = new ArrayBuffer[CLEvent]
+
   private def locked[V](block: => V): V = {
     scheduleLock.lock()
     try {
@@ -45,14 +48,16 @@ private[scalacl] trait DefaultScheduledData extends ScheduledData {
     }
   }
   override def finish() = {
-    val events = new ArrayBuffer[CLEvent]
-    locked {
+    val events: Array[CLEvent] = locked {
       if (dataWrite != null)
-        events += dataWrite
-      events ++= dataReads
+        Array(dataWrite) ++ dataReads
+      else
+        dataReads.toArray
     }
-    CLEvent.waitFor(events.toArray: _*)
+    context.waitFor(events)
     locked {
+      // Note: shit may have happened since the start of this method,
+      // which is why we only cleanup the events we know of.
       events.foreach(doEventCompleted)
     }
   }
@@ -69,7 +74,7 @@ private[scalacl] trait DefaultScheduledData extends ScheduledData {
       doEventCompleted(event)
     }
   }
-  override def startRead(out: ArrayBuffer[CLEvent]) = {
+  override def startRead(out: ArrayBuffer[CLEvent]) {
     scheduleLock.lock()
     if (dataWrite != null)
       out += dataWrite
@@ -81,7 +86,7 @@ private[scalacl] trait DefaultScheduledData extends ScheduledData {
     scheduleLock.unlock()
   }
 
-  override def startWrite(out: ArrayBuffer[CLEvent]) = {
+  override def startWrite(out: ArrayBuffer[CLEvent]) {
     scheduleLock.lock()
     out ++= dataReads
     if (dataWrite != null)
@@ -96,7 +101,4 @@ private[scalacl] trait DefaultScheduledData extends ScheduledData {
     }
     scheduleLock.unlock()
   }
-
-  private[impl] var dataWrite: CLEvent = _
-  private[impl] val dataReads = new ArrayBuffer[CLEvent]
 }

@@ -1,9 +1,11 @@
-package scalacl.impl
+package scalacl
+package impl
 import com.nativelibs4java.opencl.CLEvent
 import scala.collection.mutable.ArrayBuffer
 
 // TODO: use ScalaMock
-class MockScheduledData extends ScheduledData {
+class MockScheduledData(override val context: Context) extends ScheduledData {
+
   private var _calls = new ArrayBuffer[(Symbol, List[Any])]
   def calls: List[(Symbol, List[Any])] = {
     val calls = _calls.toList

@@ -49,20 +49,22 @@ class ScheduledDataTest {
     val outEvt = new MockEvent(2)
     val opEvt = new MockEvent(3)
 
-    val in = new MockScheduledData {
+    val context = new Context(context = null, queue = null)
+
+    val in = new MockScheduledData(context) {
       override def startRead(out: ArrayBuffer[CLEvent]) {
         super.startRead(out)
         out += inEvt
       }
     }
-    val out = new MockScheduledData {
+    val out = new MockScheduledData(context) {
       override def startWrite(out: ArrayBuffer[CLEvent]) {
         super.startWrite(out)
         out += outEvt
       }
     }
 
-    ScheduledData.schedule(Array(in), Array(out), events => {
+    context.schedule(Array(in), Array(out), events => {
       assertEquals(Seq(inEvt, outEvt), events.toSeq)
       opEvt
     })

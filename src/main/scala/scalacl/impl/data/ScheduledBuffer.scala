@@ -58,7 +58,11 @@ object ScheduledBuffer {
   )
 }
 
-private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffer: Boolean)(implicit context: Context) extends DefaultScheduledData {
+private[scalacl] class ScheduledBuffer[T](
+  initialBuffer: CLBuffer[T],
+  clearBuffer: Boolean)(
+    implicit val context: Context)
+    extends DefaultScheduledData {
 
   private var buffer_ = initialBuffer
   private var lazyClones = new ArrayBuffer[ScheduledBuffer[T]]
@@ -75,7 +79,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
   def clear() = {
     val b = buffer
     val byteCount = b.getByteCount
-    ScheduledData.schedule(
+    context.schedule(
       Array[ScheduledData](),
       Array(this),
       ScheduledBuffer.clearBytesKernel.enqueue(
@@ -111,7 +115,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
         buffer_ = context.context.createBuffer(CLMem.Usage.InputOutput, initialBuffer.getIO, initialBuffer.getElementCount)
         lazyCloneModel.lazyClones -= this
         lazyCloneModel = null
-        ScheduledData.schedule(
+        context.schedule(
           Array(lazyCloneModel),
           Array(this),
           eventsToWaitFor => initialBuffer.copyTo(context.queue, buffer, eventsToWaitFor: _*))
@@ -126,7 +130,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
   }
 
   def write(in: Pointer[T]) {
-    ScheduledData.schedule(
+    context.schedule(
       Array(),
       Array(this),
       eventsToWaitFor => buffer.write(context.queue, in, false, eventsToWaitFor: _*)
@@ -136,7 +140,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
     val queue = context.queue
     val p = buffer.allocateCompatibleMemory(queue.getDevice)
 
-    val event = ScheduledData.schedule(
+    val event = context.schedule(
       Array(this),
       Array[ScheduledData](),
       eventsToWaitFor => buffer.read(queue, p, true, eventsToWaitFor: _*))
@@ -146,7 +150,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
     val queue = context.queue
     val p = buffer.allocateCompatibleMemory(queue.getDevice)
 
-    val event = ScheduledData.schedule(
+    val event = context.schedule(
       Array(this),
       Array[ScheduledData](),
       eventsToWaitFor => buffer.read(queue, p, false, eventsToWaitFor: _*))
@@ -156,7 +160,7 @@ private[scalacl] class ScheduledBuffer[T](initialBuffer: CLBuffer[T], clearBuffe
   }
 
   def read(p: Pointer[T]) {
-    val event = ScheduledData.schedule(
+    val event = context.schedule(
       Array(this),
       Array(),
       eventsToWaitFor => buffer.read(context.queue, p, false, eventsToWaitFor: _*))

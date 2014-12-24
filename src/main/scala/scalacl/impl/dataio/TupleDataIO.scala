@@ -46,7 +46,9 @@ private[scalacl] class TupleDataIO[T <: Product: Manifest](
   override def toArray(length: Int, buffers: Array[ScheduledBuffer[_]]): Array[T] = {
     val eventsToWaitFor = new ArrayBuffer[CLEvent]
     val pointers = buffers.map(_.read(eventsToWaitFor).withoutValidityInformation) // unsafe, but faster
-    CLEvent.waitFor(eventsToWaitFor.toArray: _*)
+    val context = buffers(0).context
+    // assert(buffers.map(_.context).toSet.length == 1)
+    context.waitFor(eventsToWaitFor)
     (0 until length.toInt).par.map(i => get(i, pointers, 0)).toArray // TODO check
   }
 

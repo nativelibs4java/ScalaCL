@@ -31,19 +31,30 @@
 package scalacl
 
 import com.nativelibs4java.opencl.CLContext
+import com.nativelibs4java.opencl.CLDevice
+import com.nativelibs4java.opencl.CLEvent
+import com.nativelibs4java.opencl.CLKernel
+import com.nativelibs4java.opencl.CLPlatform
 import com.nativelibs4java.opencl.CLQueue
 import com.nativelibs4java.opencl.JavaCL
-import com.nativelibs4java.opencl.CLDevice
-import com.nativelibs4java.opencl.CLPlatform
-import scalacl.impl.KernelDef
-import com.nativelibs4java.opencl.CLKernel
+
 import scalacl.impl.ConcurrentCache
+import scalacl.impl.KernelDef
+import scalacl.impl.ScheduledData
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * ScalaCL context, which gathers an OpenCL context and a command queue.
  */
-class Context(val context: CLContext, val queue: CLQueue) {
-  private[scalacl] val kernels = new ConcurrentCache[KernelDef, CLKernel]
+class Context(
+    val context: CLContext,
+    val queue: CLQueue) {
+
+  private[this] val kernels = new ConcurrentCache[KernelDef, CLKernel]
+
+  def getOrRegisterKernel(key: KernelDef)(initialValue: => CLKernel): CLKernel =
+    kernels(key, _.release())(initialValue)
 
   def release() {
     queue.finish()
@@ -51,6 +62,46 @@ class Context(val context: CLContext, val queue: CLQueue) {
 
     kernels.clear(_.release)
     context.release()
+  }
+
+  def waitFor(eventsToWaitFor: Seq[CLEvent]) =
+    CLEvent.waitFor(eventsToWaitFor: _*)
+
+  def schedule[S1 <: ScheduledData, S2 <: ScheduledData](
+    inputs: Array[S1],
+    outputs: Array[S2],
+    operation: Array[CLEvent] => CLEvent): CLEvent = {
+
+    val nData =
+      (if (inputs != null) inputs.length else 0) +
+        (if (outputs != null) outputs.length else 0)
+    val eventsToWaitFor = new ArrayBuffer[CLEvent](nData)
+
+    if (inputs != null)
+      inputs.foreach(_.startRead(eventsToWaitFor))
+    if (outputs != null)
+      outputs.foreach(_.startWrite(eventsToWaitFor))
+
+    var event: CLEvent = null
+    try {
+      event = operation(eventsToWaitFor.toArray)
+      if (event != null)
+        event.setCompletionCallback(new CLEvent.EventCallback {
+          override def callback(status: Int) = {
+            //          println("completed")
+            if (inputs != null)
+              inputs.foreach(_.eventCompleted(event))
+            if (outputs != null)
+              outputs.foreach(_.eventCompleted(event))
+          }
+        })
+      event
+    } finally {
+      if (inputs != null)
+        inputs.foreach(_.endRead(event))
+      if (outputs != null)
+        outputs.foreach(_.endWrite(event))
+    }
   }
 }
 

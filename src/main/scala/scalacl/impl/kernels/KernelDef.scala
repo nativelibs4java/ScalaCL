@@ -40,7 +40,7 @@ import collection.mutable.ArrayBuffer
  */
 class KernelDef(protected val sources: String, protected val salt: Long) {
   def getKernel(context: Context): CLKernel = {
-    context.kernels(this, _.release) {
+    context.getOrRegisterKernel(this) {
       tryOrTrace("OpenCL sources: " + sources) {
         val Array(k) = context.context.createProgram(sources).createKernels
         k

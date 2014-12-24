@@ -61,13 +61,16 @@ class CLArray[T](
     this(length, io.allocateBuffers(length))
   }
 
-  def apply(index: Long): T = sys.error("not implemented")
-  def update(index: Long, value: T): Unit = sys.error("not implemented")
+  def apply(index: Long): T = ???
+  def update(index: Long, value: T): Unit = ???
 
-  val size = length
+  def size = length
+
+  private def cloneBuffers =
+    buffers.map(_.clone)
 
   override def clone: CLArray[T] =
-    new CLArray[T](length, buffers.map(_.clone))
+    new CLArray[T](length, cloneBuffers)
 
   private[scalacl] override def foreachBuffer(f: ScheduledBuffer[_] => Unit) {
     buffers.foreach(f)
@@ -78,6 +81,7 @@ class CLArray[T](
 
   def toPointer(implicit io: ScalarDataIO[T]): Pointer[T] = {
     val p: Pointer[T] = Pointer.allocateArray(io.pointerIO, length)
+    assert(buffers.length == 1, s"An array stored on multiple buffers cannot be converted to a single pointer yet (${buffers.length} buffers)")
     val Array(buffer: ScheduledBuffer[T]) = buffers
     buffer.read(p)
     p
@@ -94,45 +98,42 @@ class CLArray[T](
 
   def foreach(f: T => Unit): Unit = macro CLArrayMacros.foreachImpl[T]
 
-  // private[scalacl]
   def foreach(f: CLFunction[T, Unit]) {
     execute(f, null)
   }
 
   def map[U](f: T => U)(implicit io2: DataIO[U], m2: ClassTag[U], t2: TypeTag[U]): CLArray[U] = macro CLArrayMacros.mapImpl[T, U]
 
-  //private[scalacl] 
   def map[U](f: CLFunction[T, U])(implicit io2: DataIO[U], m2: ClassTag[U], t2: TypeTag[U]): CLArray[U] = {
     val output = new CLArray[U](length)
     execute(f, output)
     output
   }
 
-  private def execute[U](f: CLFunction[T, U], output: CLArray[U]) {
+  private[this] def execute[U](f: CLFunction[T, U], output: CLArray[U]) {
     val params = KernelExecutionParameters(Array(length))
     f.apply(context, params, this, output)
   }
 
   def filter(f: T => Boolean): CLFilteredArray[T] = macro CLArrayMacros.filterImpl[T]
 
-  // private[scalacl]
   def filter(f: CLFunction[T, Boolean]): CLFilteredArray[T] = {
     val presenceMask = new CLArray[Boolean](length)
     execute(f, presenceMask)
     new CLFilteredArray[T](this.clone, presenceMask)
   }
 
-  def reduce(f: (T, T) => T): T = sys.error("not implemented")
+  def reduce(f: (T, T) => T): T = ???
 
   def zip[U](col: CLArray[U])(implicit m2: ClassTag[U], t2: TypeTag[U], io: DataIO[(T, U)]): CLArray[(T, U)] =
-    new CLArray[(T, U)](length, buffers.clone ++ col.buffers.clone)
+    new CLArray[(T, U)](length, cloneBuffers ++ col.cloneBuffers)
 
-  def zipWithIndex: CLArray[(T, Int)] = sys.error("not implemented")
+  def zipWithIndex: CLArray[(T, Int)] = ???
 
-  def copyTo(pointer: Pointer[T]): Unit = sys.error("not implemented")
+  def copyTo(pointer: Pointer[T]): Unit = ???
 
-  def sum: T = sys.error("not implemented")
-  def product: T = sys.error("not implemented")
-  def min: T = sys.error("not implemented")
-  def max: T = sys.error("not implemented")
+  def sum: T = ???
+  def product: T = ???
+  def min: T = ???
+  def max: T = ???
 }

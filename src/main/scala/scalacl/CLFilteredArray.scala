@@ -35,7 +35,11 @@ import scalacl.impl.DataIO
 import scalacl.impl.ScheduledBufferComposite
 import scalacl.impl.DefaultScheduledData
 
-case class CLFilteredArray[T](array: CLArray[T], presenceMask: CLArray[Boolean])(implicit io: DataIO[T], context: Context)
+case class CLFilteredArray[T](
+  array: CLArray[T],
+  presenceMask: CLArray[Boolean])(
+    implicit io: DataIO[T],
+    val context: Context)
     extends ScheduledBufferComposite {
 
   private[scalacl] override def foreachBuffer(f: ScheduledBuffer[_] => Unit) {
@@ -43,8 +47,8 @@ case class CLFilteredArray[T](array: CLArray[T], presenceMask: CLArray[Boolean])
     presenceMask.foreachBuffer(f)
   }
 
-  def map[U](f: T => U): CLFilteredArray[U] = sys.error("not implemented")
-  def compact: CLArray[T] = sys.error("not implemented")
+  def map[U](f: T => U): CLFilteredArray[U] = ???
+  def compact: CLArray[T] = ???
 
   def toCLArray = compact
 

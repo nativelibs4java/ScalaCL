@@ -70,7 +70,7 @@ trait CLFunctionLike[U, V] {
     output: CLArray[V]): CLEvent =
     {
       //println(s"Executing kernel with params = $params")
-      ScheduledData.schedule(
+      context.schedule(
         append(captures.inputs, input),
         append(captures.outputs, output),
         eventsToWaitFor => {

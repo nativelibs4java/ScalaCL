@@ -42,7 +42,9 @@ import com.nativelibs4java.opencl.MockEvent
 import com.nativelibs4java.opencl.library.OpenCLLibrary._
 
 class DefaultScheduledDataTest {
-  val data = new DefaultScheduledData {}
+  val data = new DefaultScheduledData {
+    override val context: Context = null
+  }
   def isLocked = data.scheduleLock.isLocked
   assertFalse(isLocked)
 
