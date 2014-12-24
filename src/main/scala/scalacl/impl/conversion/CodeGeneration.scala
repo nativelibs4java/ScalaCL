@@ -33,7 +33,6 @@ import scalacl.CLArray
 import scalacl.CLFilteredArray
 
 import scala.reflect.api.Universe
-//import scalaxy.components.StreamTransformers
 import scalaxy.streams.StreamTransforms
 
 trait CodeGeneration extends CodeConversion with StreamTransforms {

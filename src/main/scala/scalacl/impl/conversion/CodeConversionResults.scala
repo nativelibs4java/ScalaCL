@@ -29,7 +29,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package scalacl.impl
-// import scalacl.impl.FlatCode
 import scalacl.impl.FlatCodes._
 
 import scalacl.CLArray

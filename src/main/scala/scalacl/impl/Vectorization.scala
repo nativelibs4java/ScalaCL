@@ -37,11 +37,10 @@ import scala.collection.immutable.NumericRange
 import scalacl.CLArray
 import scalacl.CLFilteredArray
 
-//import scalaxy.components.MiscMatchers
 import scalaxy.streams.Streams
 
 trait Vectorization
-    extends CodeGeneration // with MiscMatchers
+    extends CodeGeneration
     with Streams {
   val global: Universe
   import global._

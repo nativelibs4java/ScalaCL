@@ -31,8 +31,6 @@
 package scalacl
 package impl
 
-// import scalaxy.components.CommonScalaNames
-// import scalacl.impl.FlatCode
 import scalacl.impl.FlatCodes._
 import scalaxy.streams.Streams
 
@@ -40,7 +38,6 @@ import scala.reflect.NameTransformer
 
 trait OpenCLConverter
     extends OpenCLCodeFlattening
-    // with CommonScalaNames
     with Streams
     with KernelSymbolsAnalysis {
   val global: reflect.api.Universe

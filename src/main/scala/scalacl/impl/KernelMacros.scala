@@ -33,7 +33,6 @@ package scalacl.impl
 import scala.reflect
 import scalaxy.streams.Streams
 import scalaxy.streams.WithMacroContext
-// import scalaxy.components.WithMacroContext
 
 import language.experimental.macros
 

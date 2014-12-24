@@ -44,8 +44,6 @@ import scala.reflect.NameTransformer.{ encode, decode }
 import scala.reflect.api.Universe
 
 trait OpenCLCodeFlattening
-    // extends TreeBuilders
-    // with MiscMatchers
     extends TupleAnalysis
     with CommonScalaNames
     with WhileLoops

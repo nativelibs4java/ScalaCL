@@ -29,9 +29,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package scalacl.impl
-// import scalacl.impl.FlatCode
 import scalacl.impl.FlatCodes._
-// import scalaxy.components.StreamTransformers
 import scalaxy.streams.StreamTransforms
 
 import scalacl.CLArray
@@ -43,7 +41,6 @@ import scala.util.matching.Regex.quoteReplacement
 
 trait CodeConversion
     extends OpenCLConverter
-    // with StreamTransformers
     with StreamTransforms
     with CodeConversionResults
     with UniverseCasts {

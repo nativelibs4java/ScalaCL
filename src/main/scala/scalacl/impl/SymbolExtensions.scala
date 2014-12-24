@@ -33,8 +33,6 @@ package impl
 
 import scala.language.implicitConversions
 
-// import scalaxy.components.CommonScalaNames
-// import scalaxy.components.MiscMatchers
 
 trait SymbolExtensions {
   val global: reflect.api.Universe

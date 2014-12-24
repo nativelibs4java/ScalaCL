@@ -36,6 +36,13 @@ package scalacl.impl
 class ConcurrentCache[K, V <: AnyRef] {
   private val map = new java.util.concurrent.ConcurrentHashMap[K, V]
 
+  /**
+   * Since the map is not synchronized, we may be creating the value
+   * with {@code initialValue} concurrently with other threads.
+   * When inserting in the {@code ConcurrentHashMap}, only one
+   * initial value will be effectively inserted, the other values will
+   * be discarded.
+   */
   def apply(key: K, discardValue: V => Unit)(initialValue: => V) = {
     val value = map.get(key)
     if (value != null) {
@@ -46,6 +53,7 @@ class ConcurrentCache[K, V <: AnyRef] {
       if (oldValue eq null) {
         newValue
       } else {
+        // A concurrent insertion was quicker than us: discard our new value.
         discardValue(newValue)
         oldValue
       }

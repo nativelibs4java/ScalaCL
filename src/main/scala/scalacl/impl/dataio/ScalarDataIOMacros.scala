@@ -31,12 +31,7 @@
 // package scalacl
 // package impl
 
-// import scala.reflect.ClassTag
-// import scala.collection.mutable.ArrayBuffer
-// import scala.reflect.macros.blackbox.Context
 
-// import com.nativelibs4java.opencl.CLMem
-// import org.bridj.{ Pointer, PointerIO }
 
 // object ScalarDataIOs {
 //   def scalarDataIO[A: c.WeakTypeTag](c: Context)(m: c.Expr[Manifest[A]]): c.Expr[ScalarDataIO[A]] = {

@@ -31,8 +31,6 @@
 package scalacl
 package impl
 
-// import scalaxy.components.Tuploids
-// import scalaxy.components.CommonScalaNames
 import scalaxy.streams.TuploidValues
 
 // trait SymbolKinds extends Tuploids with CommonScalaNames {
