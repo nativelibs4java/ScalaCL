@@ -87,6 +87,57 @@ trait Vectorization
     typecheck: Tree => Tree): Option[Expr[Unit]] =
     {
       Option(block) collect {
+
+        case SomeStream(
+          Stream(_,
+            InlineRangeStreamSource(start1, end1, by1, isInclusive1, numTpe1),
+            List(ForeachOp(Function(List(param1),
+              SomeStream(
+                Stream(_,
+                  InlineRangeStreamSource(start2, end2, by2, isInclusive2, numTpe2),
+                  List(ForeachOp(Function(List(param2), body))), _, _))))), _, _)) =>
+
+          val startVal1 = freshVal("start1", numTpe1, start1)
+          val endVal1 = freshVal("end1", numTpe1, end1)
+          val byVal1 = freshVal("by1", numTpe1, Literal(Constant(by1)))
+
+          val startVal2 = freshVal("start2", numTpe2, start2)
+          val endVal2 = freshVal("end2", numTpe2, end2)
+          val byVal2 = freshVal("by2", numTpe2, Literal(Constant(by2)))
+
+          val functionKernelExpr = generateFunctionKernel[Unit, Unit](
+            kernelSalt = KernelDef.nextKernelSalt,
+            body = body,
+            paramDescs = Seq(
+              rangeParamDesc(numTpe1, param1, startVal1, byVal1, 0),
+              rangeParamDesc(numTpe2, param2, startVal2, byVal2, 1)),
+            fresh = fresh,
+            typecheck = typecheck(_)
+          )
+          val f = blockToUnitFunction(block)
+          val function = reify(new CLFunction[Unit, Unit](f.splice, Some(functionKernelExpr.splice)))
+
+          expr[Unit](
+            Block(
+              startVal1 ::
+                endVal1 ::
+                byVal1 ::
+                startVal2 ::
+                endVal2 ::
+                byVal2 ::
+                reify(
+                  function.splice(
+                    context.splice,
+                    new KernelExecutionParameters(
+                      rangeSize(startVal1, endVal1, byVal1, isInclusive1).splice,
+                      rangeSize(startVal2, endVal2, byVal2, isInclusive2).splice
+                    )
+                  )
+                ).tree :: Nil,
+              Literal(Constant({}))
+            )
+          )
+
         case SomeStream(
           Stream(_,
             InlineRangeStreamSource(start, end, by, isInclusive, numTpe),

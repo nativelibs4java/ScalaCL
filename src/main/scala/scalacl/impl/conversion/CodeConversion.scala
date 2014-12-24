@@ -110,7 +110,8 @@ trait CodeConversion
     }
 
     val transformed = transformer transform tree
-    // println("STREAMS; TRANSFORMED: " + transformed)
+
+    // println("TRANSFORMED STREAMS: " + transformed)
 
     // println(s"""
     //     transformed = $transformed
@@ -177,12 +178,16 @@ trait CodeConversion
     // val valDefs = for ((paramDesc, valDef) <- paramDescs.zip(valDefs0)) yield valDef.substituteSymbols(List(valDef.symbol), List(paramDesc.symbol))
 
     val toType = Block(valDefs.toList, transformed)
+    // println(s"""
+    //   toType = $toType
+    // """)
 
-    val Block(_, transformedBody) =
-      tryOrTrace("toType = " + toType) {
-        //typecheck(resetLocalAttrs(toType)) //, WildcardType)
-        typecheck(toType)
-      }
+    val Block(_, transformedBody) = toType
+    // tryOrTrace("toType = " + toType) {
+    //   //typecheck(resetLocalAttrs(toType)) //, WildcardType)
+    //   typecheck(toType)
+
+    // }
 
     // val transformedBody = transformed.substituteSymbols(
     //   paramDescs.map(_.symbol).toList),
@@ -236,6 +241,7 @@ trait CodeConversion
     {
       val (code, explicitParamDescs) =
         transformStreams(tree, initialParamDescs, fresh, typecheck)
+
       // val (code, explicitParamDescs) = (tree, initialParamDescs)
 
       val externalSymbols =
@@ -304,7 +310,8 @@ trait CodeConversion
         globalIDIndexes.map(i => i -> fresh("_global_id_" + i + "_")).toMap
 
       def paramRx(paramDesc: ParamDesc) =
-        ("\\b(" + quoteReplacement(paramDesc.symbol.name.toString) + ")\\b").r
+        ("(?<![\\w$])(" + quoteReplacement(paramDesc.symbol.name.toString) + ")(?![\\w$])").r
+      // ("\\b(" + quoteReplacement(paramDesc.symbol.name.toString) + ")\\b").r
 
       def replacementFunc(r: Regex, rep: String) = {
         // println(s"REPLACEMENT FUNC: $r -> $rep)")
@@ -397,7 +404,17 @@ trait CodeConversion
       if (convertedCode.matches("""(?s).*\bdouble\b.*"""))
         convertedCode = "#pragma OPENCL EXTENSION cl_khr_fp64: enable\n" + convertedCode
 
-      println("convertedCode:\n\t" + convertedCode.replaceAll("\n", "\n\t"))
+      // println(s"""
+      // convertCode:
+      //   tree: $tree
+      //   code: $code
+      //   paramDescs: $paramDescs
+      //   flat: $flat
+      //   result: $result
+      //   convertedCode: ${convertedCode.replaceAll("\n", "\n\t")}
+      // """)
+      // println("flat:\n\t" + flat)
+      // println("convertedCode:\n\t" + convertedCode.replaceAll("\n", "\n\t"))
       CodeConversionResult(convertedCode, capturedInputs, capturedOutputs, capturedConstants)
     }
 

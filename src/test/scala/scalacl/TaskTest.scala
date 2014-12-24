@@ -35,7 +35,6 @@ import org.junit._
 import Assert._
 
 class TaskTest {
-  @Ignore
   @Test
   def simple() {
     implicit val context = Context.best

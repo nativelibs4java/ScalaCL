@@ -84,7 +84,8 @@ object CLFunctionUtils {
         kernelSalt = -1,
         outputSymbol = castSymbol(outputSymbol),
         fresh = fresh,
-        typecheck = t => castTree(toolbox.typecheck(castTree(t)))).asInstanceOf[Result]
+        typecheck = t => toolbox.typecheck(t.asInstanceOf[toolbox.u.Tree]).asInstanceOf[Tree]
+      ).asInstanceOf[Result]
     }
 
     val compiled = CompilerUtils.compile(generation.result, toolbox)

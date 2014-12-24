@@ -109,10 +109,18 @@ trait OpenCLCodeFlattening
     val outerSymbols = usedIdentSymbols.keys.toSet.diff(definedSymbols.keys.toSet)
     val nameCollisions = (definedSymbols ++ usedIdentSymbols).groupBy(_._2).filter(_._2.size > 1)
     val renamings = (nameCollisions.flatMap(_._2) map {
-      case (sym, name) =>
+      case (sym, name) => //if !internal.isFreeTerm(sym) =>
         val newName: Name = N(fresh(name.toString))
         (sym, newName)
     }).toMap
+
+    // println(s"""
+    //   definedSymbols = $definedSymbols
+    //   usedIdentSymbols = $usedIdentSymbols
+    //   outerSymbols = $outerSymbols
+    //   nameCollisions = $nameCollisions 
+    //   renamings = $renamings
+    // """)
 
     if (renamings.isEmpty)
       tree
@@ -269,15 +277,29 @@ trait OpenCLCodeFlattening
       case _ =>
         try {
           getTreeSlice(tree, recursive = true) match {
-            case Some(slice) if slice.baseSymbol != tree.symbol =>
+            case Some(slice) if slice.baseSymbol != tree.symbol && isTupleType(slice.baseSymbol.typeSignature) =>
               sliceReplacements.get(slice) match {
                 case Some(identGen) =>
+                  // println(s"""
+                  // SLICE:
+                  //   tree: $tree
+                  //   slice: $slice
+                  //   id: ${identGen()}
+                  // """)
                   Seq(identGen())
                 case None =>
-                  for (i <- 0 until slice.sliceLength) yield {
+                  val subs = for (i <- 0 until slice.sliceLength) yield {
                     Ident(fiberVariableName(slice.baseSymbol.name, List(i))
                     )
                   }
+
+                  // println(s"""
+                  // SLICE:
+                  //   tree: $tree
+                  //   slice: $slice
+                  //   subs: $subs
+                  // """)
+                  subs
               }
             case _ =>
               Seq(tree)
@@ -347,22 +369,6 @@ trait OpenCLCodeFlattening
             stats,
             vals.map(v => Select(v, TermName(decode(name.toString))))
           )
-        case Apply(ident @ Ident(functionName), args) =>
-          val f = args.map(flattenTuplesAndBlocks(_))
-          // TODO assign vals to new vars before the calls, to ensure a correct evaluation order !
-          FlatCode[Tree](
-            f.flatMap(_.outerDefinitions),
-            f.flatMap(_.statements),
-            Seq(
-              typecheck(
-                Apply(
-                  Ident(ident.symbol),
-                  f.flatMap(_.values)
-                ),
-                pt = tree.tpe
-              )
-            )
-          )
         case Assign(lhs, rhs) =>
           merge(Seq(lhs, rhs).map(flattenTuplesAndBlocks(_)): _*) {
             case Seq(l, r) =>
@@ -384,6 +390,23 @@ trait OpenCLCodeFlattening
           )
           // println("UPDATE TUP(" + getType(value) + ") tree = " + tree + ", res = " + res)
           res
+        case Apply(ident @ Ident(functionName), args) =>
+          val f = args.map(flattenTuplesAndBlocks(_))
+          // TODO assign vals to new vars before the calls, to ensure a correct evaluation order !
+          FlatCode[Tree](
+            f.flatMap(_.outerDefinitions),
+            f.flatMap(_.statements),
+            Seq(
+              typecheck(
+                Apply(
+                  Ident(functionName),
+                  // Ident(ident.symbol),
+                  f.flatMap(_.values)
+                ),
+                pt = tree.tpe
+              )
+            )
+          )
         case Apply(target, args) =>
           //println("CONVERTING apply " + tree)
           val fc1 @ FlatCode(defs1, stats1, vals1) =
@@ -402,7 +425,7 @@ trait OpenCLCodeFlattening
                 Apply(target, args.flatten)
             }
           )
-          //println(s"CONVERTED apply $tree\n\tresult = $result, \n\ttpes = $tpes, \n\targsConv = $argsConv, \n\tvals1 = $vals1, fc1 = $fc1")
+          // println(s"CONVERTED apply $tree\n\tresult = $result, \n\ttpes = $tpes, \n\targs = $args, \n\targsConv = $argsConv, \n\tvals1 = $vals1, fc1 = $fc1")
           result
         case f @ DefDef(_, _, _, _, _, _) =>
           FlatCode[Tree](Seq(f), Seq(), Seq())
@@ -513,7 +536,7 @@ trait OpenCLCodeFlattening
           // println("CodeFlattening  -  WARNING EmptyTree! Should this ever happen?")
           FlatCode[Tree](Seq(), Seq(), Seq())
         case _ =>
-          new RuntimeException().printStackTrace()
+          // new RuntimeException().printStackTrace()
           assert(assertion = false, "Case not handled in tuples and blocks flattening : " + tree + ": " + tree.getClass.getName)
           FlatCode[Tree](Seq(), Seq(), Seq())
       }
@@ -525,16 +548,17 @@ trait OpenCLCodeFlattening
       else
         res
 
+      val rep = ret.mapValues(s => s.flatMap(replaceValues))
       if (false) {
         println()
-        println("tree = \n\t" + tree.toString().replaceAll("\n", "\n\t"))
+        println("tree (" + tree.getClass + ") = \n\t" + tree.toString().replaceAll("\n", "\n\t"))
         println("res = \n\t" + res.toString.replaceAll("\n", "\n\t"))
         println("ret = \n\t" + ret.toString.replaceAll("\n", "\n\t"))
+        println("rep = \n\t" + rep.toString.replaceAll("\n", "\n\t"))
       }
 
-      val out = ret.mapValues(s => s.flatMap(replaceValues))
-      //out.printDebug("out")
-      out
+      //rep.printDebug("rep")
+      rep
     }
   }
 }

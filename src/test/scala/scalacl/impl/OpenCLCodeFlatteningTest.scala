@@ -48,14 +48,14 @@ class OpenCLCodeFlatteningTest
   def conv(x: Expr[_]) = convert(typeCheck(x))
   def code(statements: Seq[String], values: Seq[String]) =
     FlatCode[String](statements = statements, values = values)
-  
+
   def flattenWithInputSymbols(body: Tree, inputSymbols: Seq[Symbol]): FlatCode[String] = {
     val renamed = renameDefinedSymbolsUniquely(body)
     val tupleAnalyzer = new TupleAnalyzer(renamed)
     val flattener = new TuplesAndBlockFlattener(tupleAnalyzer)
     val Seq(uniqueParam) = inputSymbols
     val flattened = flattener.flattenTuplesAndBlocksWithInputSymbol(renamed, uniqueParam.symbol, uniqueParam.name, currentOwner)(unit)
-    
+
   }
   */
   def unwrap(tree: Tree): Tree = tree match {

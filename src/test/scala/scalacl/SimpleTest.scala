@@ -35,7 +35,6 @@ import org.junit._
 import Assert._
 
 class SimpleTest {
-  @Ignore
   @Test
   def testHandWrittenKernels() {
     implicit val context = Context.best

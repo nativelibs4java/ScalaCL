@@ -73,7 +73,16 @@ trait OpenCLConverter
     inputSymbols: Seq[(Symbol, Type)] = Seq(),
     owner: Symbol = NoSymbol,
     renameSymbols: Boolean = true): FlatCode[String] = {
-    flatten(tree, inputSymbols, owner, renameSymbols).flatMap(convert)
+    val flattened = flatten(tree, inputSymbols, owner, renameSymbols)
+    val converted = flattened.flatMap(convert)
+
+    // println(s"""
+    // flattenAndConvert:
+    //   tree: $tree
+    //   flattened: $flattened
+    //   converted: $converted
+    // """)
+    converted
   }
 
   def convert(body: Tree): FlatCode[String] = {
@@ -84,11 +93,17 @@ trait OpenCLConverter
       body match {
         case TupleCreation(tupleArgs) => //Apply(TypeApply(Select(TupleObject(), applyName()), tupleTypes), tupleArgs) if isTopLevel =>
           tupleArgs.map(convert).reduceLeft(_ ++ _)
+
         case Literal(Constant(value)) =>
           if (value == UNIT)
             emptyCode
+          else if (value.isInstanceOf[Float])
+            valueCode(s"${value}F")
+          else if (value.isInstanceOf[Long])
+            valueCode(s"${value}L")
           else
-            valueCode(value.toString)
+            valueCode(s"$value")
+
         case Ident(name) =>
           valueCode(name.toString)
 

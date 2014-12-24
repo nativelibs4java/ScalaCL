@@ -17,6 +17,7 @@ class MatrixTest {
     assert(b.columns == out.columns)
 
     // TODO remove need for all of these:
+    //
     val aData = a.data
     val bData = b.data
     val outData = out.data
@@ -24,21 +25,22 @@ class MatrixTest {
     val aRows = a.rows
     val aColumns = a.columns
     val bColumns = b.columns
+
     kernel {
       // This block will either be converted to an OpenCL kernel or cause compilation error
       // It captures out.data, a.data and b.data
       for (i <- 0 until aRows; j <- 0 until bColumns) {
-        // TODO chain map and sum (to avoid creating a builder here !)
-        // outData(i * outColumns + j) =
-        //   (0 until aColumns).map(k => {
-        //     aData(i * aColumns + k) * bData(k * bColumns + j)
-        //   }).sum
-        // var tot = 0f
-        // for (k <- 0 until aColumns) {
-        //   //tot = tot + aData(i * aColumns + k) * bData(k * bColumns + j)
-        //   tot = 10
-        // }
-        // outData(i * outColumns + j) = tot
+        //     // TODO chain map and sum (to avoid creating a builder here !)
+        outData(i * outColumns + j) =
+          (0 until aColumns).map(k => {
+            aData(i * aColumns + k) * bData(k * bColumns + j)
+          }).sum
+        //     // var tot = 0f
+        //     // for (k <- 0 until aColumns) {
+        //     //   //tot = tot + aData(i * aColumns + k) * bData(k * bColumns + j)
+        //     //   tot = 10
+        //     // }
+        //     // outData(i * outColumns + j) = tot
       }
     }
   }
@@ -55,33 +57,49 @@ class MatrixTest {
       // This block will either be converted to an OpenCL kernel or cause compilation error
       // It captures out.data, a.data and b.data
       for (i <- 0 until 10; j <- 0 until 20) {
-        // TODO chain map and sum (to avoid creating a builder here !)
+        //     // TODO chain map and sum (to avoid creating a builder here !)
         // outData(i * 30 + j) =
         //   (0 until 30).map(k => {
         //     aData(i * 30 + k) * bData(k * 30 + j)
         //   }).sum
-        var tot = 0f
-        for (k <- 0 until 30) {
-          //tot = tot + aData(i * aColumns + k) * bData(k * bColumns + j)
-          tot = 10000
-        }
-        outData(i * 10 + j) = tot
+        // var tot = 0f
+        // for (k <- 0 until 30) {
+        //       //tot = tot + aData(i * aColumns + k) * bData(k * bColumns + j)
+        //       tot = 10000
+        // }
+        // outData(i * 10 + j) = tot
       }
     }
   }
 
-  @Ignore
+  // @Ignore
   @Test
-  def testMatrix() {
+  def testMatrixMult() {
     implicit val context = Context.best
 
-    val n = 10
-    val a = new Matrix(n)
-    val b = new Matrix(n)
-    val out = new Matrix(n)
+    val a = new Matrix(CLArray(0, 1, 1, 0), 2, 2)
+    val b = new Matrix(CLArray(12, 0, 0, 21), 2, 2)
+    val out = new Matrix(2, 2)
 
     mult(a, b, out)
 
-    println(out.data)
+    val data = out.data.toList
+    println(data)
+    assertEquals(List(0.0, 21.0, 12.0, 0.0), data)
+    // assert(data == List(21, 0, 0, 12))
   }
+
+  // @Test
+  // def testMatrixMult() {
+  //   implicit val context = Context.best
+
+  //   val n = 10
+  //   val a = new Matrix(n)
+  //   val b = new Matrix(n)
+  //   val out = new Matrix(n)
+
+  //   mult(a, b, out)
+
+  //   println(out.data)
+  // }
 }

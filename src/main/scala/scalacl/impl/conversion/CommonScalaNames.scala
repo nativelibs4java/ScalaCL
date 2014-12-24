@@ -195,14 +195,8 @@ trait CommonScalaNames extends Utils {
      *  see the twice-as-long identifiers as much improvement.
      */
     def apply(functionName: String, args: List[Tree]) =
-      q"scala.math.`package`.${TermName(functionName)}(..$args)"
-    // Apply(
-    //   mkSelect(
-    //     TermName("scala"),
-    //     TermName("math"),
-    //     TermName("package"),
-    //     TermName(functionName)),
-    //   args)
+      q"$ScalaMathPackage.${TermName(functionName)}(..$args)"
+    // q"scala.math.`package`.${TermName(functionName)}(..$args)"
 
     def unapply(tree: Tree): Option[(Type, Name, List[Tree])] = tree match {
       case Apply(f @ Select(left, name), args) =>
