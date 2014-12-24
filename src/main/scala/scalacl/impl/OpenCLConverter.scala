@@ -141,9 +141,9 @@ trait OpenCLConverter
             sc ++ rs,
             rv
           )
-        case Apply(Select(target, applyName()), List(singleArg)) =>
+        case Apply(Select(target, N("apply")), List(singleArg)) =>
           merge(Seq(target, singleArg).map(convert): _*) { case Seq(t, a) => Seq(t + "[" + a + "]") }
-        case Apply(Select(target, updateName()), List(index, value)) =>
+        case Apply(Select(target, N("update")), List(index, value)) =>
           val convs = Seq(target, index, value).map(convert)
           merge(convs: _*) { case Seq(t, i, v) => Seq(t + "[" + i + "] = " + v + ";") }
         case Assign(lhs, rhs) =>
@@ -201,14 +201,10 @@ trait OpenCLConverter
           //}
           //Match(Ident("x0$1"), List(CaseDef(Apply(TypeTree(), List(Bind(i, Ident("_")), Bind(c, Ident("_"))), EmptyTree Apply(Select(Ident("i"), "$plus"), List(Ident("c")
           convert(body)
-        case Select(expr, toSizeTName()) => cast(expr, "size_t")
-        case Select(expr, toLongName()) => cast(expr, "long")
-        case Select(expr, toIntName()) => cast(expr, "int")
-        case Select(expr, toShortName()) => cast(expr, "short")
-        case Select(expr, toByteName()) => cast(expr, "char")
-        case Select(expr, toCharName()) => cast(expr, "short")
-        case Select(expr, toDoubleName()) => cast(expr, "double")
-        case Select(expr, toFloatName()) => cast(expr, "float")
+
+        case NumberConversion(expr, typeName) =>
+          cast(expr, typeName)
+
         // TODO
         //case ScalaMathFunction(functionType, funName, args) =>
         //  convertMathFunction(functionType, funName, args)
@@ -231,7 +227,7 @@ trait OpenCLConverter
                   s"\tleft.sym = ${left.symbol}\n" +
                   s"\targs = $args\n" +
                   s"\tbody = $body\n" +
-                  s"\ttree: ${body.getClass.getName} (${updateName.unapply(name)})")
+                  s"\ttree: ${body.getClass.getName}")
               valueCode("/* Error: failed to convert " + body + " */")
           }
         case s @ Select(expr, fun) =>
@@ -285,7 +281,7 @@ trait OpenCLConverter
       outers ++= Seq("#pragma OPENCL EXTENSION cl_khr_fp64: enable")
 
     val normalizedArgs = args.map {
-      case Select(a, toDoubleName()) => a
+      case Select(a, N("toDouble")) => a
       case arg => arg
     }
     val convArgs = normalizedArgs.map(convert)

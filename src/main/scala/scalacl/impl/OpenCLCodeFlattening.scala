@@ -168,6 +168,26 @@ trait OpenCLCodeFlattening
     result
   }
 
+  object NumberConversion {
+    private[this] val namesToTypes = Map(
+      "toSizeT" -> "size_t",
+      "toLong" -> "long",
+      "toInt" -> "int",
+      "toShort" -> "short",
+      "toByte" -> "char",
+      "toChar" -> "short",
+      "toDouble" -> "double",
+      "toFloat" -> "float"
+    )
+
+    def unapply(tree: Tree): Option[(Tree, String)] = tree match {
+      case Select(expr, n) =>
+        namesToTypes.get(n.toString).map(expr -> _)
+      case _ =>
+        None
+    }
+  }
+
   class TuplesAndBlockFlattener(val tupleAnalyzer: TupleAnalyzer) {
     import tupleAnalyzer._
 
@@ -182,23 +202,6 @@ trait OpenCLCodeFlattening
 
     var sliceReplacements = new scala.collection.mutable.HashMap[TupleSlice, TreeGen]()
 
-    object NumberConversion {
-      def unapply(tree: Tree): Option[(Tree, String)] = tree match {
-        case Select(expr, n) =>
-          Option(n) collect {
-            case toSizeTName() => (expr, "size_t")
-            case toLongName() => (expr, "long")
-            case toIntName() => (expr, "int")
-            case toShortName() => (expr, "short")
-            case toByteName() => (expr, "char")
-            case toCharName() => (expr, "short")
-            case toDoubleName() => (expr, "double")
-            case toFloatName() => (expr, "float")
-          }
-        case _ =>
-          None
-      }
-    }
     def isUnitOrNoType(tpe: Type) = tpe == NoType || tpe == UnitTpe
 
     def makeValuesSideEffectFree(code: FlatCode[Tree], symbolOwner: Symbol) = {
@@ -206,7 +209,7 @@ trait OpenCLCodeFlattening
       var hasNewStatements = false
       val vals = for (value <- code.values) yield {
         value match {
-          case Select(ScalaMathFunction(_, _, _), toFloatName()) =>
+          case Select(ScalaMathFunction(_, _, _), N("toFloat")) =>
             // special case for non-double math :
             // exp(20: Float).toFloat
             (Seq(), value)
@@ -374,7 +377,7 @@ trait OpenCLCodeFlattening
             case Seq(l, r) =>
               Seq(Assign(l, r))
           }
-        case Apply(Select(target, updateName()), List(index, value)) if isTupleType(getType(value)) =>
+        case Apply(Select(target, N("update")), List(index, value)) if isTupleType(getType(value)) =>
           val targetTpe = normalize(target.tpe).asInstanceOf[TypeRef]
           // val indexVal = q"val index: ${index.tpe} = $index" // TODO fresh
           val indexVal = newVal("index", index, index.tpe)
@@ -385,7 +388,7 @@ trait OpenCLCodeFlattening
             flatTarget.outerDefinitions ++ flatValue.outerDefinitions,
             flatTarget.statements ++ Seq(indexVal.definition) ++ flatValue.statements,
             for ((t, v) <- flatTarget.values.zip(flatValue.values)) yield {
-              Apply(Select(t, updateName()), List(indexVal(), v))
+              Apply(Select(t, N("update")), List(indexVal(), v))
             }
           )
           // println("UPDATE TUP(" + getType(value) + ") tree = " + tree + ", res = " + res)

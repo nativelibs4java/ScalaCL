@@ -96,11 +96,11 @@ trait KernelSymbolsAnalysis
       override def traverse(tree: Tree) = tree match {
         case Ident(n) =>
           declare(tree.symbol, tree.tpe, UsageKind.Input)
-        case Apply(Select(target, updateName()), List(index, value)) =>
+        case Apply(Select(target, N("update")), List(index, value)) =>
           declare(target.symbol, target.tpe, UsageKind.Output)
           super.traverse(index)
           super.traverse(value)
-        case Apply(Select(target, applyName()), List(index)) =>
+        case Apply(Select(target, N("apply")), List(index)) =>
           declare(target.symbol, target.tpe, UsageKind.Input)
           super.traverse(index)
         case ValDef(_, _, _, _) =>
