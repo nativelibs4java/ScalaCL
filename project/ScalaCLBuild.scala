@@ -80,8 +80,9 @@ object ScalaCLBuild extends Build {
       libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-reflect" % _),
       libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-compiler" % _),
       libraryDependencies ++= Seq(
-        "junit" % "junit" % "4.10" % "test",
-        "com.novocode" % "junit-interface" % "0.8" % "test"
+        "org.scalatest" % "scalatest_2.11" % "2.2.3" % "test",
+        "junit" % "junit" % "4.12" % "test",
+        "com.novocode" % "junit-interface" % "0.11" % "test"
       )
     )
 
