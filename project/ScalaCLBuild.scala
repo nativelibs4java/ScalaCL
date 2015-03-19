@@ -65,7 +65,7 @@ object ScalaCLBuild extends Build {
 
       fork := true,
 
-      scalaVersion := "2.11.4",
+      scalaVersion := "2.11.5",
       scalacOptions ++= Seq(
         "-language:experimental.macros",
         "-encoding", "UTF-8",
