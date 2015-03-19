@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/nativelibs4java/ScalaCL.svg?branch=feature_travis-build)](https://travis-ci.org/nativelibs4java/ScalaCL) [![Join the chat at https://gitter.im/nativelibs4java/ScalaCL](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nativelibs4java/ScalaCL?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) 
+ 
 ScalaCL... v3 (yeah, yet another rewrite from scratch FTW!)
 
 BARELY FUNCTIONAL YET, WORK IN PROGRESS (see [ScalaCL](https://code.google.com/p/scalacl/) if you want something that _works_, albeit only on Scala 2.9.x).
