@@ -2,7 +2,8 @@ import sbt._
 import Keys._
 import ls.Plugin._
 
-import sbtassembly.Plugin._ ; import AssemblyKeys._
+import sbtassembly.Plugin._
+import sbtassembly.Plugin.AssemblyKeys._
 import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform.scalariformSettings
 import com.typesafe.sbt.SbtScalariform._
@@ -32,12 +33,12 @@ object ScalaCLBuild extends Build {
     organization := "com.nativelibs4java",
     version := "0.4-SNAPSHOT",
     licenses := Seq("BSD-3-Clause" -> url("http://www.opensource.org/licenses/BSD-3-Clause")),
-    homepage := Some(url("https://github.com/ochafik/ScalaCL")),
+    homepage := Some(url("https://github.com/nativelibs4java/ScalaCL")),
     pomIncludeRepository := { _ => false },
     pomExtra := (
       <scm>
-        <url>git@github.com:ochafik/ScalaCL.git</url>
-        <connection>scm:git:git@github.com:ochafik/ScalaCL.git</connection>
+        <url>git@github.com:nativelibs4java/ScalaCL.git</url>
+        <connection>scm:git:git@github.com:nativelibs4java/ScalaCL.git</connection>
       </scm>
       <developers>
         <developer>
@@ -52,7 +53,7 @@ object ScalaCLBuild extends Build {
        Seq("opencl", "GPGPU", "macro", "GPU", "JavaCL"),
     (description in LsKeys.lsync) :=
       "OpenCL-powered and macro-powered data structures to store and transform data straight on the graphic card, using an API akin to Scala collections. Scala closures are transformed to OpenCL kernels automagically by macros, during compilation.",
-    LsKeys.ghUser := Some("ochafik"),
+    LsKeys.ghUser := Some("nativelibs4java"),
     LsKeys.ghRepo := Some("ScalaCL"))
 
 	lazy val standardSettings = 
@@ -61,8 +62,6 @@ object ScalaCLBuild extends Build {
 	  sonatypeSettings ++
 	  infoSettings ++
 	  Seq(
-      //resolvers += "Local Maven Repository" at "file://" + Path.userHome + "/.m2/repository",
-
       fork := true,
 
       scalaVersion := "2.11.5",
@@ -72,8 +71,6 @@ object ScalaCLBuild extends Build {
         // "-optimise",
         "-deprecation",
         "-feature",
-        // "-Xlog-free-types",
-        // "-Ymacro-debug-lite",
         "-unchecked"
       ),
 
@@ -140,38 +137,6 @@ object ScalaCLBuild extends Build {
       }
     )
 
-  // lazy val ScalaCL =
-  //     Project(
-  //       id = "ScalaCL",
-  //       base = file("."),
-  //       settings = standardSettings ++
-  //         // shadeSettings ++
-  //         Seq(
-  //           name := "scalacl",
-  //           scalacOptions ++= Seq(
-  //             "-language:experimental.macros"
-  //           ),
-  //           // mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
-  //           //   {
-  //           //     case f if f.matches(""".*?\.(class|dll|so|dylib)""") => MergeStrategy.first
-  //           //     case x => old(x)
-  //           //   }
-  //           // },
-  //           libraryDependencies ++= Seq(
-  //             "com.nativelibs4java" %% "scalaxy-components" % "0.4-SNAPSHOT",
-  //             "com.nativelibs4java" %% "scalaxy-reified" % "0.4-SNAPSHOT",
-  //             //"com.nativelibs4java" %% "scalaxy-reified-base" % "0.4-SNAPSHOT",
-  //             "com.nativelibs4java" % "javacl" % "1.0-SNAPSHOT"
-  //           ),
-  //           fork in Test := true,
-  //           //javaOptions in Test ++= Seq("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
-  //           scalacOptions in Test ++= Seq(
-  //             "-optimise",
-  //             "-Yclosure-elim",
-  //             "-Yinline"
-  //           )
-  //         ))
-
   lazy val ScalaCL =
     addLocalOrRemoteDependencies(
       Project(
@@ -188,20 +153,15 @@ object ScalaCLBuild extends Build {
         )
       ),
       List(
-        // (
-        //   "com.nativelibs4java" %% "scalaxy-components" % "0.4-SNAPSHOT",
-        //   "../Scalaxy",
-        //   "git://github.com/ochafik/Scalaxy.git"
-        // ),
         (
           "com.nativelibs4java" %% "scalaxy-streams" % "0.4-SNAPSHOT",
           "../Scalaxy",
-          "git://github.com/ochafik/Scalaxy.git"
+          "git://github.com/nativelibs4java/Scalaxy.git"
         ),
         (
           "com.nativelibs4java" %% "scalaxy-reified" % "0.4-SNAPSHOT",
           "../Scalaxy",
-          "git://github.com/ochafik/Scalaxy.git"
+          "git://github.com/nativelibs4java/Scalaxy.git"
         )
       )
     )
