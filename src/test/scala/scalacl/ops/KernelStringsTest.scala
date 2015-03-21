@@ -63,8 +63,8 @@ class KernelStringsTest {
           constant double doubleValue = $doubleValue;
           constant char stringValue[] = $stringValue;
 
-          kernel void f(global int *in, global int *out, size_t n) {
-            size_t i = get_global_id(0);
+          kernel void f(global int *in, global int *out, long n) {
+            long i = get_global_id(0);
             bool b = i > n;
             b = true;
             if (b) return;
@@ -97,8 +97,8 @@ class KernelStringsTest {
           constant double doubleValue = 1.0;
           constant char stringValue[] = "1";
 
-          kernel void f(global int *in, global int *out, size_t n) {
-            size_t i = get_global_id(0);
+          kernel void f(global int *in, global int *out, long n) {
+            long i = get_global_id(0);
             bool b = i > n;
             b = true;
             if (b) return;

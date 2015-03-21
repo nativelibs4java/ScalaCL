@@ -49,7 +49,7 @@ object ScheduledBuffer {
   private val clearBytesKernel = new KernelDef(
     """
     kernel void f(global char* buffer, long length) {
-      size_t i = get_global_id(0);
+      long i = get_global_id(0);
       if (i >= length) return;
       buffer[i] = 0;
     }
