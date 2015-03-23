@@ -93,7 +93,7 @@ class KernelTest extends BaseTest {
         r
       }
 
-      result.toList should equal(clResult.toList)
+      clResult.toList should equal(result.toList)
   }
 
   it should "check equality of kernels" in {
