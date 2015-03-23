@@ -35,7 +35,7 @@ import scalacl.impl.KernelDef
 class KernelTest extends BaseTest {
   behavior of "ScalaCl kernel"
 
-  ignore should "perform computation in kernel block for integers" in context {
+  it should "perform computation in kernel block for integers" in context {
     implicit context =>
       val n = 25
       val result = new Array[Int](n)
@@ -53,7 +53,7 @@ class KernelTest extends BaseTest {
       result.toSeq should equal(clResult.toSeq)
   }
 
-  ignore should "perform computation in kernel block for longs" in context {
+  it should "perform computation in kernel block for longs" in context {
     implicit context =>
       val n = 25L
       val result = new Array[Long](n.toInt)
@@ -71,7 +71,7 @@ class KernelTest extends BaseTest {
       result.toSeq should equal(clResult.toSeq)
   }
 
-  ignore should "capture simple array" in context {
+  it should "capture simple array" in context {
     implicit context =>
       val clResult = {
         val f = CLArray(10, 20, 30, 40)
@@ -96,7 +96,7 @@ class KernelTest extends BaseTest {
       result.toList should equal(clResult.toList)
   }
 
-  ignore should "check equality of kernels" in {
+  it should "check equality of kernels" in {
     val sources = "aa"
     same(new KernelDef(sources = sources, salt = 1), new KernelDef(sources = sources, salt = 1))
     diff(new KernelDef(sources = sources, salt = 1), new KernelDef(sources = sources, salt = 2), sameHC = false)
@@ -105,7 +105,7 @@ class KernelTest extends BaseTest {
 
   def same(a: AnyRef, b: AnyRef) = {
     a.hashCode should equal(b.hashCode)
-    a shouldEqual equal(b)
+    a should equal(b)
   }
 
   def diff(a: AnyRef, b: AnyRef, sameHC: Boolean) = {

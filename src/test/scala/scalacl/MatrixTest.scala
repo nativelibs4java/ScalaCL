@@ -44,7 +44,7 @@ class MatrixTest extends BaseTest {
     }
   }
 
-  ignore should "perform multiplication of two matrix" in context {
+  it should "perform multiplication of two matrix" in context {
     implicit context =>
       val n = 10
       val a = new Matrix(n)
@@ -55,7 +55,7 @@ class MatrixTest extends BaseTest {
       mul(a, b, out)
   }
 
-  ignore should "generate kernel with matrix type" in context {
+  it should "generate kernel with matrix type" in context {
     implicit context =>
       val n = 10
       val out = new Matrix(n)

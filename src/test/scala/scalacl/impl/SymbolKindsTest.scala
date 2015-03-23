@@ -48,7 +48,7 @@ class SymbolKindsTest
     var v = 0
   }
 
-  ignore should "find properly kind some object" in {
+  it should "find properly kind some object" in {
     SymbolKind.Tuploid should equal(kindOf(typeOf[Int]))
     SymbolKind.Tuploid should equal(kindOf(typeOf[Float]))
     SymbolKind.Tuploid should equal(kindOf(typeOf[(Int, Int)]))

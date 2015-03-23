@@ -34,7 +34,7 @@ class CLFunctionTest extends BaseTest {
 
   behavior of "CLFunction"
 
-  ignore should "wrap scalar function" in context {
+  it should "wrap scalar function" in context {
     implicit context =>
       val a = CLArray[Int](1, 2, 3)
       val v = 10

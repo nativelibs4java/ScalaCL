@@ -42,7 +42,7 @@ class ScheduledDataTest extends BaseTest {
   behavior of "ScheduledDate"
 
   //TODO create higher granularization
-  ignore should "perform some reads and writes" in {
+  it should "perform some reads and writes" in {
     val inEvt = new MockEvent(1)
     val outEvt = new MockEvent(2)
     val opEvt = new MockEvent(3)

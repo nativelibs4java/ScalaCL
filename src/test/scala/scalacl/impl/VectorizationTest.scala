@@ -41,17 +41,17 @@ class VectorizationTest
   private val context = reify { null: Context }
   private val vectorized = not be None
 
-  ignore should "not vectorized 0D expression" in {
+  it should "not vectorized 0D expression" in {
     vectorization(reify { 1 + 2 }) should not(vectorized)
   }
 
-  ignore should "vectorized 1D expression" in {
+  it should "vectorized 1D expression" in {
     vectorization(reify {
       for (i <- 0 until 10) i + 1
     }) should vectorized
   }
 
-  ignore should "vectorized 2D expression" in {
+  it should "vectorized 2D expression" in {
     vectorization(reify {
       for (i <- 0 until 10; j <- 0 until 10)
         i + j + 2

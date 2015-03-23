@@ -4,7 +4,7 @@ class MapConversionTest extends BaseTest {
 
   behavior of "map"
 
-  ignore should "compute scalar function with int type" in context {
+  it should "compute scalar function with int type" in context {
     implicit context =>
       val f = 0.2f
 

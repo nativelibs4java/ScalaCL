@@ -34,13 +34,13 @@ class TaskTest
     extends BaseTest {
   behavior of "ScalaCl task"
 
-  ignore should "perform computation in task block" in context {
+  it should "perform computation in task block" in context {
     implicit context =>
       val result = new CLArray[Int](3)
       val f = 10
       task {
         result(1) = 10 * f
       }
-      result should equal(Seq(0, 100, 0))
+      result.toList should equal(Seq(0, 100, 0))
   }
 }

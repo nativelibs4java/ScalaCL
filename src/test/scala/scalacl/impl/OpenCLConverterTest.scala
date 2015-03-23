@@ -37,7 +37,7 @@ class OpenCLConverterTest
 
   behavior of "OpenClConverter"
 
-  ignore should "convert touple" in {
+  it should "convert touple" in {
     val flattenCode = flatStatement(
       Seq("const int x = 10;"),
       Seq("x", "(x * 2)")
@@ -52,7 +52,7 @@ class OpenCLConverterTest
     flattenCode should equal(convertedExpression)
   }
 
-  ignore should "convert simple function: cos" in {
+  it should "convert simple function: cos" in {
     import scala.math._
 
     val flattenCode = flatStatement(

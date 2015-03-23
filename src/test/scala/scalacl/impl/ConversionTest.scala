@@ -38,7 +38,7 @@ class ConversionTest
 
   behavior of "CodeConversion"
 
-  ignore should "captures on simple expression" in {
+  it should "captures on simple expression" in {
     val in: CLArray[Int] = null
     val out: CLArray[Int] = null
     val f = 10
@@ -47,7 +47,7 @@ class ConversionTest
     })
 
     val kernel = "kernel void f(global const int* in, global int* out, int f) {\n" +
-      "\tout[1] = (in[2] * f);;\n" +
+      "\tout[1L] = (in[2L] * f);;\n" +
       "}"
 
     kernel should equal(c.code)
@@ -62,16 +62,16 @@ class ConversionTest
     assertParamDesc(fDesc, "f", typeOf[Int], UsageKind.Input, ParamKind.Normal)
   }
 
-  ignore should "convert tuple" in {
+  it should "convert tuple" in {
     val in: CLArray[Int] = null
     val out: CLArray[(Int, Float)] = null
     val c = convertExpression(reify {
       out(0) = (in(0), in(2).toFloat)
     })
     val kernel = "kernel void f(global const int* in, global int* out$1, global float* out$2) {\n" +
-      "\tconst long index0 = 0;\n" +
-      "\tout$1[index0] = in[0];;\n" +
-      "\tout$2[index0] = ((float)in[2]);;\n" +
+      "\tconst long index0 = 0L;\n" +
+      "\tout$1[index0] = in[0L];;\n" +
+      "\tout$2[index0] = ((float)in[2L]);;\n" +
       "}"
 
     kernel should equal(c.code)
@@ -86,7 +86,7 @@ class ConversionTest
     })
 
     val kernel = "kernel void f(global const int* in, global int* out) {\n" +
-      "\tout[1] = (in[2] * f);\n" +
+      "\tout[1L] = (in[2L] * f);\n" +
       "}"
     kernel should equal(c.code)
   }
@@ -99,7 +99,7 @@ class ConversionTest
       out(0) = i + f + s + p._1 + p._2
     })
     val kernel = "kernel void f(global const int* in, global int* out) {\n" +
-      "\tout[1] = (in[2] * f);\n" +
+      "\tout[1L] = (in[2L] * f);\n" +
       "}"
 
     kernel should equal(c.code)

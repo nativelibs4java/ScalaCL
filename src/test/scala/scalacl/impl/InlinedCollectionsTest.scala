@@ -40,7 +40,7 @@ class InlinedCollectionsTest
 
   behavior of "InlinedCollections"
 
-  ignore should "inline map as switch" in {
+  it should "inline map as switch" in {
     //TODO some validation
     inlineMapAsSwitch("map", Map(1 -> 10, 2 -> 20))
   }

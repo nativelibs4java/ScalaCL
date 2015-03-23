@@ -38,7 +38,7 @@ class OpenCLCodeFlatteningTest
 
   behavior of "OpenCLCodeFlattening"
 
-  ignore should "flatten tuple of values" in {
+  it should "flatten tuple of values" in {
     val x = 10
     assertEquals(
       flatCode(values = List(
@@ -52,7 +52,7 @@ class OpenCLCodeFlatteningTest
     )
   }
 
-  ignore should "flatten tuple of references" in {
+  it should "flatten tuple of references" in {
     val p = (10, 12)
     val Seq(p$1, p$2, pp$1, pp$2) = 1 to 4
     assertEquals(

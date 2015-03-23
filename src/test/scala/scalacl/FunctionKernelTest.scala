@@ -35,7 +35,7 @@ class FunctionKernelTest extends BaseTest {
 
   behavior of "FunctionKernel"
 
-  ignore should "create kernel" in context {
+  it should "create kernel" in context {
     implicit context =>
       val factor = 20.5f
       val trans = new CLFunction[Int, Int](
