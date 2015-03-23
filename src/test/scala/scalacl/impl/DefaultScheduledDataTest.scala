@@ -36,41 +36,48 @@ import collection.mutable.ArrayBuffer
 import com.nativelibs4java.opencl.CLEvent
 import com.nativelibs4java.opencl.MockEvent
 
+import org.scalatest._
+
 class DefaultScheduledDataTest
     extends BaseTest
-    with RuntimeUniverseTest {
+    with RuntimeUniverseTest
+    with BeforeAndAfterEach {
 
   behavior of "DefaultScheduledData"
-
-  private val data = new DefaultScheduledData {
-    override val context: Context = null
-  }
-  private def isLocked = data.scheduleLock.isLocked
 
   private val e1 = new MockEvent(1)
   private val e2 = new MockEvent(2)
   private val e3 = new MockEvent(3)
 
+  private var data: DefaultScheduledData = _
+  private def isLocked = data.scheduleLock.isLocked
+
+  override def beforeEach() {
+    data = new DefaultScheduledData {
+      override val context: Context = null
+    }
+  }
+
   it should "reads" in {
-    read(e1, Nil, null)
-    read(e2, List(e1), null)
+    read(e1, expectReads = Nil, expectWrite = null)
+    read(e2, expectReads = List(e1), expectWrite = null)
   }
 
-  ignore should "writes" in {
-    write(e1, Nil, null)
-    write(e2, Nil, e1)
+  it should "writes" in {
+    write(e1, expectReads = Nil, expectWrite = null)
+    write(e2, expectReads = Nil, expectWrite = e1)
   }
 
-  ignore should "read -> write -> read" in {
-    read(e1, Nil, null)
-    write(e2, List(e1), null)
-    read(e3, Nil, e2)
+  it should "read -> write -> read" in {
+    read(e1, expectReads = Nil, expectWrite = null)
+    write(e2, expectReads = List(e1), expectWrite = null)
+    read(e3, expectReads = Nil, expectWrite = e2)
   }
 
-  ignore should "write -> read -> write" in {
-    write(e1, Nil, null)
-    read(e2, Nil, e1)
-    write(e3, List(e2), e1)
+  it should "write -> read -> write" in {
+    write(e1, expectReads = Nil, expectWrite = null)
+    read(e2, expectReads = Nil, expectWrite = e1)
+    write(e3, expectReads = List(e2), expectWrite = e1)
   }
 
   private def read(event: CLEvent, expectReads: List[CLEvent], expectWrite: CLEvent) {
