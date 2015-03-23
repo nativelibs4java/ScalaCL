@@ -47,12 +47,17 @@ package ops {
             map({ case (part, arg) => arg + part }).
             mkString("")
 
-          println(s"SOURCE: $source")
           val program = context.createProgram(source)
           program.addBuildOption("-Werror")
           // TODO: clCompileProgram instead
           // TODO: parse errors / warnings
-          program.build()
+          try {
+            program.build()
+          } catch {
+            case ex: Throwable =>
+              println(s"SOURCE: $source")
+              throw new RuntimeException(ex)
+          }
 
           val expr = parts.zip((null: Tree) :: formattedArgExprs).
             map({

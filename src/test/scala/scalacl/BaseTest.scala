@@ -16,7 +16,9 @@ trait BaseTest extends FlatSpecLike with Matchers with MockFactory {
     val context = Context.best
     try {
       f(context)
-    } finally context.release()
+    } finally {
+      context.release()
+    }
   }
 }
 
