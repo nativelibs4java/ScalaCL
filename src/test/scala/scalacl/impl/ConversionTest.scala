@@ -31,65 +31,27 @@
 package scalacl
 package impl
 
-import scalaxy.streams.WithRuntimeUniverse
-import scalaxy.streams.testing.WithTestFresh
-
-import org.junit._
-import Assert._
-import org.hamcrest.CoreMatchers._
-
 class ConversionTest
-    extends CodeConversion
-    with WithRuntimeUniverse
-    with WithTestFresh {
+    extends BaseTest
+    with CodeConversionTest {
   import global._
 
-  private val context = reify { null: Context }
-  private val NotVectorizable: Option[Expr[Unit]] = None
-  private val Vectorizable = not(NotVectorizable)
+  behavior of "CodeConversion"
 
-  private def conv(block: Expr[Unit], explicitParamDescs: Seq[ParamDesc] = Seq()) = {
-    convertCode(typecheck(block.tree), explicitParamDescs, fresh, typecheck(_))
-  }
-
-  def assertParamDesc(d: ParamDesc, name: String, tpe: Type, usage: UsageKind, kind: ParamKind) = {
-    assertEquals(name, d.symbol.name.toString)
-    assertEquals(tpe, d.tpe)
-    assertEquals(kind, d.mode)
-    assertEquals(usage, d.usage)
-  }
-
-  def inputParam[T: TypeTag](name: String, mode: ParamKind = ParamKind.Normal) = {
-    ParamDesc(
-      symbol = internal.newTermSymbol(NoSymbol, TermName(name)),
-      output = true,
-      tpe = typeOf[T],
-      mode = mode,
-      usage = UsageKind.Input)
-  }
-
-  def outputParam[T: TypeTag](name: String, mode: ParamKind = ParamKind.Normal) = {
-    ParamDesc(
-      symbol = internal.newTermSymbol(NoSymbol, TermName(name)),
-      output = true,
-      tpe = typeOf[T],
-      mode = mode,
-      usage = UsageKind.Output)
-  }
-
-  @Test
-  def simpleCaptures() {
+  it should "captures on simple expression" in {
     val in: CLArray[Int] = null
     val out: CLArray[Int] = null
     val f = 10
-    val c = conv(reify { out(1) = in(2) * f })
+    val c = convertExpression(reify {
+      out(1) = in(2) * f
+    })
 
-    assertEquals(
-      "kernel void f(global const int* in, global int* out, int f) {\n" +
-        "\tout[1L] = (in[2L] * f);;\n" +
-        "}",
-      c.code
-    )
+    val kernel = "kernel void f(global const int* in, global int* out, int f) {\n" +
+      "\tout[1L] = (in[2L] * f);;\n" +
+      "}"
+
+    kernel should equal(c.code)
+
     val Seq(inDesc) = c.capturedInputs
     assertParamDesc(inDesc, "in", typeOf[CLArray[Int]], UsageKind.Input, ParamKind.Normal)
 
@@ -100,52 +62,71 @@ class ConversionTest
     assertParamDesc(fDesc, "f", typeOf[Int], UsageKind.Input, ParamKind.Normal)
   }
 
-  @Test
-  def simpleTupleResult() {
+  it should "convert tuple" in {
     val in: CLArray[Int] = null
     val out: CLArray[(Int, Float)] = null
-    val c = conv(reify { out(0) = (in(0), in(2).toFloat) })
-    assertEquals(
-      "kernel void f(global const int* in, global int* out$1, global float* out$2) {\n" +
-        "\tconst long index0 = 0L;\n" +
-        "\tout$1[index0] = in[0L];;\n" +
-        "\tout$2[index0] = ((float)in[2L]);;\n" +
-        "}",
-      c.code
-    )
+    val c = convertExpression(reify {
+      out(0) = (in(0), in(2).toFloat)
+    })
+    val kernel = "kernel void f(global const int* in, global int* out$1, global float* out$2) {\n" +
+      "\tconst long index0 = 0L;\n" +
+      "\tout$1[index0] = in[0L];;\n" +
+      "\tout$2[index0] = ((float)in[2L]);;\n" +
+      "}"
+
+    kernel should equal(c.code)
   }
 
-  @Ignore
-  @Test
-  def simpleTuplesCaptures() {
+  ignore should "convert tuple expression" in {
     val in: CLArray[(Int, (Float, Short))] = null
     val out: CLArray[Float] = null
-    val c = conv(reify {
+    val c = convertExpression(reify {
       val (i, (f, s)) = in(0)
       out(0) = i + f + s
     })
-    assertEquals(
-      "kernel void f(global const int* in, global int* out) {\n" +
-        "\tout[1] = (in[2] * f);\n" +
-        "}",
-      c.code
-    )
+
+    val kernel = "kernel void f(global const int* in, global int* out) {\n" +
+      "\tout[1L] = (in[2L] * f);\n" +
+      "}"
+    kernel should equal(c.code)
   }
 
-  @Ignore
-  @Test
-  def aliasedTuplesCaptures() {
+  ignore should "convert aliased tuple" in {
     val in: CLArray[(Int, (Float, Short))] = null
     val out: CLArray[Float] = null
-    val c = conv(reify {
+    val c = convertExpression(reify {
       val (i, p @ (f, s)) = in(0)
       out(0) = i + f + s + p._1 + p._2
     })
-    assertEquals(
-      "kernel void f(global const int* in, global int* out) {\n" +
-        "\tout[1] = (in[2] * f);\n" +
-        "}",
-      c.code
-    )
+    val kernel = "kernel void f(global const int* in, global int* out) {\n" +
+      "\tout[1L] = (in[2L] * f);\n" +
+      "}"
+
+    kernel should equal(c.code)
+  }
+
+  private def assertParamDesc(d: ParamDesc, name: String, tpe: Type, usage: UsageKind, kind: ParamKind) = {
+    name should equal(d.symbol.name.toString)
+    tpe should equal(d.tpe)
+    kind should equal(d.mode)
+    usage should equal(d.usage)
+  }
+
+  private def inputParam[T: TypeTag](name: String, mode: ParamKind = ParamKind.Normal) = {
+    ParamDesc(
+      symbol = internal.newTermSymbol(NoSymbol, TermName(name)),
+      output = true,
+      tpe = typeOf[T],
+      mode = mode,
+      usage = UsageKind.Input)
+  }
+
+  private def outputParam[T: TypeTag](name: String, mode: ParamKind = ParamKind.Normal) = {
+    ParamDesc(
+      symbol = internal.newTermSymbol(NoSymbol, TermName(name)),
+      output = true,
+      tpe = typeOf[T],
+      mode = mode,
+      usage = UsageKind.Output)
   }
 }

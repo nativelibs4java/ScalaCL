@@ -31,24 +31,41 @@
 package scalacl
 package impl
 
-import scalaxy.streams.WithRuntimeUniverse
-import scalaxy.streams.testing.WithTestFresh
-
-import org.junit._
-import Assert._
-import org.hamcrest.CoreMatchers._
-
 class VectorizationTest
-    extends Vectorization
-    with WithRuntimeUniverse
-    with WithTestFresh {
+    extends BaseTest
+    with CodeVectorizationTest {
   import global._
 
-  private val context = reify { null: Context }
-  private val NotVectorizable: Option[Expr[Unit]] = None
-  private val Vectorizable = not(NotVectorizable)
+  behavior of "ScalaCl vectorization"
 
-  private def vec(block: Expr[Unit]) = {
+  private val context = reify { null: Context }
+  private val vectorized = not be None
+
+  it should "not vectorized 0D expression" in {
+    vectorization(reify { 1 + 2 }) should not(vectorized)
+  }
+
+  it should "vectorized 1D expression" in {
+    vectorization(reify {
+      for (i <- 0 until 10) i + 1
+    }) should vectorized
+  }
+
+  it should "vectorized 2D expression" in {
+    vectorization(reify {
+      for (i <- 0 until 10; j <- 0 until 10)
+        i + j + 2
+    }) should vectorized
+  }
+
+  ignore should "vectorized 3D expression" in {
+    vectorization(reify {
+      for (i <- 0 until 10; j <- 0 until 10; k <- 0 until 10)
+        i + j + k + 3
+    }) should vectorized
+  }
+
+  private def vectorization(block: Expr[Unit]) = {
     try {
       vectorize(context, typecheck(block.tree), fresh, typecheck(_))
     } catch {
@@ -56,36 +73,5 @@ class VectorizationTest
         ex.printStackTrace()
         throw ex
     }
-  }
-
-  @Test
-  def notVectorizable0D() {
-    assertThat(
-      vec(reify { 1 + 2 }),
-      is(NotVectorizable)
-    )
-  }
-
-  @Test
-  def vectorizable1D() {
-    assertThat(
-      vec(reify {
-        for (i <- 0 until 10) i + 2
-      }),
-      is(Vectorizable)
-    )
-  }
-
-  // @Ignore
-  @Test
-  def notVectorizable2D() {
-    assertThat(
-      vec(reify {
-        for (i <- 0 until 10; j <- 0 until 10)
-          i + j + 2
-      }),
-      //is(NotVectorizable)
-      is(Vectorizable)
-    )
   }
 }

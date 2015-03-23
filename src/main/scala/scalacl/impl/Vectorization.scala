@@ -79,6 +79,7 @@ trait Vectorization
         )
     }
   }
+
   private[impl] def vectorize(
     context: Expr[scalacl.Context],
     block: Tree,

@@ -31,74 +31,76 @@
 package scalacl
 package impl
 
-import org.junit._
-import Assert._
-import org.hamcrest.CoreMatchers._
-
 import collection.mutable.ArrayBuffer
 
 import com.nativelibs4java.opencl.CLEvent
 import com.nativelibs4java.opencl.MockEvent
-import com.nativelibs4java.opencl.library.OpenCLLibrary._
 
-class DefaultScheduledDataTest {
-  val data = new DefaultScheduledData {
-    override val context: Context = null
+import org.scalatest._
+
+class DefaultScheduledDataTest
+    extends BaseTest
+    with RuntimeUniverseTest
+    with BeforeAndAfterEach {
+
+  behavior of "DefaultScheduledData"
+
+  private val e1 = new MockEvent(1)
+  private val e2 = new MockEvent(2)
+  private val e3 = new MockEvent(3)
+
+  private var data: DefaultScheduledData = _
+  private def isLocked = data.scheduleLock.isLocked
+
+  override def beforeEach() {
+    data = new DefaultScheduledData {
+      override val context: Context = null
+    }
   }
-  def isLocked = data.scheduleLock.isLocked
-  assertFalse(isLocked)
 
-  val e1 = new MockEvent(1)
-  val e2 = new MockEvent(2)
-  val e3 = new MockEvent(3)
+  it should "reads" in {
+    read(e1, expectReads = Nil, expectWrite = null)
+    read(e2, expectReads = List(e1), expectWrite = null)
+  }
 
-  def read(event: CLEvent, expectReads: List[CLEvent], expectWrite: CLEvent) {
+  it should "writes" in {
+    write(e1, expectReads = Nil, expectWrite = null)
+    write(e2, expectReads = Nil, expectWrite = e1)
+  }
+
+  it should "read -> write -> read" in {
+    read(e1, expectReads = Nil, expectWrite = null)
+    write(e2, expectReads = List(e1), expectWrite = null)
+    read(e3, expectReads = Nil, expectWrite = e2)
+  }
+
+  it should "write -> read -> write" in {
+    write(e1, expectReads = Nil, expectWrite = null)
+    read(e2, expectReads = Nil, expectWrite = e1)
+    write(e3, expectReads = List(e2), expectWrite = e1)
+  }
+
+  private def read(event: CLEvent, expectReads: List[CLEvent], expectWrite: CLEvent) {
     val events = new ArrayBuffer[CLEvent]
     data.startRead(events)
-    assertEquals("bad read events", Option(expectWrite).toSeq, events.toList)
-    assertTrue(isLocked)
+    events.toList should equal(Option(expectWrite).toSeq)
+    assert(isLocked)
 
     data.endRead(event)
-    assertEquals("bad dataWrite", expectWrite, data.dataWrite)
-    assertEquals("bad dataReads", expectReads ++ Option(event), data.dataReads.toList)
-    assertFalse(isLocked)
+    data.dataWrite should equal(expectWrite)
+    data.dataReads.toList should equal(expectReads ++ Option(event))
+    assert(!isLocked)
   }
 
-  def write(event: CLEvent, expectReads: List[CLEvent], expectWrite: CLEvent) {
+  private def write(event: CLEvent, expectReads: List[CLEvent], expectWrite: CLEvent) {
     val events = new ArrayBuffer[CLEvent]
     data.startWrite(events)
-    assertEquals("bad write events", expectReads ++ Option(expectWrite), events.toList)
-    assertTrue(isLocked)
+    events.toList should equal(expectReads ++ Option(expectWrite))
+    assert(isLocked)
 
     data.endWrite(event)
-    assertEquals("bad dataWrite", event, data.dataWrite)
-    assertEquals("bad dataReads", Nil, data.dataReads.toList)
-    assertFalse(isLocked)
-  }
-
-  @Test
-  def simpleReads() {
-    read(e1, Nil, null)
-    read(e2, List(e1), null)
-  }
-
-  @Test
-  def simpleWrites() {
-    write(e1, Nil, null)
-    write(e2, Nil, e1)
-  }
-
-  @Test
-  def simpleReadWriteRead() {
-    read(e1, Nil, null)
-    write(e2, List(e1), null)
-    read(e3, Nil, e2)
-  }
-
-  @Test
-  def simpleWriteReadWrite() {
-    write(e1, Nil, null)
-    read(e2, Nil, e1)
-    write(e3, List(e2), e1)
+    data.dataWrite should equal(event)
+    data.dataReads.toList should equal(Nil)
+    assert(!isLocked)
   }
 }
