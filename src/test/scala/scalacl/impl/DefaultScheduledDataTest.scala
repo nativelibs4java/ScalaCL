@@ -76,23 +76,23 @@ class DefaultScheduledDataTest
   private def read(event: CLEvent, expectReads: List[CLEvent], expectWrite: CLEvent) {
     val events = new ArrayBuffer[CLEvent]
     data.startRead(events)
-    Option(expectWrite).toSeq should equal(events.toList)
+    events.toList should equal(Option(expectWrite).toSeq)
     assert(isLocked)
 
     data.endRead(event)
-    expectWrite should equal(data.dataWrite)
-    (expectReads ++ Option(event)) should equal(data.dataReads.toList)
+    data.dataWrite should equal(expectWrite)
+    data.dataReads.toList should equal(expectReads ++ Option(event))
     assert(!isLocked)
   }
 
   private def write(event: CLEvent, expectReads: List[CLEvent], expectWrite: CLEvent) {
     val events = new ArrayBuffer[CLEvent]
     data.startWrite(events)
-    (expectReads ++ Option(expectWrite)) should equal(events.toList)
+    events.toList should equal(expectReads ++ Option(expectWrite))
     assert(isLocked)
 
     data.endWrite(event)
-    event should equal(data.dataWrite)
+    data.dataWrite should equal(event)
     data.dataReads.toList should equal(Nil)
     assert(!isLocked)
   }
