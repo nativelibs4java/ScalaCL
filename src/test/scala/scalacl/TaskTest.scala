@@ -29,25 +29,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package scalacl
-import impl._
 
-import org.junit._
-import Assert._
+class TaskTest
+    extends BaseTest {
+  behavior of "ScalaCl task"
 
-class TaskTest {
-  @Test
-  def simple() {
-    implicit val context = Context.best
-    try {
-      val a = new CLArray[Int](3)
+  ignore should "perform computation in task block" in context {
+    implicit context =>
+      val result = new CLArray[Int](3)
       val f = 10
       task {
-        a(1) = 10 * f
+        result(1) = 10 * f
       }
-      println(a.toSeq)
-      assertEquals(Seq(0, 100, 0), a.toSeq)
-    } finally {
-      context.release()
-    }
+      result should equal(Seq(0, 100, 0))
   }
 }

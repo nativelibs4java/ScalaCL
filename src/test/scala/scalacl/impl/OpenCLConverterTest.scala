@@ -31,56 +31,41 @@
 package scalacl
 package impl
 
-import scalaxy.streams.WithRuntimeUniverse
-import scalaxy.streams.SideEffectsDetection
-import scalaxy.streams.StreamTransforms
-import scalaxy.streams.testing.WithTestFresh
-
-import org.junit._
-import Assert._
-import org.hamcrest.CoreMatchers._
-
 class OpenCLConverterTest
-    extends OpenCLConverter
-    with WithRuntimeUniverse
-    with WithTestFresh
-    with StreamTransforms
-    with SideEffectsDetection {
-  import global._
+    extends BaseTest
+    with CodeConversionTest {
 
-  def conv(x: Expr[_]): FlatCode[String] = {
-    //convert(typecheck(x))
-    flattenAndConvert(typecheck(x.tree))
-  }
+  behavior of "OpenClConverter"
 
-  def code(statements: Seq[String], values: Seq[String]): FlatCode[String] =
-    FlatCode[String](statements = statements, values = values)
+  ignore should "convert touple" in {
+    val flattenCode = flatStatement(
+      Seq("const int x = 10;"),
+      Seq("x", "(x * 2)")
+    )
 
-  @Test
-  def testSimpleTuple() {
-    assertEquals(
-      code(
-        Seq("const int x = 10;"),
-        Seq("x", "(x * 2)")
-      ),
-      conv(reify {
+    val convertedExpression =
+      flatAndConvertExpression(global.reify {
         val x = 10
         (x, x * 2)
       })
-    )
+
+    flattenCode should equal(convertedExpression)
   }
 
-  @Test
-  def testSimpleMath() {
+  ignore should "convert simple function: cos" in {
     import scala.math._
-    assertEquals(
-      code(
-        Seq(),
-        Seq("cos((float)10.0)")
-      ),
-      conv(reify {
+
+    val flattenCode = flatStatement(
+      Seq(),
+      Seq("cos((float)10.0)")
+    )
+
+    val convertedExpression =
+      flatAndConvertExpression(global.reify {
         cos(10)
       })
-    )
+
+    flattenCode should equal(convertedExpression)
   }
+
 }

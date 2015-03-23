@@ -31,14 +31,17 @@
 package scalacl
 import impl._
 
-import org.junit._
-import Assert._
-
 import InlinedCollections._
+import scalaxy.streams.WithRuntimeUniverse
 
-class InlinedCollectionsTest {
-  @Test
-  def simple() {
-    println(inlineMapAsSwitch("map", Map(1 -> 10, 2 -> 20)))
+class InlinedCollectionsTest
+    extends BaseTest
+    with RuntimeUniverseTest {
+
+  behavior of "InlinedCollections"
+
+  ignore should "inline map as switch" in {
+    //TODO some validation
+    inlineMapAsSwitch("map", Map(1 -> 10, 2 -> 20))
   }
 }

@@ -29,59 +29,74 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package scalacl
-import impl._
 
-import org.junit._
-import Assert._
+import scalacl.impl.KernelDef
 
-class KernelTest {
-  @Test
-  def intRange1DKernel() {
-    implicit val context = Context.best
-    try {
+class KernelTest extends BaseTest {
+  behavior of "ScalaCl kernel"
 
+  ignore should "perform computation in kernel block for integers" in context {
+    implicit context =>
       val n = 25
-      val a = new Array[Int](n)
-      val ca = new CLArray[Int](n)
+      val result = new Array[Int](n)
+      val clResult = new CLArray[Int](n)
       val f = 10
 
       kernel {
         for (i <- 0 until n by 3)
-          ca(i) = i * f + 10
+          clResult(i) = i * f + 10
       }
+
       for (i <- 0 until n by 3)
-        a(i) = i * f + 10
+        result(i) = i * f + 10
 
-      assertEquals(a.toSeq, ca.toSeq)
-    } finally {
-      context.release()
-    }
+      result.toSeq should equal(clResult.toSeq)
   }
-  @Test
-  def longRange1DKernel() {
-    implicit val context = Context.best
-    try {
 
+  ignore should "perform computation in kernel block for longs" in context {
+    implicit context =>
       val n = 25L
-      val a = new Array[Long](n.toInt)
-      val ca = new CLArray[Long](n)
+      val result = new Array[Long](n.toInt)
+      val clResult = new CLArray[Long](n)
       val f = 10
 
       kernel {
         for (i <- 0L until n by 3L)
-          ca(i) = i * f + 10
+          clResult(i) = i * f + 10
       }
-      for (i <- 0L until n by 3L)
-        a(i.toInt) = i * f + 10
 
-      assertEquals(a.toSeq, ca.toSeq)
-    } finally {
-      context.release()
-    }
+      for (i <- 0L until n by 3L)
+        result(i.toInt) = i * f + 10
+
+      result.toSeq should equal(clResult.toSeq)
   }
 
-  @Test
-  def testEquality() {
+  ignore should "capture simple array" in context {
+    implicit context =>
+      val clResult = {
+        val f = CLArray(10, 20, 30, 40)
+        val a = CLArray(0, 1, 2, 3)
+
+        val rr = new CLArray[Int](a.length)
+        kernel {
+          for (i <- 0 until a.length.toInt) {
+            rr(i) = f(i) + i
+          }
+        }
+        rr
+      }
+
+      val result = {
+        val f = Array(10, 20, 30, 40)
+        val a = Array(0, 1, 2, 3)
+        val r = a.map(x => f(x) + x)
+        r
+      }
+
+      result.toList should equal(clResult.toList)
+  }
+
+  ignore should "check equality of kernels" in {
     val sources = "aa"
     same(new KernelDef(sources = sources, salt = 1), new KernelDef(sources = sources, salt = 1))
     diff(new KernelDef(sources = sources, salt = 1), new KernelDef(sources = sources, salt = 2), sameHC = false)
@@ -89,12 +104,12 @@ class KernelTest {
   }
 
   def same(a: AnyRef, b: AnyRef) = {
-    assertEquals(a.hashCode, b.hashCode)
-    assertEquals(a, b)
+    a.hashCode should equal(b.hashCode)
+    a shouldEqual equal(b)
   }
 
   def diff(a: AnyRef, b: AnyRef, sameHC: Boolean) = {
-    assertTrue(sameHC ^ (a.hashCode != b.hashCode))
-    assertFalse(a.equals(b))
+    assert(sameHC ^ (a.hashCode != b.hashCode))
+    assert(!a.equals(b))
   }
 }

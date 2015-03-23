@@ -29,42 +29,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 package scalacl
-import impl._
 
-import org.junit._
-import Assert._
+class CLFunctionTest extends BaseTest {
 
-class CLFunctionTest {
-  @Ignore
-  @Test
-  def simple() {
-    implicit val context = Context.best
-    try {
+  behavior of "CLFunction"
+
+  ignore should "wrap scalar function" in context {
+    implicit context =>
       val a = CLArray[Int](1, 2, 3)
       val v = 10
-      // task {
-      //   a(1) = 10 * v
-      // }
-      // println(a.toSeq)
-      // assertEquals(Seq(0, 100, 0), a.toSeq)
 
-      val f: CLFunction[Int, Float] = (x: Int) => {
+      val clFunction: CLFunction[Int, Float] = (x: Int) => {
         x * 2.0f * v
       }
 
-      println(f)
-      println(f.value)
-      println(f.functionKernel)
-      assertArrayEquals(
-        Array(20.0f, 40.0f, 60.0f),
-        a.map(f).toArray,
-        0)
-    } catch {
-      case ex: Throwable =>
-        ex.printStackTrace()
-        throw ex
-    } finally {
-      context.release()
-    }
+      val clResult = a.map(clFunction).toArray
+      clResult should equal(Array(20.0f, 40.0f, 60.0f))
   }
 }

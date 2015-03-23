@@ -31,10 +31,6 @@
 package scalacl
 package impl
 
-import org.junit._
-import Assert._
-import org.hamcrest.CoreMatchers._
-
 import com.nativelibs4java.opencl.CLEvent
 import com.nativelibs4java.opencl.MockEvent
 import com.nativelibs4java.opencl.library.OpenCLLibrary._
@@ -42,9 +38,11 @@ import com.nativelibs4java.opencl.library.IOpenCLLibrary._
 
 import scala.collection.mutable.ArrayBuffer
 
-class ScheduledDataTest {
-  @Test
-  def simpleOpWithoutEvent() {
+class ScheduledDataTest extends BaseTest {
+  behavior of "ScheduledDate"
+
+  //TODO create higher granularization
+  ignore should "perform some reads and writes" in {
     val inEvt = new MockEvent(1)
     val outEvt = new MockEvent(2)
     val opEvt = new MockEvent(3)
@@ -65,29 +63,25 @@ class ScheduledDataTest {
     }
 
     context.schedule(Array(in), Array(out), events => {
-      assertEquals(Seq(inEvt, outEvt), events.toSeq)
+      Seq(inEvt, outEvt) should equal(events.toSeq)
       opEvt
     })
-    assertNotNull(opEvt.completionCallback)
 
-    assertEquals(
-      "in calls don't match",
-      Seq(
-        'startRead -> List(Nil),
-        'endRead -> List(opEvt)),
-      in.calls)
-    assertEquals(
-      "out calls don't match",
-      Seq(
-        'startWrite -> List(List(inEvt)),
-        'endWrite -> List(opEvt)),
-      out.calls)
+    opEvt.completionCallback should not be null
+
+    Seq(
+      'startRead -> List(Nil),
+      'endRead -> List(opEvt)
+    ) should equal(in.calls)
+
+    Seq(
+      'startWrite -> List(List(inEvt)),
+      'endWrite -> List(opEvt)
+    ) should equal(out.calls)
 
     opEvt.completionCallback.callback(CL_COMPLETE)
-    for (d <- Seq(in, out))
-      assertEquals(
-        Seq(
-          'eventCompleted -> List(opEvt)),
-        d.calls)
+    Seq(in, out).foreach {
+      d => Seq('eventCompleted -> List(opEvt)) should equal(d.calls)
+    }
   }
 }

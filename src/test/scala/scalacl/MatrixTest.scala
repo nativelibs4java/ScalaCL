@@ -1,8 +1,7 @@
 package scalacl
-import org.junit._
-import Assert._
 
-class MatrixTest {
+class MatrixTest extends BaseTest {
+  behavior of "Matrix"
 
   case class Matrix(data: CLArray[Float], rows: Int, columns: Int)(implicit context: Context) {
     def this(rows: Int, columns: Int)(implicit context: Context) =
@@ -11,7 +10,7 @@ class MatrixTest {
       this(n, n)
   }
 
-  def mult(a: Matrix, b: Matrix, out: Matrix)(implicit context: Context) = {
+  def mul(a: Matrix, b: Matrix, out: Matrix)(implicit context: Context) = {
     assert(a.columns == b.rows)
     assert(a.rows == out.rows)
     assert(b.columns == out.columns)
@@ -45,61 +44,40 @@ class MatrixTest {
     }
   }
 
-  @Ignore
-  @Test
-  def testMatrix2() {
-    implicit val context = Context.best
+  ignore should "perform multiplication of two matrix" in context {
+    implicit context =>
+      val n = 10
+      val a = new Matrix(n)
+      val b = new Matrix(n)
+      val out = new Matrix(n)
 
-    val n = 10
-    val out = new Matrix(n)
-    val outData = out.data
-    kernel {
-      // This block will either be converted to an OpenCL kernel or cause compilation error
-      // It captures out.data, a.data and b.data
-      for (i <- 0 until 10; j <- 0 until 20) {
-        //     // TODO chain map and sum (to avoid creating a builder here !)
-        // outData(i * 30 + j) =
-        //   (0 until 30).map(k => {
-        //     aData(i * 30 + k) * bData(k * 30 + j)
-        //   }).sum
-        // var tot = 0f
-        // for (k <- 0 until 30) {
-        //       //tot = tot + aData(i * aColumns + k) * bData(k * bColumns + j)
-        //       tot = 10000
-        // }
-        // outData(i * 10 + j) = tot
+      //TODO add some verification
+      mul(a, b, out)
+  }
+
+  ignore should "generate kernel with matrix type" in context {
+    implicit context =>
+      val n = 10
+      val out = new Matrix(n)
+      val outData = out.data
+      kernel {
+        // This block will either be converted to an OpenCL kernel or cause compilation error
+        // It captures out.data, a.data and b.data
+        for (i <- 0 until 10; j <- 0 until 20) {
+          // TODO chain map and sum (to avoid creating a builder here !)
+          // outData(i * 30 + j) =
+          //   (0 until 30).map(k => {
+          //     aData(i * 30 + k) * bData(k * 30 + j)
+          //   }).sum
+          var tot = 0f
+          for (k <- 0 until 30) {
+            //tot = tot + aData(i * aColumns + k) * bData(k * bColumns + j)
+            tot = 10000
+          }
+          outData(i * 10 + j) = tot
+        }
       }
-    }
+    //TODO add some verification
   }
 
-  // @Ignore
-  @Test
-  def testMatrixMult() {
-    implicit val context = Context.best
-
-    val a = new Matrix(CLArray(0, 1, 1, 0), 2, 2)
-    val b = new Matrix(CLArray(12, 0, 0, 21), 2, 2)
-    val out = new Matrix(2, 2)
-
-    mult(a, b, out)
-
-    val data = out.data.toList
-    println(data)
-    assertEquals(List(0.0, 21.0, 12.0, 0.0), data)
-    // assert(data == List(21, 0, 0, 12))
-  }
-
-  // @Test
-  // def testMatrixMult() {
-  //   implicit val context = Context.best
-
-  //   val n = 10
-  //   val a = new Matrix(n)
-  //   val b = new Matrix(n)
-  //   val out = new Matrix(n)
-
-  //   mult(a, b, out)
-
-  //   println(out.data)
-  // }
 }

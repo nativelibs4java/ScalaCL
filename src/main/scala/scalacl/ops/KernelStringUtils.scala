@@ -24,7 +24,7 @@ trait KernelStringUtils {
         q""" "\"" + ${value} + "\"" """
       case tpe if tpe != null && tpe <:< typeOf[Array[_]] =>
         val TypeRef(_, _, List(componentTpe)) = tpe
-        println("componentTpe = " + componentTpe)
+        // println("componentTpe = " + componentTpe)
         val componentFormat = formatConstantTree(Ident(TermName("v")), componentTpe)
         if (componentFormat == null)
           null
