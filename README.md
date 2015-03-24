@@ -1,10 +1,10 @@
 [![Build Status](https://travis-ci.org/nativelibs4java/ScalaCL.svg?branch=feature_travis-build)](https://travis-ci.org/nativelibs4java/ScalaCL) [![Join the chat at https://gitter.im/nativelibs4java/ScalaCL](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nativelibs4java/ScalaCL?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) 
- 
-ScalaCL... v3 (yeah, yet another rewrite from scratch FTW!)
 
-BARELY FUNCTIONAL YET, WORK IN PROGRESS (see [ScalaCL](https://code.google.com/p/scalacl/) if you want something that _works_, albeit only on Scala 2.9.x).
+ScalaCL lets you run Scala code on GPUs through OpenCL ([BSD-licensed](./LICENSE)).
 
-Features of the new design:
+WORK IN PROGRESS (see [ScalaCL](https://code.google.com/p/scalacl/) if you want something that _works_, albeit only on Scala 2.9.x).
+
+Features of the new design (v3, rewritten from scratch again!):
 - Much better asynchronicity support (now requires OpenCL 1.1), and much better performance in general
 - Support for captures of constants *and* OpenCL arrays
 - Support for lazy clones for fast zipping
