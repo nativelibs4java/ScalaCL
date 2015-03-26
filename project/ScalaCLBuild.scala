@@ -154,8 +154,8 @@ object ScalaCLBuild extends Build {
       List(
         (
           "com.nativelibs4java" %% "scalaxy-streams" % "0.4-SNAPSHOT",
-          "../Scalaxy",
-          "git://github.com/nativelibs4java/Scalaxy.git"
+          "../scalaxy-streams",
+          "git://github.com/nativelibs4java/scalaxy-streams.git"
         ),
         (
           "com.nativelibs4java" %% "scalaxy-reified" % "0.4-SNAPSHOT",
