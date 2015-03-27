@@ -4,6 +4,8 @@ ScalaCL lets you run Scala code on GPUs through OpenCL ([BSD-licensed](./LICENSE
 
 WORK IN PROGRESS (see [ScalaCL](https://code.google.com/p/scalacl/) if you want something that _works_, albeit only on Scala 2.9.x).
 
+See [slides from ScalaCL + Reified talk @ scala.io 2013](https://docs.google.com/presentation/d/1R61HTC6HMzmv7y6UqCSmVhy7kNk04l9cDg2vYHECZ98/edit#slide=id.g243771a0_0396).
+
 Features of the new design (v3, rewritten from scratch again!):
 - Much better asynchronicity support (now requires OpenCL 1.1), and much better performance in general
 - Support for captures of constants *and* OpenCL arrays
