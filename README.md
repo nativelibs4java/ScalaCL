@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/nativelibs4java/ScalaCL.svg?branch=feature_travis-build)](https://travis-ci.org/nativelibs4java/ScalaCL) [![Join the chat at https://gitter.im/nativelibs4java/ScalaCL](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nativelibs4java/ScalaCL?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) 
+[![Build Status](https://travis-ci.org/nativelibs4java/ScalaCL.svg?branch=master)](https://travis-ci.org/nativelibs4java/ScalaCL) [![Join the chat at https://gitter.im/nativelibs4java/ScalaCL](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nativelibs4java/ScalaCL?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) 
 
 ScalaCL lets you run Scala code on GPUs through OpenCL ([BSD-licensed](./LICENSE)).
 
