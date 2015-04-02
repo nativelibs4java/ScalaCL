@@ -16,6 +16,8 @@ Features of the new design (v3, rewritten from scratch again!):
 
 # TODO
 
+[![Join the chat at https://gitter.im/nativelibs4java/ScalaCL](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nativelibs4java/ScalaCL?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 - Finish Scalaxy/Reified integration (started under CLFunc / CLFuncUtils)
 - Add more tests: DataIO, CodeConversion, scheduling, uniqueness / caching of kernels
 - Implement more DataIO[T], support case classes as tuples
